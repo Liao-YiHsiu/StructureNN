@@ -14,7 +14,8 @@
 
 using namespace std;
 using namespace kaldi;
-void genTranMat(Matrix<BaseFloat> &tran, const ContextDependency &ctx_dep, int MaxPhn);
+
+void genTranMat(Matrix<BaseFloat> &tran, const ContextDependency &ctx_dep);
 
 int main(int argc, char* argv[]){
    // parse arguement.
@@ -42,7 +43,7 @@ int main(int argc, char* argv[]){
          ContextDependency ctx_dep;
          ReadKaldiObject(tree_path, &ctx_dep);
          Matrix<BaseFloat> tran;
-         genTranMat(tran, ctx_dep, 48);
+         genTranMat(tran, ctx_dep);
 
          SequentialBaseFloatMatrixReader kaldi_reader(rspecifier);
          BaseFloatMatrixWriter kaldi_writer(wspecifier);
@@ -64,17 +65,15 @@ int main(int argc, char* argv[]){
 }
 
 // tran = (phones) x (posteriors) 
-void genTranMat(Matrix<BaseFloat> &tran, const ContextDependency &ctx_dep, int MaxPhn){
+void genTranMat(Matrix<BaseFloat> &tran, const ContextDependency &ctx_dep){
 
    int32 pdfs = ctx_dep.NumPdfs();
    const EventMap &emap = ctx_dep.ToPdfMap();
-
-   tran.Resize(MaxPhn, pdfs);
+   vector< vector<EventAnswerType> > mapping;
 
    int32 P = ctx_dep.CentralPosition();
 
-
-   for(int i = 1; i <= MaxPhn; ++i){
+   for(int i = 1; ; ++i){
       EventType event;
       vector<EventAnswerType> ans;
 
@@ -84,9 +83,18 @@ void genTranMat(Matrix<BaseFloat> &tran, const ContextDependency &ctx_dep, int M
                static_cast<EventValueType>(i)));
 
       emap.MultiMap(event, &ans);
-      SubVector<BaseFloat> vec(tran, i-1);
 
-      for(int j = 0; j < ans.size(); ++j)
-         vec(ans[j]-1) = 1;
+      if(ans.size() == 0) break;
+
+      mapping.push_back(ans);
+   }
+
+
+   int phones = mapping.size();
+   tran.Resize(phones, pdfs);
+   for(int i = 0; i < phones; ++i){
+      SubVector<BaseFloat> vec(tran, i);
+      for(int j = 0; j < mapping[i].size(); ++j)
+         vec(mapping[i][j]-1) = 1;
    }
 }

@@ -18,16 +18,37 @@ void getPhone(const string &key, const string &timit, map<string, int> &phMap, v
 void readPhMap(const string path, map<string, int> &phMap);
 string execute(const string &cmd);
 
-void readPhMap(const string path, map<string, int> &phMap){
+// use second value as key
+void readPhMap(const string path, const string id_path, map<string, int> &phMap){
+   map<string, int> inner;
+   string line, tmp;
+   int id;
+
+   {
+      ifstream fin(id_path.c_str());
+      while(getline(fin, line)){
+         stringstream ss(line);
+         ss >> tmp >> id;
+         inner[tmp] = id;
+      }
+
+   }
 
    ifstream fin(path.c_str());
-   string line, tmp;
-   int id = 0;
 
    while(getline(fin, line)){
       stringstream ss(line);
-      ss >> tmp;
-      phMap[tmp] = id++;
+      string tmp2;
+      ss >> tmp >> tmp2;
+
+      if(tmp2.empty()
+            || inner.find(tmp2) == inner.end()){
+
+         phMap[tmp] = -1;
+         continue;
+      }
+
+      phMap[tmp] = inner[tmp2];
    }
 }
 
@@ -51,9 +72,18 @@ void getPhone(const string &key, const string &timit, map<string, int> &phMap, v
    vector<int> ph_idx;
 
    while(fin >> s >> e >> phn){
-      ph_e.push_back(e);
-      ph_idx.push_back(phMap[phn]);
+      if(phMap.find(phn) == phMap.end() || phMap[phn] < 0){
+         int size = ph_e.size();
+         if(size == 0)
+            continue;
+         else
+            ph_e[size-1] = (ph_e[size-1] + e)/2;
+      }else{
+         ph_e.push_back(e);
+         ph_idx.push_back(phMap[phn]);
+      }
    }
+   ph_e[ph_e.size()-1] = e;
 
    double step = ph_e[ph_e.size()-1] /(double) phIdx.size();
    int j = 0;

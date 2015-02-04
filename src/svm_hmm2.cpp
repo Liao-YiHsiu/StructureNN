@@ -12,43 +12,39 @@ using namespace std;
 using namespace kaldi;
 
 void gen(ofstream &fout, int index,const Matrix<BaseFloat> &matrix,const vector<int> &phIdx);
+void getLabel(const string &path,  map<string, vector<int> > &labelMap);
 
 int main(int argc, char* argv[]){
    // parse arguement.
    try{
       string usage;
-      usage.append("Use DNN output sequence and label sequence to generate structure learning feature\n")
-         .append("Usage: ").append(argv[0]).append(" <timit path> <phone map> <phone map ids> <rspecifier> <outFile>\n")
-         .append("e.g.: ").append(argv[0]).append(" /corpus/timit s5/conf/phones.60-48-39.map ../timit/data/lang/phones.txt scp:feats.scp out\n");
+      usage.append("Use feature and label sequence to generate structure learning feature\n")
+         .append("Usage: ").append(argv[0]).append(" <answer> <rspecifier> <outFile>\n")
+         .append("e.g.: ").append(argv[0]).append(" answer scp:feats.scp out\n");
 
       ParseOptions po(usage.c_str());
       po.Read(argc, argv);
 
-      if( po.NumArgs() != 5 ){
+      if( po.NumArgs() != 3 ){
          po.PrintUsage();
          exit(1);
       }
 
-      string timit_path = po.GetArg(1);
-      string phone_path = po.GetArg(2);
-      string phone_map  = po.GetArg(3);
+      map<string, vector<int> > labelMap;
+      string label_path = po.GetArg(1);
+      getLabel(label_path, labelMap);
 
-      map<string, int> phMap;
-      readPhMap(phone_path, phone_map, phMap);
-
-      if (ClassifyRspecifier(po.GetArg(4), NULL, NULL) != kNoRspecifier) {
-         string rspecifier = po.GetArg(4);
-         ofstream fout(po.GetArg(5).c_str());
+      if (ClassifyRspecifier(po.GetArg(2), NULL, NULL) != kNoRspecifier) {
+         string rspecifier = po.GetArg(2);
+         ofstream fout(po.GetArg(3).c_str());
 
          SequentialBaseFloatMatrixReader kaldi_reader(rspecifier);
 
          for (int index = 1; !kaldi_reader.Done(); kaldi_reader.Next(), index++){
             const Matrix<BaseFloat> &matrix = kaldi_reader.Value();
 
-            vector<int> phIdx(matrix.NumRows());
-            getPhone(kaldi_reader.Key(), timit_path, phMap, phIdx);
-
-            gen(fout, index, matrix, phIdx);
+            assert(labelMap.find(kaldi_reader.Key()) != labelMap.end());
+            gen(fout, index, matrix, labelMap[kaldi_reader.Key()]);
          }
       }
    }catch(const exception &e){
@@ -57,6 +53,23 @@ int main(int argc, char* argv[]){
    }
 
    return 0;
+}
+
+void getLabel(const string &path,  map<string, vector<int> > &labelMap){
+   ifstream fin(path.c_str());
+   string line;
+   while(getline(fin, line)){
+      stringstream ss(line);
+      string name;
+      vector<int> phns;
+      int ph;
+
+      ss >> name;
+      while(ss >> ph)
+         phns.push_back(ph);
+
+      labelMap[name] = phns;
+   }
 }
 
 void gen(ofstream &fout, int index, const Matrix<BaseFloat> &matrix, const vector<int> &phIdx){
