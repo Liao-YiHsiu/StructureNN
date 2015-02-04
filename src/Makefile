@@ -5,7 +5,7 @@ EXTRA_CXXFLAGS = -Wno-sign-compare
 include $(KALDISRC)/kaldi.mk
 CXXFLAGS += -I$(KALDISRC)
 
-BINFILES = str_format svm_hmm 
+BINFILES = str_format svm_hmm post2phn
 
 OBJFILES = 
 
