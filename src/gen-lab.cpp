@@ -17,9 +17,9 @@ int main(int argc, char* argv[]){
    // parse arguement.
    try{
       string usage;
-      usage.append("Use DNN output sequence and label sequence to generate structure learning feature\n")
-         .append("Usage: ").append(argv[0]).append(" <timit path> <phone map> <phone map ids> <rspecifier> <outFile>\n")
-         .append("e.g.: ").append(argv[0]).append(" /corpus/timit s5/conf/phones.60-48-39.map ../timit/data/lang/phones.txt scp:feats.scp out\n");
+      usage.append("transform input feature key and timit path to generate label sequence\n")
+         .append("Usage: ").append(argv[0]).append(" <timit path> <phone map> <phone map ids> <rspecifier> <wspecifier>\n")
+         .append("e.g.: ").append(argv[0]).append(" /corpus/timit s5/conf/phones.60-48-39.map ../timit/data/lang/phones.txt scp:feats.scp ark,t:-\n");
 
       ParseOptions po(usage.c_str());
       po.Read(argc, argv);
@@ -38,17 +38,17 @@ int main(int argc, char* argv[]){
 
       if (ClassifyRspecifier(po.GetArg(4), NULL, NULL) != kNoRspecifier) {
          string rspecifier = po.GetArg(4);
-         ofstream fout(po.GetArg(5).c_str());
+         string wspecifier = po.GetArg(5);
 
          SequentialBaseFloatMatrixReader kaldi_reader(rspecifier);
+         Int32VectorWriter label_writer(wspecifier);
 
          for (int index = 1; !kaldi_reader.Done(); kaldi_reader.Next(), index++){
             const Matrix<BaseFloat> &matrix = kaldi_reader.Value();
-
-            vector<int> phIdx(matrix.NumRows());
+            vector<int32> phIdx(matrix.NumRows());
             getPhone(kaldi_reader.Key(), timit_path, phMap, phIdx);
 
-            gen(fout, index, matrix, phIdx);
+            label_writer.Write(kaldi_reader.Key(), phIdx);
          }
       }
    }catch(const exception &e){
@@ -57,23 +57,4 @@ int main(int argc, char* argv[]){
    }
 
    return 0;
-}
-
-void gen(ofstream &fout, int index, const Matrix<BaseFloat> &matrix, const vector<int> &phIdx){
-   int F = matrix.NumCols(), T = matrix.NumRows();
-   assert(T == phIdx.size());
-
-   for(int t = 0; t < T; ++t){
-      if(phIdx[t] < 0) continue;
-
-      const SubVector<BaseFloat>& vec = matrix.Row(t);
-      
-      fout << phIdx[t] << " qid:" << index << " ";
-      
-      for(int i = 0; i < F; ++i)
-         fout << i + 1 << ":" << vec(i) << " ";
-
-      fout << endl;
-   }
-   
 }

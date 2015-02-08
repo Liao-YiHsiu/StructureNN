@@ -31,7 +31,7 @@ max_iters=20
 min_iters=
 keep_lr_iters=0
 start_halving_impr=0.01
-end_halving_impr=0.001
+end_halving_impr=0.000001
 halving_factor=0.5
 
 verbose=1
@@ -42,11 +42,11 @@ bn_dim=48
 mlp_proto=
 seed=777
 learn_rate=0.00001
-momentum=0.00001
+momentum=0.9
 minibatch_size=1024
 train_opts=
 randomizer_seed=777
-randomizer_size=5000
+randomizer_size=10240
 cv_percent=10
 cut_size="1G"
 train_tool="nnet-train-frmshuff"
@@ -213,7 +213,7 @@ done
 
 echo "train success"
 
-$current_dir/nnet-pop $mlp_best $current_dir/$model
+nnet-pop --num=2 $mlp_best $current_dir/$model
 exit 0;
 
 

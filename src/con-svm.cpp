@@ -19,8 +19,8 @@ int main(int argc, char* argv[]){
    try{
       string usage;
       usage.append("Use feature and label sequence to generate structure learning feature\n")
-         .append("Usage: ").append(argv[0]).append(" <answer> <rspecifier> <outFile>\n")
-         .append("e.g.: ").append(argv[0]).append(" answer scp:feats.scp out\n");
+         .append("Usage: ").append(argv[0]).append(" <label-rspecifier> <feat-rspecifier> <outFile>\n")
+         .append("e.g.: ").append(argv[0]).append(" scp:label.scp scp:feats.scp out\n");
 
       ParseOptions po(usage.c_str());
       po.Read(argc, argv);
@@ -30,21 +30,23 @@ int main(int argc, char* argv[]){
          exit(1);
       }
 
-      map<string, vector<int> > labelMap;
-      string label_path = po.GetArg(1);
-      getLabel(label_path, labelMap);
+      string label_rspecifier = po.GetArg(1);
+      string feats_rspecifier = po.GetArg(2);
 
-      if (ClassifyRspecifier(po.GetArg(2), NULL, NULL) != kNoRspecifier) {
-         string rspecifier = po.GetArg(2);
+      if (ClassifyRspecifier(label_rspecifier, NULL, NULL) != kNoRspecifier &&
+            ClassifyRspecifier(feats_rspecifier, NULL, NULL) != kNoRspecifier ) {
+
          ofstream fout(po.GetArg(3).c_str());
 
-         SequentialBaseFloatMatrixReader kaldi_reader(rspecifier);
+         SequentialBaseFloatMatrixReader feats_reader(feats_rspecifier);
+         RandomAccessInt32VectorReader   label_reader(label_rspecifier);
 
-         for (int index = 1; !kaldi_reader.Done(); kaldi_reader.Next(), index++){
-            const Matrix<BaseFloat> &matrix = kaldi_reader.Value();
+         for (int index = 1; !feats_reader.Done(); feats_reader.Next(), index++){
+            const Matrix<BaseFloat> &matrix = feats_reader.Value();
 
-            assert(labelMap.find(kaldi_reader.Key()) != labelMap.end());
-            gen(fout, index, matrix, labelMap[kaldi_reader.Key()]);
+            assert( label_reader.HasKey(feats_reader.Key()) );
+
+            gen(fout, index, matrix, label_reader.Value(feats_reader.Key()) );
          }
       }
    }catch(const exception &e){
@@ -55,24 +57,7 @@ int main(int argc, char* argv[]){
    return 0;
 }
 
-void getLabel(const string &path,  map<string, vector<int> > &labelMap){
-   ifstream fin(path.c_str());
-   string line;
-   while(getline(fin, line)){
-      stringstream ss(line);
-      string name;
-      vector<int> phns;
-      int ph;
-
-      ss >> name;
-      while(ss >> ph)
-         phns.push_back(ph);
-
-      labelMap[name] = phns;
-   }
-}
-
-void gen(ofstream &fout, int index, const Matrix<BaseFloat> &matrix, const vector<int> &phIdx){
+void gen(ofstream &fout, int index, const Matrix<BaseFloat> &matrix, const vector<int32> &phIdx){
    int F = matrix.NumCols(), T = matrix.NumRows();
    assert(T == phIdx.size());
 

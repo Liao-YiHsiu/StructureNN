@@ -14,15 +14,15 @@
 using namespace std;
 using namespace kaldi;
 
-void getPhone(const string &key, const string &timit, map<string, int> &phMap, vector<int> &phIdx);
-void readPhMap(const string path, map<string, int> &phMap);
+void getPhone(const string &key, const string &timit, map<string, int32> &phMap, vector<int32> &phIdx);
+void readPhMap(const string path, map<string, int32> &phMap);
 string execute(const string &cmd);
 
 // use second value as key
-void readPhMap(const string path, const string id_path, map<string, int> &phMap){
-   map<string, int> inner;
+void readPhMap(const string path, const string id_path, map<string, int32> &phMap){
+   map<string, int32> inner;
    string line, tmp;
-   int id;
+   int32 id;
 
    {
       ifstream fin(id_path.c_str());
@@ -52,7 +52,7 @@ void readPhMap(const string path, const string id_path, map<string, int> &phMap)
    }
 }
 
-void getPhone(const string &key, const string &timit, map<string, int> &phMap, vector<int> &phIdx){
+void getPhone(const string &key, const string &timit, map<string, int32> &phMap, vector<int32> &phIdx){
 
    // get phone path
    size_t pos = key.find('_');
