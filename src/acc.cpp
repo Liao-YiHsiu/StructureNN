@@ -5,6 +5,7 @@
 using namespace std;
 
 void Usage(const char* progName){
+   cerr << "compare two file line by line" << endl;
    cerr << "Usage: " << progName << " file1 file2" << endl;
    exit(-1);
 }
