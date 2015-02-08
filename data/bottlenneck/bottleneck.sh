@@ -14,7 +14,7 @@ function tobyte {
 # usage: ./bottleneck.sh <rspecifier> <bottleneck-number> <model>
 
 current_dir=`pwd`
-timit_root=../timit
+timit_root=../../timit
 
 cd $timit_root
 
@@ -30,8 +30,8 @@ l2_penalty=0
 max_iters=20
 min_iters=
 keep_lr_iters=0
-start_halving_impr=0.01
-end_halving_impr=0.000001
+start_halving_impr=0.001
+end_halving_impr=0.0001
 halving_factor=0.5
 
 verbose=1
@@ -52,7 +52,6 @@ cut_size="1G"
 train_tool="nnet-train-frmshuff"
 # End configuration.
 
-echo "tmp dir = $dir"
 echo "$0 $@"  # Print the command line for logging
 
 . parse_options.sh || exit 1;

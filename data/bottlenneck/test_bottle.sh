@@ -1,7 +1,5 @@
 #!/bin/bash
 
-. ../timit/path.sh
-
 FEAT=data-fmllr-tri3/train/feats.scp
 TEST=timit/data-fmllr-tri3/test/feats.scp
 

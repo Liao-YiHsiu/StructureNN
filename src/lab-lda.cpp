@@ -9,14 +9,14 @@ typedef kaldi::int32 int32;
 
 int main(int argc, char *argv[]) {
   try {
-    const char *usage =
-        "Accumulate LDA statistics based on label.\n"
-        "Usage:  acc-lda [options] <features-rspecifier> <label-rspecifier> <lda-acc-out>\n"
-        "e.g.\n"
-        " lda-acc \"ark:splice-feats scp:train.scp|\" ark:label.scp ldaacc.1\n";
+    string usage;
+    usage.append("Accumulate LDA statistics based on label.\n")
+        .append("Usage: ").append(argv[0]).append(" [options] <features-rspecifier> <label-rspecifier> <lda-acc-out>\n")
+        .append("e.g.\n")
+        .append(" ").append(argv[0]).append(" \"ark:splice-feats scp:train.scp|\" ark:label.scp ldaacc.1\n");
 
     bool binary = true;
-    ParseOptions po(usage);
+    ParseOptions po(usage.c_str());
     po.Register("binary", &binary, "Write accumulators in binary mode.");
     po.Read(argc, argv);
 

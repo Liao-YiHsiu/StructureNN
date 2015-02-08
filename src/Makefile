@@ -23,9 +23,3 @@ ADDLIBS = $(KALDISRC)/feat/kaldi-feat.a $(KALDISRC)/transform/kaldi-transform.a 
 
 include $(KALDISRC)/makefiles/default_rules.mk
 
-run: $(BINFILES)
-	./nn_output.sh
-svm: $(BINFILES)
-	./svm_hmm.sh
-svm2: $(BINFILES)
-	./svm_hmm2.sh
