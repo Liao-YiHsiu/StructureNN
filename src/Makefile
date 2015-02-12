@@ -8,7 +8,7 @@ CXXFLAGS += -I$(KALDISRC)
 LDFLAGS += $(CUDA_LDFLAGS)
 LDLIBS += $(CUDA_LDLIBS)
 
-BINFILES = post-phn acc con-svm nnet-pop lab-lda gen-lab
+BINFILES = post-phn acc con-svm nnet-pop lab-lda gen-lab lattice-to-vec snnet-train-shuff
 
 OBJFILES = 
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-C=10000
+C=1000
 
 echo "$0 $@"  # Print the command line for logging
 
@@ -9,7 +9,7 @@ echo "$0 $@"  # Print the command line for logging
 if [ "$#" -ne 1 ]; then
    echo "Train Structure SVM on a data set"
    echo "Usage: $0 <dir> "
-   echo "eg. $0 simp"
+   echo "eg. $0 data/simp"
    echo ""
    echo "dir-> train.lab test.lab train.ark test.ark"
    exit 1;
@@ -32,7 +32,7 @@ model=$dir/data_${C}.model
    [ -f $dir/test.out ] || con-svm ark:$dir/test.lab ark,s,cs:$dir/test.ark $dir/test.out  
 
    echo "SVM training start..................................."
-   svm_hmm/svm_hmm_learn -c $C -e 0.5 $dir/data.out $model &> $log 
+   [ -f $model ] || svm_hmm/svm_hmm_learn -c $C -e 0.5 $dir/data.out $model &> $log 
    
    echo "SVM testing start..................................."
    svm_hmm/svm_hmm_classify $dir/test.out $model $dir/test.tags &>> $log 
