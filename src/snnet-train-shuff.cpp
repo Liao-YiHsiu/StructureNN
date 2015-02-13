@@ -6,19 +6,13 @@
 #include "util/common-utils.h"
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
+#include "svm.h"
 #include <sstream>
 
 using namespace std;
 using namespace kaldi;
 using namespace kaldi::nnet1;
 
-typedef pair< vector<int32>, vector< vector<float> > > LabFeat;
-typedef vector< LabFeat > LabFeatVec;
-
-void svm_read(const string &file, LabFeatVec &labfeat); 
-int path_read(const string &path_rspecifier, const LabFeatVec& labfeats,
-      vector< vector< vector<int32> > > &all_path);
-void permute_arr(vector<int> &arr);
 
 void makeFeature(Matrix<BaseFloat> &matrix, const LabFeat& labfeat, const vector<int32> &path, int32 maxState);
 void makePost(Posterior &post, const vector<int32> &realPath, const vector<int32> &path);
@@ -32,13 +26,12 @@ void train(const LabFeatVec &labfeats, const vector< vector< vector<int32> > > &
 int main(int argc, char *argv[]) {
   
   try {
-    string usage =
-        "Perform one iteration of Structure Neural Network training by mini-batch Stochastic Gradient Descent.\n"
-        "Use structure SVM file and path to train the neural net. \n"
-        "Train by SGD and cut Cross Validation set automatically.\n"
-        "Usage:  snnet-train-shuff [options] <SVM in> <path-rspecifier> <model-in> <model-out>\n"
-        "e.g.: \n"
-        " nnet-train-frmshuff data.out \"ark:lattice-to-vec ark:1.lat ark:- |\" nnet.init nnet.iter1\n";
+    string usage;
+    usage.append("Perform one iteration of Structure Neural Network training by mini-batch Stochastic Gradient Descent.\n")
+       .append("Use structure SVM file and path to train the neural net. \n")
+       .append("Usage: ").append(argv[0]).append(" [options] <SVM in> <path-rspecifier> <model-in> [<model-out>]\n")
+       .append("e.g.: \n")
+       .append(" ").append(argv[0]).append(" data.out \"ark:lattice-to-vec ark:1.lat ark:- |\" nnet.init nnet.iter1\n");
 
     ParseOptions po(usage.c_str());
 
@@ -49,16 +42,16 @@ int main(int argc, char *argv[]) {
 
 
     bool binary = true, 
+         crossvalidate = false,
          randomize = true;
 
     po.Register("binary", &binary, "Write output in binary mode");
+    po.Register("cross-validate", &crossvalidate, "Perform cross-validation (don't backpropagate)");
     po.Register("randomize", &randomize, "Perform the frame-level shuffling within the Cache::");
 
     string objective_function = "xent";
     po.Register("objective-function", &objective_function, "Objective function : xent|mse");
 
- //   int32 length_tolerance = 5;
- //   po.Register("length-tolerance", &length_tolerance, "Allowed length difference of features/targets (frames)");
     
     string use_gpu="yes";
     po.Register("use-gpu", &use_gpu, "yes|no|optional, only has effect if compiled with CUDA");
@@ -72,7 +65,7 @@ int main(int argc, char *argv[]) {
     
     po.Read(argc, argv);
 
-    if (po.NumArgs() != 4) {
+    if (po.NumArgs() != 4-(crossvalidate?1:0)) {
       po.PrintUsage();
       exit(1);
     }
@@ -80,8 +73,11 @@ int main(int argc, char *argv[]) {
     string svm_file = po.GetArg(1),
       path_rspecifier = po.GetArg(2),
       model_filename = po.GetArg(3),
-      target_model_filename = po.GetArg(4);
+      target_model_filename;
         
+    if (!crossvalidate) {
+      target_model_filename = po.GetArg(4);
+    }
     //Select the GPU
 #if HAVE_CUDA==1
     CuDevice::Instantiate().SelectGpuId(use_gpu);
@@ -97,29 +93,31 @@ int main(int argc, char *argv[]) {
       nnet.SetDropoutRetention(dropout_retention);
     }
 
+    if (crossvalidate) {
+      nnet.SetDropoutRetention(1.0);
+    }
+
     LabFeatVec labfeats; 
-    svm_read(svm_file, labfeats);
+    int maxState = svm_read(svm_file, labfeats);
 
 
     vector< vector< vector<int32> > > all_path;
-    int maxState = path_read(path_rspecifier, labfeats, all_path);
+    path_read(path_rspecifier, labfeats, all_path);
 
     // cut data into Cross Validation set and Training set
-    int pathN = all_path[0].size();
-
-    assert(all_path.size() * labfeats.size());
-    int N = labfeats.size()*pathN;
-    int cvN = N * cv_percent / 100;
-    int trN = N - cvN;
+    assert(all_path.size() == labfeats.size());
+    int N = all_path[0].size() * all_path.size();
 
     srand(rnd_opts.randomizer_seed);
 
     vector<int> randIndex(trN);
     permute_arr(randIndex);
+    const& vector<int> mask = 
 
     train(labfeats, all_path, nnet, randIndex, pathN, 
           rnd_opts, false, target_model_filename, binary, 
-          randomize, objective_function, maxState);
+          false, objective_function, maxState);
+          //randomize, objective_function, maxState);
 
     randIndex.resize(cvN);
     permute_arr(randIndex);
@@ -139,92 +137,6 @@ int main(int argc, char *argv[]) {
     std::cerr << e.what();
     return -1;
   }
-}
-
-void svm_read(const string &file, LabFeatVec &labfeats){
-   ifstream fin(file.c_str());
-   string line;
-
-   string uid, puid;
-   int label;
-   int id;
-   float value;
-   char c;
-
-   int feat_dim = 0;
-
-   vector<int32> labels;
-   vector< vector<float> > feats;
-
-   while(getline(fin, line)){
-      stringstream ss(line);
-      ss >> label >> uid;
-
-      vector<float> arr;
-      if(feat_dim != 0)
-         arr.resize(feat_dim, 0);
-
-      while(ss >> id >> c >> value){
-         if(feat_dim == 0){
-            if(arr.size() < id)
-               arr.resize(id, 0);
-         }else
-            assert(feat_dim >= id);
-
-         arr[id-1] = value;
-      }
-
-      feat_dim = feat_dim == 0 ? arr.size(): feat_dim;
-
-
-      if( uid != puid && puid != "" ){
-         labfeats.push_back(make_pair(labels, feats));
-         labels.clear(); feats.clear();
-      }
-
-      puid = uid;
-      labels.push_back(label);
-      feats.push_back(arr);
-   }
-
-   labfeats.push_back(make_pair(labels, feats));
-}
-
-int path_read(const string &path_rspecifier, const LabFeatVec& labfeats,
-      vector< vector< vector<int32> > > &all_path){
-
-    int32 maxState = -1;
-    SequentialInt32VectorVectorReader path_reader(path_rspecifier);
-
-    for(int i = 0; !path_reader.Done(); ++i, path_reader.Next()){
-       all_path.push_back(path_reader.Value());
-       vector< vector<int32> > &path = all_path[all_path.size() - 1];
-       assert(path[0].size() == labfeats[i].first.size());
-
-       // put correct answer into training data.
-       path.push_back(labfeats[i].first);
-
-       for(int j = 0; j < path.size(); ++j){
-          for(int k = 0; k < path[j].size(); ++k)
-             maxState = maxState < path[j][k] ? path[j][k] : maxState;
-       }
-       
-    }
-    return maxState;
-}
-
-void permute_arr(vector<int> &arr){
-   int size = arr.size();
-
-   for(int i = 0; i < size; ++i)
-      arr[i] = i;
-
-   for(int i = 0; i < size; ++i){
-      int j = rand() % size;
-      int tmp = arr[j];
-      arr[j] = arr[i];
-      arr[i] = tmp;
-   }
 }
 
 
