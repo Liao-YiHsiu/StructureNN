@@ -3,6 +3,7 @@
 #include "fstext/fstext-lib.h"
 #include "lat/kaldi-lattice.h"
 #include "lat/lattice-functions.h"
+#include "svm.h"
 
 using namespace std;
 using namespace fst;
@@ -12,13 +13,18 @@ int main(int argc, char *argv[]) {
   try {
     typedef Lattice::Arc Arc;
     typedef Arc::StateId StateId;
+    typedef Arc::Weight Weight;
 
     string usage;
     usage.append("Use lattice to generate phone path matrix.\n")
-       .append("Usage: ").append(argv[0]).append(" [options] <lats-rspecifier> <path-wspecifier>\n")
+       .append("Usage: ").append(argv[0]).append(" [options] <lats-rspecifier> <score-path-wspecifier>\n")
        .append(" e.g.: ").append(argv[0]).append(" \"ark:lattice-to-nbest ark:1.lat ark:- |\" ark:path.ark\n");
 
     ParseOptions po(usage.c_str());
+
+    BaseFloat acoustic_scale = 1.0;
+
+    po.Register("acoustic-scale", &acoustic_scale, "Scaling factor for acoustic likelihoods");
     po.Read(argc, argv);
 
     if (po.NumArgs() != 2) {
@@ -27,23 +33,27 @@ int main(int argc, char *argv[]) {
     }
 
     string lats_rspecifier = po.GetArg(1),
-        path_wspecifier = po.GetArg(2);
+        score_path_wspecifier = po.GetArg(2);
 
     // Read as regular lattice
     SequentialLatticeReader lattice_reader(lats_rspecifier);
 
-    Int32VectorVectorWriter path_writer(path_wspecifier);
+    TableWriter<KaldiObjectHolder<ScorePath> > score_path_writer(score_path_wspecifier);
     
-    vector< vector<int32> > path_matrix;
+    ScorePath score_path;
     string pKey;
 
     for (; !lattice_reader.Done(); lattice_reader.Next()) {
 
        string key = lattice_reader.Key();
+       string nkey = key.substr(0, key.rfind('-'));
+
        Lattice lat = lattice_reader.Value();
        // FreeCurrent() is an optimization that prevents the lattice from being
        // copied unnecessarily (OpenFst does copy-on-write).
        lattice_reader.FreeCurrent();
+
+       fst::ScaleLattice(fst::AcousticLatticeScale(acoustic_scale), &lat);
 
        uint64 props = lat.Properties(kFstProperties, false);
        if (!(props & fst::kTopSorted)) {
@@ -54,18 +64,19 @@ int main(int argc, char *argv[]) {
 
        vector<int32> path;
 
-       //int32 num_states = lat.NumStates();
-       //vector<int32> state_times;
-       //int32 max_time = LatticeStateTimes(lat, &state_times);
-
        // DFS
        StateId s = 0;
+
+       Weight tot_weight = Weight::One();
+
        int plabel;
        while( true ){
           ArcIterator<Lattice> aiter(lat, s);
           if(aiter.Done()) break;
 
           const Arc &arc = aiter.Value();
+          tot_weight = Times(arc.weight, tot_weight);
+
           if( arc.ilabel != 0){
              if(arc.olabel == 0)
                 path.push_back(plabel);
@@ -77,18 +88,21 @@ int main(int argc, char *argv[]) {
           s = arc.nextstate;
        }
 
-       if(pKey == "" || key.compare(0, pKey.size(), pKey) != 0){
+       if(pKey == "" || nkey.compare(pKey) != 0){
           if(pKey != ""){
-             path_writer.Write(pKey, path_matrix);
-             path_matrix.clear();
+             score_path_writer.Write(pKey, score_path);
+             score_path.Value().clear();
           }
-          pKey = key.substr(0, key.rfind('-'));
+          pKey = nkey; 
        }
 
-       path_matrix.push_back(path);
+       score_path.Value().push_back(make_pair(
+                tot_weight.Value1() + tot_weight.Value2(),
+                path
+                ));
     }
 
-    path_writer.Write(pKey, path_matrix);
+    score_path_writer.Write(pKey, score_path);
 
     return 0;
 

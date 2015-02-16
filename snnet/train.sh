@@ -10,7 +10,7 @@ function tobyte {
    echo $num
 }
 
-timit_root=../timit
+timit_root=~/Research/timit
 
 # Begin configuration.
 config=
@@ -33,10 +33,10 @@ mlp_proto=
 seed=777
 learn_rate=0.00001
 momentum=0.9
-minibatch_size=1024
-randomizer_size=10240
-cv_percent=10
+minibatch_size=256
+randomizer_size=32768
 n_lattice=300
+negative_num=100
 rand_lattice="true"
 train_tool="snnet-train-shuff"
 # End configuration.
@@ -45,29 +45,38 @@ echo "$0 $@"  # Print the command line for logging
 
 . parse_options.sh || exit 1;
 
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 7 ]; then
    echo "Perform structure DNN training"
-   echo "Usage: $0 <Structure-SVM-In> <lattice-rspecifier> <model_out>"
-   echo "eg. $0 data.out ark:1.lat model"
+   echo "Usage: $0 <feat-rspecifier> <label-rspecifier> <lattice-rspecifier> \\"
+   echo "          <cv-feat-rspecifier> <cv-label-rspecifier> <cv-lattice-rspecifier> <model_out>"
+   echo "eg. $0 ark:1.ark ark:1.lab ark:1.lat ark:dev.ark ark:dev.lab ark:dev.lat model"
    echo ""
    exit 1;
 fi
 
-svm_data=$1
-lattice_data=$2
-model_out=$3
+feat_data=$1
+label_data=$2
+lattice_data=$3
+
+cv_feat_data=$4
+cv_label_data=$5
+cv_lattice_data=$6
+
+model_out=$7
 
 [ ! -d $dir/nnet ] && mkdir $dir/nnet
 [ ! -d $dir/log ] && mkdir $dir/log
 
 #initialize model
-feat_dim=$(svm-info $svm_data)
+max_state=$(copy-int-vector "$label_data" ark,t:-| cut -f 2- -d ' ' | tr " " "\n" | awk 'n < $0 {n=$0}END{print n}')
+feat_dim=$(feat-to-dim "$feat_data" -)
+SVM_dim=$(( (max_state + feat_dim) * max_state ))
 mlp_init=$dir/nnet.init
 mlp_proto=$dir/nnet.proto
-$timit_root/utils/nnet/make_nnet_proto.py $feat_dim 2 3 100 > $mlp_proto || exit 1
+$timit_root/utils/nnet/make_nnet_proto.py $SVM_dim 2 1 100 > $mlp_proto || exit 1
 nnet-initialize $mlp_proto $mlp_init || exit 1; 
 
-mlp_best=$model_init
+mlp_best=$mlp_init
 
 loss=0
 halving=0
@@ -75,15 +84,33 @@ halving=0
 for iter in $(seq -w $max_iters); do
    mlp_next=$dir/nnet/nnet.${iter}
 
+# train
+   log=$dir/log/iter${iter}.tr.log; hostname>$log
+
    $train_tool \
       --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
       --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
-      --verbose=$verbose --binary=true --randomizer-seed=$seed --cv-percent=$cv_percent\
-      ${feature_transform:+ --feature-transform=$feature_transform} \
-      ${frame_weights:+ "--frame-weights=$frame_weights"} \
-      $svm_data "ark:lattice-to-nbest --n=$n_lattice --random=$rand_lattice ark:$lattice_data ark:- | lattice-to-vec ark:- ark:- |" \
+      --verbose=$verbose --binary=true --randomizer-seed=$seed \
+      --negative-num=$negative_num \
+      "$feat_data" "$label_data" "ark:lattice-to-nbest --n=$n_lattice --random=$rand_lattice $lattice_data ark:- | lattice-to-vec ark:- ark:- |" \
       $mlp_best $mlp_next \
-      2>> $log || exit 1; 
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+      seed=$((seed + 1))
+   loss_tr=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
+   echo -n "TRAIN AVG.LOSS $(printf "%.4f" $loss_tr), "
+
+# CV
+   log=$dir/log/iter${iter}.cv.log; hostname>$log
+   $train_tool \
+      --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
+      --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
+      --verbose=$verbose --binary=true --randomizer-seed=$seed\
+      --cross-validate=true \
+      --negative-num=$negative_num \
+      "$cv_feat_data" "$cv_label_data" "ark:lattice-to-nbest --n=$n_lattice --random=$rand_lattice $cv_lattice_data ark:- | lattice-to-vec ark:- ark:- |" \
+      $mlp_next \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
       seed=$((seed + 1))
 
 

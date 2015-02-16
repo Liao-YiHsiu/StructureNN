@@ -11,7 +11,7 @@
 using namespace std;
 using namespace kaldi;
 
-void gen(ofstream &fout, int index,const Matrix<BaseFloat> &matrix,const vector<int> &phIdx);
+void gen(ofstream &fout, int index,const Matrix<BaseFloat> &matrix,const vector<int32> &phIdx, const string& cmt);
 void getLabel(const string &path,  map<string, vector<int> > &labelMap);
 
 int main(int argc, char* argv[]){
@@ -46,7 +46,7 @@ int main(int argc, char* argv[]){
 
             assert( label_reader.HasKey(feats_reader.Key()) );
 
-            gen(fout, index, matrix, label_reader.Value(feats_reader.Key()) );
+            gen(fout, index, matrix, label_reader.Value(feats_reader.Key()), feats_reader.Key());
          }
       }
    }catch(const exception &e){
@@ -57,7 +57,7 @@ int main(int argc, char* argv[]){
    return 0;
 }
 
-void gen(ofstream &fout, int index, const Matrix<BaseFloat> &matrix, const vector<int32> &phIdx){
+void gen(ofstream &fout, int index, const Matrix<BaseFloat> &matrix, const vector<int32> &phIdx, const string& cmt){
    int F = matrix.NumCols(), T = matrix.NumRows();
    assert(T == phIdx.size());
 
@@ -71,7 +71,7 @@ void gen(ofstream &fout, int index, const Matrix<BaseFloat> &matrix, const vecto
       for(int i = 0; i < F; ++i)
          fout << i + 1 << ":" << vec(i) << " ";
 
-      fout << endl;
+      fout << "#" << cmt << endl;
    }
    
 }

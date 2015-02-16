@@ -4,7 +4,7 @@ echo "$0 $@"  # Print the command line for logging
 
 . parse_options.sh || exit 1;
 
-files="train.lab test.lab train.ark test.ark train.lat test.lat"
+files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat"
 
 if [ "$#" -ne 1 ]; then
    echo "Train Structure SVM with NN on a data set"
@@ -16,8 +16,8 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-log=$dir/data_nn_${C}.log
-model=$dir/data_nn_${C}.model
+log=$dir/data_nn.log
+model=$dir/data_nn.model
 
 
    #check file existence.
@@ -26,17 +26,19 @@ model=$dir/data_nn_${C}.model
       [ -f $dir/$file ] || ( echo "File '$dir/$file' not found." && exit 1 );
    done
 
-   #generate svm file
-   [ -f $dir/data.out ] || con-svm ark:$dir/train.lab ark,s,cs:$dir/train.ark $dir/data.out  
-   [ -f $dir/test.out ] || con-svm ark:$dir/test.lab ark,s,cs:$dir/test.ark $dir/test.out  
-
    echo "SVM with NN training start..................................."
 
-   snnet/train.sh $dir/data.out ark:$dir/train.lat $model &> $log
+   snnet/train.sh --n-lattice 100 \
+      ark:$dir/train.ark ark:$dir/train.lab ark:$dir/train.lat \
+      ark:$dir/dev.ark   ark:$dir/dev.lab   ark:$dir/dev.lat $model \
+      2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
    
    echo "SVM with NN testing start..................................."
 
-   snnet/test.sh $dir/test.out ark:$dir/test.lat $model &>> $log
+   snnet-test ark:$dir/test.ark ark:$dir/test.lab \
+      "ark:lattice-to-nbest --n=100 ark:$dir/test.lat ark:- | lattice-to-vec ark:- ark:- |" \
+      $model ark,t:$dir/test.tags \ 
+      2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 
 exit 0;

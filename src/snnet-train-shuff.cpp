@@ -14,24 +14,16 @@ using namespace kaldi;
 using namespace kaldi::nnet1;
 
 
-void makeFeature(Matrix<BaseFloat> &matrix, const LabFeat& labfeat, const vector<int32> &path, int32 maxState);
-void makePost(Posterior &post, const vector<int32> &realPath, const vector<int32> &path);
-
-void train(const LabFeatVec &labfeats, const vector< vector< vector<int32> > > &all_path,
-      Nnet &nnet, const vector<int> &randIndex, int pathN,
-      const NnetDataRandomizerOptions& rnd_opts, bool crossvalidate,
-      const string &target_model_filename, bool binary, bool randomize,
-      const string &objective_function, int maxState);
 
 int main(int argc, char *argv[]) {
   
   try {
     string usage;
     usage.append("Perform one iteration of Structure Neural Network training by mini-batch Stochastic Gradient Descent.\n")
-       .append("Use structure SVM file and path to train the neural net. \n")
-       .append("Usage: ").append(argv[0]).append(" [options] <SVM in> <path-rspecifier> <model-in> [<model-out>]\n")
+       .append("Use feature, label and path to train the neural net. \n")
+       .append("Usage: ").append(argv[0]).append(" [options] <feature-rspecifier> <label-rspecifier> <score-path-rspecifier> <model-in> [<model-out>]\n")
        .append("e.g.: \n")
-       .append(" ").append(argv[0]).append(" data.out \"ark:lattice-to-vec ark:1.lat ark:- |\" nnet.init nnet.iter1\n");
+       .append(" ").append(argv[0]).append(" ark:feat.ark ark:lab.ark \"ark:lattice-to-vec ark:1.lat ark:- |\" nnet.init nnet.iter1\n");
 
     ParseOptions po(usage.c_str());
 
@@ -45,45 +37,58 @@ int main(int argc, char *argv[]) {
          crossvalidate = false,
          randomize = true;
 
-    po.Register("binary", &binary, "Write output in binary mode");
+    po.Register("binary", &binary, "Write model in binary mode");
     po.Register("cross-validate", &crossvalidate, "Perform cross-validation (don't backpropagate)");
     po.Register("randomize", &randomize, "Perform the frame-level shuffling within the Cache::");
 
     string objective_function = "xent";
     po.Register("objective-function", &objective_function, "Objective function : xent|mse");
 
-    
     string use_gpu="yes";
     po.Register("use-gpu", &use_gpu, "yes|no|optional, only has effect if compiled with CUDA");
 
-    double cv_percent = 10;
-    po.Register("cv-percent", &cv_percent, "Cross Validation percentage.(default = 10)");
-    
     double dropout_retention = 0.0;
     po.Register("dropout-retention", &dropout_retention, "number between 0..1, saying how many neurons to preserve (0.0 will keep original value");
      
+    int max_state = 48;
+    po.Register("max-state", &max_state, "max state ID");
+
+    int negative_num = 0;
+    po.Register("negative-num", &negative_num, "insert negative example in training");
     
     po.Read(argc, argv);
 
-    if (po.NumArgs() != 4-(crossvalidate?1:0)) {
+    if (po.NumArgs() != 5-(crossvalidate?1:0)) {
       po.PrintUsage();
       exit(1);
     }
 
-    string svm_file = po.GetArg(1),
-      path_rspecifier = po.GetArg(2),
-      model_filename = po.GetArg(3),
+
+    string feat_rspecifier  = po.GetArg(1),
+      label_rspecifier      = po.GetArg(2),
+      score_path_rspecifier = po.GetArg(3),
+      model_filename        = po.GetArg(4),
       target_model_filename;
         
     if (!crossvalidate) {
-      target_model_filename = po.GetArg(4);
+      target_model_filename = po.GetArg(5);
     }
+
+    RandomizerMask randomizer_mask(rnd_opts);
+    MatrixRandomizer feature_randomizer(rnd_opts);
+    PosteriorRandomizer targets_randomizer(rnd_opts);
+
+    SequentialTableReader<KaldiObjectHolder<ScorePath> >  score_path_reader(score_path_rspecifier);
+    SequentialBaseFloatMatrixReader                       feature_reader(feat_rspecifier);
+    SequentialInt32VectorReader                           label_reader(label_rspecifier);
+
     //Select the GPU
 #if HAVE_CUDA==1
     CuDevice::Instantiate().SelectGpuId(use_gpu);
     CuDevice::Instantiate().DisableCaching();
 #endif
 
+    Nnet nnet_transf;
 
     Nnet nnet;
     nnet.Read(model_filename);
@@ -97,140 +102,60 @@ int main(int argc, char *argv[]) {
       nnet.SetDropoutRetention(1.0);
     }
 
-    LabFeatVec labfeats; 
-    int maxState = svm_read(svm_file, labfeats);
-
-
-    vector< vector< vector<int32> > > all_path;
-    path_read(path_rspecifier, labfeats, all_path);
-
-    // cut data into Cross Validation set and Training set
-    assert(all_path.size() == labfeats.size());
-    int N = all_path[0].size() * all_path.size();
-
-    srand(rnd_opts.randomizer_seed);
-
-    vector<int> randIndex(trN);
-    permute_arr(randIndex);
-    const& vector<int> mask = 
-
-    train(labfeats, all_path, nnet, randIndex, pathN, 
-          rnd_opts, false, target_model_filename, binary, 
-          false, objective_function, maxState);
-          //randomize, objective_function, maxState);
-
-    randIndex.resize(cvN);
-    permute_arr(randIndex);
-    for(int i = 0; i < randIndex.size(); ++i)
-       randIndex[i] += trN;
-
-    train(labfeats, all_path, nnet, randIndex, pathN, 
-          rnd_opts, true, target_model_filename, binary, 
-          randomize, objective_function, maxState);
-
-#if HAVE_CUDA==1
-    CuDevice::Instantiate().PrintProfile();
-#endif
-
-    return 0;
-  } catch(const std::exception &e) {
-    std::cerr << e.what();
-    return -1;
-  }
-}
-
-
-// TODO: feature normalization
-void makeFeature(Matrix<BaseFloat> &matrix, const LabFeat& labfeat, const vector<int32> &path, int32 maxState){
-   const vector< vector<float> >& feat = labfeat.second;
-   int feat_dim = feat[0].size();
-
-   int N = feat_dim * maxState + maxState * maxState;
-   matrix.Resize(1, N);
-
-   SubVector<BaseFloat> vec(matrix, 0);
-
-   SubVector<BaseFloat> tran(vec, feat_dim * maxState, maxState*maxState);
-   for(int i = 0; i < path.size(); ++i){
-      SubVector<BaseFloat> obs(vec, path[i]*feat_dim, feat_dim);
-      for(int j = 0; j < feat_dim; ++j)
-         obs(j) += feat[i][j];
-      if(i > 0){
-         tran(path[i-1]*maxState + path[i]) += 1;
-      }
-   }
-
-   // normalization
-   for(int i = 0; i < N; ++i)
-      vec(i) /= path.size();
-
-}
-
-void makePost(Posterior &post, const vector<int32> &realPath, const vector<int32> &path){
-   assert(realPath.size() == path.size());
-   int corr = 0;
-   for(int i = 0; i < path.size(); ++i){
-      corr += realPath[i] == path[i] ? 1:0;
-   }
-
-   double err = corr / (double)path.size();
-   vector< pair<int32, BaseFloat> > arr; 
-
-   arr.push_back(make_pair(1, err));
-   arr.push_back(make_pair(1, 1-err));
-   post.push_back(arr);
-
-}
-
-void train(const LabFeatVec &labfeats, const vector< vector< vector<int32> > > &all_path,
-      Nnet &nnet, const vector<int> &randIndex, int pathN,
-      const NnetDataRandomizerOptions& rnd_opts, bool crossvalidate,
-      const string &target_model_filename, bool binary, bool randomize,
-      const string &objective_function, int maxState){ 
-
-    if (crossvalidate) {
-      nnet.SetDropoutRetention(1.0);
-    }
-
-    RandomizerMask randomizer_mask(rnd_opts);
-    MatrixRandomizer feature_randomizer(rnd_opts);
-    PosteriorRandomizer targets_randomizer(rnd_opts);
+    kaldi::int64 total_frames = 0;
 
     Xent xent;
     Mse mse;
     
-    Matrix<BaseFloat> feats;
     CuMatrix<BaseFloat> nnet_out, obj_diff;
 
     Timer time;
     KALDI_LOG << (crossvalidate?"CROSS-VALIDATION":"TRAINING") << " STARTED";
 
+    int32 featsN = -1;
     int32 num_done = 0, num_no_tgt_mat = 0, num_other_error = 0;
-    kaldi::int64 total_frames = 0;
-
-   
-    for(int index = 0; index < randIndex.size(); ){
+    while(!score_path_reader.Done()){
 #if HAVE_CUDA==1
       // check the GPU is not overheated
       CuDevice::Instantiate().CheckGpuHealth();
 #endif
       // fill the randomizer
-      for ( ; index < randIndex.size(); index++) {
+      for ( ; !score_path_reader.Done();
+            score_path_reader.Next(), feature_reader.Next(), label_reader.Next()) {
+
         if (feature_randomizer.IsFull()) break; // suspend, keep utt for next loop
 
-        int utt_i = randIndex[index] / pathN;
-        int path_i = randIndex[index] % pathN;
+        assert( score_path_reader.Key() == feature_reader.Key() );
+        assert( label_reader.Key() == feature_reader.Key() );
 
-        assert(labfeats[utt_i].first.size() == all_path[utt_i][path_i].size());
+        const ScorePath::Table  &table = score_path_reader.Value().Value();
+        const Matrix<BaseFloat> &feat  = feature_reader.Value();
+        const vector<int32>     &label = label_reader.Value();
 
-        // get feature / target pair
+        if(featsN < 0)
+           featsN = (feat.NumCols() + max_state) * max_state;
+        assert((feat.NumCols() + max_state)*max_state == featsN);
 
-        Posterior targets;
-        makeFeature(feats, labfeats[utt_i], all_path[utt_i][path_i], maxState);
-        makePost(targets, labfeats[utt_i].first, all_path[utt_i][path_i]);
+        Matrix<BaseFloat> feats(table.size() + 1 + negative_num, featsN);
+        Posterior         targets;
+
+        makeFeature(feat, label, max_state, feats.Row(0));
+        makePost(label, label, targets);
+
+        for(int i = 0; i < table.size(); ++i){
+           makeFeature(feat, table[i].second, max_state, feats.Row(i+1));
+           makePost(label, table[i].second, targets);
+        }
+
+        vector<int32> neg_arr(label.size());
+        for(int i = 0; i < negative_num; ++i){
+           for(int j = 0; j < neg_arr.size(); ++j)
+              neg_arr[j] = rand() % max_state + 1;
+           makeFeature(feat, neg_arr, max_state, feats.Row(table.size()+1+i));
+           makePost(label, neg_arr, targets);
+        }
+
         
-        // pass data to randomizers
-        KALDI_ASSERT(feats.NumRows() == targets.size());
         feature_randomizer.AddData(CuMatrix<BaseFloat>(feats));
         targets_randomizer.AddData(targets);
         num_done++;
@@ -330,4 +255,15 @@ void train(const LabFeatVec &labfeats, const vector< vector< vector<int32> > > &
     } else {
       KALDI_ERR << "Unknown objective function code : " << objective_function;
     }
+
+#if HAVE_CUDA==1
+    CuDevice::Instantiate().PrintProfile();
+#endif
+
+    return 0;
+  } catch(const std::exception &e) {
+    std::cerr << e.what();
+    return -1;
+  }
 }
+

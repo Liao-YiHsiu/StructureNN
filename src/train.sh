@@ -10,7 +10,7 @@ function tobyte {
    echo $num
 }
 
-timit_root=../../timit
+timit_root=~/Research/timit
 
 # Begin configuration.
 config=
@@ -21,8 +21,8 @@ l2_penalty=0
 max_iters=100
 min_iters=
 keep_lr_iters=0
-start_halving_impr=0.005
-end_halving_impr=0.0005
+start_halving_impr=0.01
+end_halving_impr=0.001
 halving_factor=0.5
 
 verbose=1
@@ -31,11 +31,10 @@ frame_weights=
 dir=$(mktemp -d)
 mlp_proto=
 seed=777
-learn_rate=0.00001
+learn_rate=0.008
 momentum=0.9
-minibatch_size=1024
-randomizer_size=10240
-cv_percent=10
+minibatch_size=256
+randomizer_size=32768
 cut_size="1G"
 train_tool="nnet-train-frmshuff"
 # End configuration.
@@ -47,10 +46,10 @@ echo "$0 $@"  # Print the command line for logging
 # usage: ./train.sh <model_init> <feat-rspecifier> <post-rspecifier> <model_out>
 
 
-if [ "$#" -ne 4 ]; then
+if [ "$#" -ne 6 ]; then
    echo "Perform DNN train with data cut into several chunk(save memory)"
    echo "cut cross validation set automatically."
-   echo "Usage: $0 <model_init> <feat-rspecifier> <post-rspecifier> <model_out>"
+   echo "Usage: $0 <model_init> <feat-rspecifier> <post-rspecifier> <dev-feat-rspecifier> <dev-post-rspecifier> <model_out>"
    echo "eg. $0 model.init scp:feat.scp \"ark:ali-to-post ark:1.ali ark:- |\" model.nnet"
    echo ""
    exit 1;
@@ -59,28 +58,22 @@ fi
 model_init=$1
 feats=$2
 labels=$3
-model_out=$4
+cv_feats=$4
+cv_labels=$5
+model_out=$6
 
 #generate scp
-copy-feats "$feats" ark,scp:$dir/feats.ark,$dir/feats.scp || exit 1
-copy-post "$labels" ark,scp:$dir/labels.ark,$dir/labels.scp || exit 1
+copy-feats "$feats" ark,scp:$dir/feats_tr.ark,$dir/feats_tr.scp || exit 1
+copy-post "$labels" ark,scp:$dir/labels_tr.ark,$dir/labels_tr.scp || exit 1
+
+copy-feats "$cv_feats" ark,scp:$dir/feats_cv.ark,$dir/feats_cv.scp || exit 1
+copy-post "$cv_labels" ark,scp:$dir/labels_cv.ark,$dir/labels_cv.scp || exit 1
 
 cut_size=$(tobyte $cut_size)
-data_size=$(du -sb $dir/feats.ark | cut -f 1)
+data_size=$(du -sb $dir/feats_tr.ark | cut -f 1)
 data_num=$(( data_size / cut_size ))
 
 echo "data cut into $data_num chunks $data_size $cut_size"
-
-#cut data into cv set.
-N=$(cat $dir/feats.scp | wc -l)
-N_tail=$((N * cv_percent / 100))
-N_head=$((N - N_tail))
-
-head $dir/feats.scp -n $N_head > $dir/feats_tr.scp
-tail $dir/feats.scp -n $N_tail > $dir/feats_cv.scp
-
-head $dir/labels.scp -n $N_head > $dir/labels_tr.scp
-tail $dir/labels.scp -n $N_tail > $dir/labels_cv.scp
 
 feats_cv="scp:$dir/feats_cv.scp"
 labels_cv="scp:$dir/labels_cv.scp"
