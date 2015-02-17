@@ -31,7 +31,7 @@ frame_weights=
 dir=$(mktemp -d)
 mlp_proto=
 seed=777
-learn_rate=0.00001
+learn_rate=0.004
 momentum=0.9
 minibatch_size=256
 randomizer_size=32768
@@ -73,7 +73,7 @@ feat_dim=$(feat-to-dim "$feat_data" -)
 SVM_dim=$(( (max_state + feat_dim) * max_state ))
 mlp_init=$dir/nnet.init
 mlp_proto=$dir/nnet.proto
-$timit_root/utils/nnet/make_nnet_proto.py $SVM_dim 2 1 100 > $mlp_proto || exit 1
+$timit_root/utils/nnet/make_nnet_proto.py $SVM_dim 2 1 200 > $mlp_proto || exit 1
 nnet-initialize $mlp_proto $mlp_init || exit 1; 
 
 mlp_best=$mlp_init

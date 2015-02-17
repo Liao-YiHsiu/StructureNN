@@ -100,12 +100,12 @@ int main(int argc, char *argv[]) {
 
        
 
-       //Matrix<BaseFloat> feats(table.size() + 1, featsN);
-       Matrix<BaseFloat> feats(table.size(), featsN);
+       Matrix<BaseFloat> feats(table.size() + 1, featsN);
+       //Matrix<BaseFloat> feats(table.size(), featsN);
        Posterior         targets;
 
        //TODO delete the reference
-      // makeFeature(feat, label, max_state, feats.Row(table.size()));
+       makeFeature(feat, label, max_state, feats.Row(table.size()));
        for(int i = 0; i < table.size(); ++i){
           makeFeature(feat, table[i].second, max_state, feats.Row(i));
        }

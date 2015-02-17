@@ -28,7 +28,7 @@ model=$dir/data_nn.model
 
    echo "SVM with NN training start..................................."
 
-   snnet/train.sh --n-lattice 100 \
+   snnet/train.sh --rand-lattice "false" --n-lattice 0 \
       ark:$dir/train.ark ark:$dir/train.lab ark:$dir/train.lat \
       ark:$dir/dev.ark   ark:$dir/dev.lab   ark:$dir/dev.lat $model \
       2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
@@ -38,7 +38,7 @@ model=$dir/data_nn.model
    snnet-test ark:$dir/test.ark ark:$dir/test.lab \
       "ark:lattice-to-nbest --n=100 ark:$dir/test.lat ark:- | lattice-to-vec ark:- ark:- |" \
       $model ark,t:$dir/test.tags \
-      2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 
 exit 0;

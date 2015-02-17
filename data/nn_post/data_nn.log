@@ -1,0 +1,64 @@
+snnet-test ark:data/nn_post//test.ark ark:data/nn_post//test.lab 'ark:lattice-to-nbest --n=100 ark:data/nn_post//test.lat ark:- | lattice-to-vec ark:- ark:- |' data/nn_post//data_nn.model ark,t:data/nn_post//test.tags 
+lattice-to-nbest --n=100 ark:data/nn_post//test.lat ark:- 
+lattice-to-vec ark:- ark:- 
+LOG (snnet-test:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-test:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2098M, used:972M, total:3071M, free/total:0.683242
+LOG (snnet-test:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-test:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2084M, used:986M, total:3071M, free/total:0.678684 version 3.5
+LOG (snnet-test:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-test:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-test:main():snnet-test.cpp:70) PREDICT STARTED
+LOG (lattice-to-nbest:main():lattice-to-nbest.cc:123) Done applying N-best algorithm to 192 lattices with n = 100, average actual #paths is 99.6042
+LOG (snnet-test:main():snnet-test.cpp:153) Done 192 files in 0.494792min, (fps 644.177)
+LOG (snnet-test:main():snnet-test.cpp:157) Total FER = 0.73829
+LOG (snnet-test:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+CuVector::CopyFromVecH2D	2.31266e-05s
+CopyToVec	3.09944e-05s
+CuVector::SetZero	4.50611e-05s
+CuVector::Resize	0.000108957s
+ApplySoftMaxPerRow	0.00338936s
+Sigmoid	0.00362825s
+AddVecToRows	0.00653291s
+CuMatrix::CopyToMatD2H	0.0125561s
+CuMatrix::SetZero	0.0218573s
+Destroy	0.0360246s
+CuMatrixBase::CopyFromMat(from CPU)	0.07095s
+CuMatrix::Resize	0.0896468s
+AddMatMat	0.120299s
+CheckGpuHealth	0.13207s
+Total GPU time:	0.497162s (may involve some double-counting)
+-----
+LOG (snnet-test:PrintMemoryUsage():cu-device.cc:334) Memory used: 9699328 bytes.
+snnet-test ark:data/nn_post//test.ark ark:data/nn_post//test.lab 'ark:lattice-to-nbest --n=100 ark:data/nn_post//test.lat ark:- | lattice-to-vec ark:- ark:- |' data/nn_post//data_nn.model ark,t:data/nn_post//test.tags 
+lattice-to-vec ark:- ark:- 
+lattice-to-nbest --n=100 ark:data/nn_post//test.lat ark:- 
+LOG (snnet-test:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-test:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2072M, used:998M, total:3071M, free/total:0.674858
+LOG (snnet-test:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-test:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2058M, used:1012M, total:3071M, free/total:0.670299 version 3.5
+LOG (snnet-test:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-test:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-test:main():snnet-test.cpp:70) PREDICT STARTED
+LOG (lattice-to-nbest:main():lattice-to-nbest.cc:123) Done applying N-best algorithm to 192 lattices with n = 100, average actual #paths is 99.6042
+LOG (snnet-test:main():snnet-test.cpp:153) Done 192 files in 0.531128min, (fps 606.132)
+LOG (snnet-test:main():snnet-test.cpp:157) Total FER = 0.0533676
+LOG (snnet-test:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+CuVector::CopyFromVecH2D	2.57492e-05s
+CopyToVec	4.1008e-05s
+CuVector::SetZero	5.57899e-05s
+CuVector::Resize	0.000139713s
+ApplySoftMaxPerRow	0.00327229s
+Sigmoid	0.00349832s
+AddVecToRows	0.0064044s
+CuMatrix::CopyToMatD2H	0.0133185s
+CuMatrix::SetZero	0.0263917s
+Destroy	0.0351024s
+CuMatrixBase::CopyFromMat(from CPU)	0.0703256s
+CuMatrix::Resize	0.0944111s
+AddMatMat	0.118357s
+CheckGpuHealth	0.134777s
+Total GPU time:	0.506121s (may involve some double-counting)
+-----
+LOG (snnet-test:PrintMemoryUsage():cu-device.cc:334) Memory used: 9699328 bytes.
