@@ -25,18 +25,23 @@ template<class V, class T> class ValueVectorPair{
       ValueVectorPair(const Table& value): val(value){}
 
       void Write(ostream &os, bool binary) const{
-         int32 vecsz = static_cast<int32>(val.size());
-         KALDI_ASSERT((size_t)vecsz == val.size());
+         try{
+            int32 vecsz = static_cast<int32>(val.size());
+            KALDI_ASSERT((size_t)vecsz == val.size());
 
-         if(binary){
-            os.write(reinterpret_cast<const char *>(&vecsz), sizeof(vecsz));
-         }else{
-            os << vecsz << endl ;
-         }
+            if(binary){
+               os.write(reinterpret_cast<const char *>(&vecsz), sizeof(vecsz));
+            }else{
+               os << vecsz << " " ;
+            }
 
-         for(int i = 0; i < val.size(); ++i){
-            WriteBasicType(os, binary, val[i].first);
-            WriteIntegerVector(os, binary, val[i].second);
+            for(int i = 0; i < val.size(); ++i){
+               WriteBasicType(os, binary, val[i].first);
+               WriteIntegerVector(os, binary, val[i].second);
+            }
+         } catch(const std::exception &e) {
+            std::cerr << e.what();
+            exit(-1);
          }
       }
 

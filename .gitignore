@@ -1,0 +1,10 @@
+*.lat
+*.scp
+*.lab
+*.ark
+*.out
+*.model
+*.tags
+*.tag
+*.nnet
+*.mat

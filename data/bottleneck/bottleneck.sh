@@ -24,9 +24,9 @@ config=
 # training options
 l1_penalty=0
 l2_penalty=0
-max_iters=20
+max_iters=100
 min_iters=
-keep_lr_iters=0
+keep_lr_iters=1
 start_halving_impr=0.001
 end_halving_impr=0.0001
 halving_factor=0.5
@@ -40,9 +40,9 @@ mlp_proto=
 seed=777
 learn_rate=0.00001
 momentum=0.9
-minibatch_size=1024
+minibatch_size=256
 randomizer_seed=777
-randomizer_size=10240
+randomizer_size=32768
 cv_percent=10
 cut_size="1G"
 train_tool="nnet-train-frmshuff"
@@ -52,34 +52,28 @@ echo "$0 $@"  # Print the command line for logging
 
 . parse_options.sh || exit 1;
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 3 ]; then
    echo "Perform bottleneck feature extraction on a probability input."
-   echo "Usage: $0 <rspecifier> <model-out>"
-   echo "eg. $0 scp:feat.scp model.nnet"
+   echo "Usage: $0 <rspecifier> <cv-rspecifier> <model-out>"
+   echo "eg. $0 scp:feat.scp scp:cv_feat.scp model.nnet"
    echo ""
    exit 1;
 fi
 
 
 data=$1
-model=$2
+cv_data=$2
+model=$3
 
 #generate scp
-copy-feats "$data" ark,scp:$dir/feats.ark,$dir/feats.scp || exit 1
+copy-feats "$cv_data" ark,scp:$dir/feats_cv.ark,$dir/feats_cv.scp || exit 1
+copy-feats "$data" ark,scp:$dir/feats_tr.ark,$dir/feats_tr.scp || exit 1
 
 cut_size=$(tobyte $cut_size)
-data_size=$(du -sb $dir/feats.ark | cut -f 1)
+data_size=$(du -sb $dir/feats_tr.ark | cut -f 1)
 data_num=$(( data_size / cut_size ))
 
 echo "data cut into $data_num chunks $data_size $cut_size"
-
-#cut data into cv set.
-N=$(cat $dir/feats.scp | wc -l)
-N_tail=$((N * cv_percent / 100))
-N_head=$((N - N_tail))
-
-head $dir/feats.scp -n $N_head > $dir/feats_tr.scp
-tail $dir/feats.scp -n $N_tail > $dir/feats_cv.scp
 
 #generate NN proto
 if [ -z "$mlp_proto" ]; then 
@@ -101,17 +95,7 @@ labels_cv="ark:feat-to-post scp:$dir/cv.scp ark:- |"
 
 mlp_best=$mlp_init
 
-# cross-validation on original network
-log=$dir/log/iter00.initial.log; hostname>$log
-$train_tool --cross-validate=true \
- --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=false --verbose=$verbose \
- ${feature_transform:+ --feature-transform=$feature_transform} \
- ${frame_weights:+ "--frame-weights=$frame_weights"} \
- "$feats_cv" "$labels_cv" $mlp_best \
- 2>> $log || exit 1;
-
-loss=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
-
+loss=0
 halving=0
 # start training
 for iter in $(seq -w $max_iters); do

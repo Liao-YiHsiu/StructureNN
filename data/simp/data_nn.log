@@ -1,0 +1,2 @@
+snnet/train.sh --n-lattice 20 data/simp//data.out ark:data/simp//train.lat data/simp//dev.out ark:data/simp//dev.lat data/simp//data_nn.model
+svm-info data/simp//data.out 

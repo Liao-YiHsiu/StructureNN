@@ -1,0 +1,15 @@
+snnet/train.sh --n-lattice 20 data/bottleneck/data.out ark:data/bottleneck/train.lat data/bottleneck/dev.out ark:data/bottleneck/dev.lat data/bottleneck/data_nn.model
+svm-info data/bottleneck/data.out 
+nnet-initialize /tmp/tmp.5o0BtqyVvY/nnet.proto /tmp/tmp.5o0BtqyVvY/nnet.init 
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:362) <NnetProto>
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:362) <AffineTransform> <InputDim> 4608 <OutputDim> 100 <BiasMean> -2.000000 <BiasRange> 4.000000 <ParamStddev> 0.020824 <MaxNorm> 0.000000
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:362) <Sigmoid> <InputDim> 100 <OutputDim> 100
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:362) <AffineTransform> <InputDim> 100 <OutputDim> 100 <BiasMean> -2.000000 <BiasRange> 4.000000 <ParamStddev> 0.350000 <MaxNorm> 0.000000
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:362) <Sigmoid> <InputDim> 100 <OutputDim> 100
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:362) <AffineTransform> <InputDim> 100 <OutputDim> 100 <BiasMean> -2.000000 <BiasRange> 4.000000 <ParamStddev> 0.350000 <MaxNorm> 0.000000
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:362) <Sigmoid> <InputDim> 100 <OutputDim> 100
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:362) <AffineTransform> <InputDim> 100 <OutputDim> 2 <BiasMean> 0.000000 <BiasRange> 0.000000 <ParamStddev> 0.490098 <LearnRateCoef> 1.000000 <BiasLearnRateCoef> 0.100000
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:362) <Softmax> <InputDim> 2 <OutputDim> 2
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:362) </NnetProto>
+LOG (nnet-initialize:main():nnet-initialize.cc:64) Written initialized model to /tmp/tmp.5o0BtqyVvY/nnet.init
+snnet/train.sh: line 76: 26499 Aborted                 (core dumped) $train_tool --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true --verbose=$verbose --binary=true --randomizer-seed=$seed $svm_data "ark:lattice-to-nbest --n=$n_lattice --random=$rand_lattice $lattice_data ark:- | lattice-to-vec ark:- ark:- |" $mlp_best $mlp_next 2>> $log

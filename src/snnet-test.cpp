@@ -98,9 +98,14 @@ int main(int argc, char *argv[]) {
           featsN = (feat.NumCols() + max_state) * max_state;
        assert((feat.NumCols() + max_state)*max_state == featsN);
 
+       
+
+       //Matrix<BaseFloat> feats(table.size() + 1, featsN);
        Matrix<BaseFloat> feats(table.size(), featsN);
        Posterior         targets;
 
+       //TODO delete the reference
+      // makeFeature(feat, label, max_state, feats.Row(table.size()));
        for(int i = 0; i < table.size(); ++i){
           makeFeature(feat, table[i].second, max_state, feats.Row(i));
        }
@@ -122,9 +127,14 @@ int main(int argc, char *argv[]) {
           }
        }
 
-       path_writer.Write(feature_reader.Key(), table[imax].second);
+       if(imax != table.size()){
+          path_writer.Write(feature_reader.Key(), table[imax].second);
+          corr += path_acc(table[imax].second, label) * label.size();
+       }else{
+          path_writer.Write(feature_reader.Key(), label);
+          corr += label.size();
+       }
 
-       corr += path_acc(table[imax].second, label) * label.size();
        corrN += label.size();
 
        // progress log

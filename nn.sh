@@ -37,7 +37,7 @@ model=$dir/data_nn.model
 
    snnet-test ark:$dir/test.ark ark:$dir/test.lab \
       "ark:lattice-to-nbest --n=100 ark:$dir/test.lat ark:- | lattice-to-vec ark:- ark:- |" \
-      $model ark,t:$dir/test.tags \ 
+      $model ark,t:$dir/test.tags \
       2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 
