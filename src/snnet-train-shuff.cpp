@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
     RandomizerMask randomizer_mask(rnd_opts);
     MatrixRandomizer feature_randomizer(rnd_opts);
     PosteriorRandomizer targets_randomizer(rnd_opts);
+    VectorRandomizer weights_randomizer(rnd_opts);
 
     SequentialTableReader<KaldiObjectHolder<ScorePath> >  score_path_reader(score_path_rspecifier);
     SequentialBaseFloatMatrixReader                       feature_reader(feat_rspecifier);
@@ -155,9 +156,15 @@ int main(int argc, char *argv[]) {
            makePost(label, neg_arr, targets);
         }
 
+        // TODO: pos example weight can be larger.
+        Vector<BaseFloat> weights;
+        weights.Resize(feats.NumRows());
+        weights.Set(1.0);
+
         
         feature_randomizer.AddData(CuMatrix<BaseFloat>(feats));
         targets_randomizer.AddData(targets);
+        weights_randomizer.AddData(weights);
         num_done++;
       
         // report the speed
@@ -174,23 +181,28 @@ int main(int argc, char *argv[]) {
         const std::vector<int32>& mask = randomizer_mask.Generate(feature_randomizer.NumFrames());
         feature_randomizer.Randomize(mask);
         targets_randomizer.Randomize(mask);
+        weights_randomizer.Randomize(mask);
       }
 
       // train with data from randomizers (using mini-batches)
       for ( ; !feature_randomizer.Done(); feature_randomizer.Next(),
-                                          targets_randomizer.Next()){
+                                          targets_randomizer.Next(),
+                                          weights_randomizer.Next()){
         // get block of feature/target pairs
         const CuMatrixBase<BaseFloat>& nnet_in = feature_randomizer.Value();
         const Posterior& nnet_tgt = targets_randomizer.Value();
+        const Vector<BaseFloat>& frm_weights = weights_randomizer.Value();
 
         // forward pass
         nnet.Propagate(nnet_in, &nnet_out);
 
         // evaluate objective function we've chosen
         if (objective_function == "xent") {
-          xent.Eval(nnet_out, nnet_tgt, &obj_diff);
+          //xent.Eval(nnet_out, nnet_tgt, &obj_diff);
+          xent.Eval(frm_weights, nnet_out, nnet_tgt, &obj_diff); 
         } else if (objective_function == "mse") {
-          mse.Eval(nnet_out, nnet_tgt, &obj_diff);
+          //mse.Eval(nnet_out, nnet_tgt, &obj_diff);
+          mse.Eval(frm_weights, nnet_out, nnet_tgt, &obj_diff);
         } else {
           KALDI_ERR << "Unknown objective function code : " << objective_function;
         }

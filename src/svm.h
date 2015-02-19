@@ -16,6 +16,7 @@ template<class VALUE, class T> class ValueVectorPair;
 typedef ValueVectorPair<BaseFloat, int32> ScorePath;
 
 double path_acc(const vector<int32> path1, const vector<int32> path2);
+int32 sample(const vector<BaseFloat> &arr);
 
 template<class V, class T> class ValueVectorPair{
    public:
@@ -87,6 +88,9 @@ void makeFeature(const Matrix<BaseFloat> &feat, const vector<int32> &path, int32
    SubVector<BaseFloat> tran(vec, feat_dim * maxState, maxState*maxState);
    for(int i = 0; i < path.size(); ++i){
       SubVector<BaseFloat> obs(vec, (path[i]-1)*feat_dim, feat_dim);
+      //int32 offset = (path[i]-1)*feat_dim;
+      //for(int k = 0; k < feat_dim; ++k)
+      //   vec(offset+k) = feat(i,k); 
       obs.CopyFromVec(feat.Row(i));
 
       if(i > 0){
@@ -112,3 +116,16 @@ void makePost(const vector<int32> &realPath, const vector<int32> &path, Posterio
 }
 
 
+int32 sample(const vector<BaseFloat> &arr){
+   BaseFloat sum = 0;
+   for(int i = 0; i < arr.size(); ++i)
+      sum += arr[i];
+   BaseFloat p = rand() / (double) RAND_MAX * sum;
+   sum = 0;
+   for(int i = 0; i < arr.size(); ++i){
+      sum += arr[i];
+      if(sum >= p ) return i;
+   }
+   assert(false);
+   return -1;
+}

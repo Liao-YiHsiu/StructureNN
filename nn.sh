@@ -39,6 +39,9 @@ model=$dir/data_nn.model
       "ark:lattice-to-nbest --n=100 ark:$dir/test.lat ark:- | lattice-to-vec ark:- ark:- |" \
       $model ark,t:$dir/test.tags \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+   
+   snnet-gibbs ark:$dir/test.ark $model ark,t:$dir/test.tags \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 
 exit 0;
