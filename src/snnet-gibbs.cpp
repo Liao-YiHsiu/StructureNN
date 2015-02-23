@@ -85,8 +85,6 @@ int main(int argc, char *argv[]) {
     int batch_num = mini_batch / max_state;
 
     Matrix<BaseFloat> feats(batch_num * max_state, featsN);
-    //KALDI_LOG << "matrix" << feats.Sum();
-
     vector<BaseFloat> probArr(max_state);
 
     vector< Matrix<BaseFloat> > featArr(batch_num);
@@ -99,13 +97,9 @@ int main(int argc, char *argv[]) {
           CuDevice::Instantiate().CheckGpuHealth();
 #endif
 
-       //const Matrix<BaseFloat> &feat  = feature_reader.Value();
        int index;
        for(index = 0; index < batch_num && !feature_reader.Done();
              ++index, feature_reader.Next()){
-          //const Matrix<BaseFloat> &mat = feature_reader.Value();
-          //featArr[index].Resize(mat.NumRows(), mat.NumCols());
-          //featArr[index].CopyFromMat(mat);
           featArr[index] = feature_reader.Value();
           featKey[index] = feature_reader.Key();
 
@@ -127,10 +121,9 @@ int main(int argc, char *argv[]) {
                 makeFeature(featArr[j], pathArr[j], max_state, feats.Row(j*max_state + k));
              }
           }
-          nnet_in.Resize(feats.NumRows(), feats.NumCols());
+          nnet_in.Resize(feats.NumRows(), feats.NumCols(), kUndefined);
           nnet_in.CopyFromMat(feats);
 
-          //nnet.Feedforward(CuMatrix<BaseFloat>(feats), &nnet_out);
           nnet.Feedforward(nnet_in, &nnet_out);
 
           //download from GPU

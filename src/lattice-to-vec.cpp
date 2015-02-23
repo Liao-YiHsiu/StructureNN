@@ -36,9 +36,8 @@ int main(int argc, char *argv[]) {
         score_path_wspecifier = po.GetArg(2);
 
     // Read as regular lattice
-    SequentialLatticeReader lattice_reader(lats_rspecifier);
-
-    TableWriter<KaldiObjectHolder<ScorePath> > score_path_writer(score_path_wspecifier);
+    SequentialLatticeReader  lattice_reader(lats_rspecifier);
+    ScorePathWriter          score_path_writer(score_path_wspecifier);
     
     ScorePath score_path;
     string pKey;

@@ -14,9 +14,12 @@ using namespace kaldi::nnet1;
 
 template<class VALUE, class T> class ValueVectorPair;
 typedef ValueVectorPair<BaseFloat, int32> ScorePath;
+typedef SequentialTableReader<KaldiObjectHolder<ScorePath> > SequentialScorePathReader;
+typedef TableWriter<KaldiObjectHolder<ScorePath> > ScorePathWriter;
 
 double path_acc(const vector<int32> path1, const vector<int32> path2);
 int32 sample(const vector<BaseFloat> &arr);
+int32 best(const vector<BaseFloat> &arr);
 
 template<class V, class T> class ValueVectorPair{
    public:
@@ -128,4 +131,16 @@ int32 sample(const vector<BaseFloat> &arr){
    }
    assert(false);
    return -1;
+}
+
+int32 best(const vector<BaseFloat> &arr){
+   assert(arr.size() >= 1);
+   BaseFloat max = arr[0];
+   int32 index = 0;
+   for(int i = 1; i < arr.size(); ++i)
+     if(max < arr[i]){
+        max = arr[i];
+        index = i;
+     }
+   return index;
 }

@@ -45,10 +45,10 @@ int main(int argc, char *argv[]) {
       path_wspecifier       = po.GetArg(5);
 
 
-    Int32VectorWriter                                     path_writer(path_wspecifier);
-    SequentialTableReader<KaldiObjectHolder<ScorePath> >  score_path_reader(score_path_rspecifier);
-    SequentialBaseFloatMatrixReader                       feature_reader(feat_rspecifier);
-    SequentialInt32VectorReader                           label_reader(label_rspecifier);
+    Int32VectorWriter                path_writer(path_wspecifier);
+    SequentialScorePathReader        score_path_reader(score_path_rspecifier);
+    SequentialBaseFloatMatrixReader  feature_reader(feat_rspecifier);
+    SequentialInt32VectorReader      label_reader(label_rspecifier);
 
     //Select the GPU
 #if HAVE_CUDA==1
@@ -100,12 +100,12 @@ int main(int argc, char *argv[]) {
 
        
 
-       Matrix<BaseFloat> feats(table.size() + 1, featsN);
-       //Matrix<BaseFloat> feats(table.size(), featsN);
+       //Matrix<BaseFloat> feats(table.size() + 1, featsN);
+       Matrix<BaseFloat> feats(table.size(), featsN);
        Posterior         targets;
 
        //TODO delete the reference
-       makeFeature(feat, label, max_state, feats.Row(table.size()));
+       //makeFeature(feat, label, max_state, feats.Row(table.size()));
        for(int i = 0; i < table.size(); ++i){
           makeFeature(feat, table[i].second, max_state, feats.Row(i));
        }
