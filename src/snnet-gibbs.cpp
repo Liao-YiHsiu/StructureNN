@@ -18,8 +18,8 @@ int main(int argc, char *argv[]) {
   try {
     string usage;
     usage.append("Structure Neural Network predict with Gibbs Sampling.\n")
-       .append("Random start path, use Gibbs Sampling to find best path.\n")
-       .append("Usage: ").append(argv[0]).append(" [options] <feature-rspecifier> <model-in> <path-wspecifier>\n")
+       .append("Use Gibbs Sampling to find best path.\n")
+       .append("Usage: ").append(argv[0]).append(" [options] <feature-rspecifier> <model-in> <score-path-wspecifier>\n")
        .append("e.g.: \n")
        .append(" ").append(argv[0]).append(" ark:feat.ark nnet ark:path.ark \n");
 
@@ -50,10 +50,10 @@ int main(int argc, char *argv[]) {
 
     string feat_rspecifier  = po.GetArg(1),
       model_filename        = po.GetArg(2),
-      path_wspecifier       = po.GetArg(3);
+      score_path_wspecifier       = po.GetArg(3);
 
 
-    Int32VectorWriter                path_writer(path_wspecifier);
+    ScorePathWriter                  score_path_writer(score_path_wspecifier);
     SequentialBaseFloatMatrixReader  feature_reader(feat_rspecifier);
 
     //Select the GPU
@@ -84,44 +84,54 @@ int main(int argc, char *argv[]) {
 
     int batch_num = mini_batch / max_state;
 
-    Matrix<BaseFloat> feats(batch_num * max_state, featsN);
     vector<BaseFloat> probArr(max_state);
 
     vector< Matrix<BaseFloat> > featArr(batch_num);
-    vector< string > featKey(batch_num);
+    vector< string >            featKey(batch_num);
+    vector< BaseFloat >         pathVal(batch_num);
+    vector<vector<int32> >      pathArr(batch_num);
 
-    for ( ; !feature_reader.Done(); feature_reader.Next()) {
+    vector< int32 >             sameCnt(batch_num);
+    vector< int32 >             old(batch_num);
+
+    for ( ; !feature_reader.Done();) {
 
 #if HAVE_CUDA==1
-          // check the GPU is not overheated
-          CuDevice::Instantiate().CheckGpuHealth();
+       // check the GPU is not overheated
+       CuDevice::Instantiate().CheckGpuHealth();
 #endif
 
+       // prepare feature and start path
        int index;
        for(index = 0; index < batch_num && !feature_reader.Done();
              ++index, feature_reader.Next()){
+
+
           featArr[index] = feature_reader.Value();
           featKey[index] = feature_reader.Key();
+          sameCnt[index]  = 0;
+
+          // random start
+          pathArr[index].resize(featArr[index].NumRows());
+          for(int j = 0; j < pathArr[index].size(); ++j)
+             pathArr[index][j] = rand() % max_state + 1;
 
           assert((featArr[index].NumCols() + max_state)*max_state == featsN);
        }
 
-       vector<vector<int32> > pathArr(index);
-       for(int i = 0; i < index; ++i){
-          pathArr[i].resize(featArr[i].NumRows());
-          for(int j = 0; j < pathArr[i].size(); ++j)
-             pathArr[i][j] = rand() % max_state + 1;
-       }
-
+       // start training
        for(int i = 0; i < GibbsIter; ++i){
+          for(int j = 0; j < index; ++j)
+             old[j] = pathArr[j][i % pathArr[j].size()];
 
+          Matrix<BaseFloat> feats(batch_num * max_state, featsN);
           for(int j = 0; j < index; ++j){
              for(int k = 0; k < max_state; ++k){
                 pathArr[j][ i % pathArr[j].size() ] = k + 1;
                 makeFeature(featArr[j], pathArr[j], max_state, feats.Row(j*max_state + k));
              }
           }
-          nnet_in.Resize(feats.NumRows(), feats.NumCols(), kUndefined);
+          nnet_in.Resize(feats.NumRows(), feats.NumCols());
           nnet_in.CopyFromMat(feats);
 
           nnet.Feedforward(nnet_in, &nnet_out);
@@ -136,16 +146,36 @@ int main(int argc, char *argv[]) {
              for(int k = 0; k < max_state; ++k){
                 probArr[k] = nnet_out_host(j*max_state + k, 0); 
              }
-             pathArr[j][ i % pathArr[j].size() ] = sample(probArr) + 1;
+             int32 choose = best(probArr);
+             pathArr[j][ i % pathArr[j].size() ] = choose + 1;
+             pathVal[j] = probArr[choose];
+
+             if(choose + 1 == old[j])
+                sameCnt[j]++;
+             else
+                sameCnt[j] = 0;
           }
           tot_t += feats.NumRows();
 
-          KALDI_LOG << num_done << "\t" << i ; 
+          if(i % 1000 == 0)
+             KALDI_LOG << num_done << "\t" << i ; 
 
+          bool stop = true;
+          for(int j = 0; j < index; ++j)
+             if(sameCnt[j] < pathArr[j].size()){
+                stop = false;
+                break;
+             }
+                
+          // early stop
+          if(stop) break;
        }
 
-       for(int j = 0; j < index; ++j)
-          path_writer.Write(featKey[j], pathArr[j]);
+       for(int j = 0; j < index; ++j){
+          ScorePath::Table table;
+          table.push_back(make_pair(pathVal[j], pathArr[j]));
+          score_path_writer.Write(featKey[j], ScorePath(table));
+       }
 
        // progress log
        if (num_done % 100 == 0) {
@@ -176,5 +206,6 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 }
+
 
 

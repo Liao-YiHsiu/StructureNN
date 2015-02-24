@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 
     po.Register("binary", &binary, "Write model in binary mode");
     po.Register("cross-validate", &crossvalidate, "Perform cross-validation (don't backpropagate)");
-    po.Register("randomize", &randomize, "Perform the frame-level shuffling within the Cache::");
+    po.Register("randomize", &randomize, "Perform the frame-level shuffling within the Cache");
 
     string objective_function = "xent";
     po.Register("objective-function", &objective_function, "Objective function : xent|mse");
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
     po.Register("use-gpu", &use_gpu, "yes|no|optional, only has effect if compiled with CUDA");
 
     double dropout_retention = 0.0;
-    po.Register("dropout-retention", &dropout_retention, "number between 0..1, saying how many neurons to preserve (0.0 will keep original value");
+    po.Register("dropout-retention", &dropout_retention, "number between 0..1, saying how many neurons to preserve (0.0 will keep original value)");
      
     int max_state = 48;
     po.Register("max-state", &max_state, "max state ID");
@@ -74,14 +74,14 @@ int main(int argc, char *argv[]) {
       target_model_filename = po.GetArg(5);
     }
 
-    RandomizerMask randomizer_mask(rnd_opts);
-    MatrixRandomizer feature_randomizer(rnd_opts);
-    PosteriorRandomizer targets_randomizer(rnd_opts);
-    VectorRandomizer weights_randomizer(rnd_opts);
+    RandomizerMask        randomizer_mask(rnd_opts);
+    MatrixRandomizer      feature_randomizer(rnd_opts);
+    PosteriorRandomizer   targets_randomizer(rnd_opts);
+    VectorRandomizer      weights_randomizer(rnd_opts);
 
-    SequentialTableReader<KaldiObjectHolder<ScorePath> >  score_path_reader(score_path_rspecifier);
-    SequentialBaseFloatMatrixReader                       feature_reader(feat_rspecifier);
-    SequentialInt32VectorReader                           label_reader(label_rspecifier);
+    SequentialScorePathReader        score_path_reader(score_path_rspecifier);
+    SequentialBaseFloatMatrixReader  feature_reader(feat_rspecifier);
+    SequentialInt32VectorReader      label_reader(label_rspecifier);
 
     //Select the GPU
 #if HAVE_CUDA==1
@@ -140,14 +140,17 @@ int main(int argc, char *argv[]) {
         Matrix<BaseFloat> feats(table.size() + 1 + negative_num, featsN);
         Posterior         targets;
 
+        // positive example
         makeFeature(feat, label, max_state, feats.Row(0));
         makePost(label, label, targets);
 
+        // input example
         for(int i = 0; i < table.size(); ++i){
            makeFeature(feat, table[i].second, max_state, feats.Row(i+1));
            makePost(label, table[i].second, targets);
         }
 
+        // random negitive example
         vector<int32> neg_arr(label.size());
         for(int i = 0; i < negative_num; ++i){
            for(int j = 0; j < neg_arr.size(); ++j)

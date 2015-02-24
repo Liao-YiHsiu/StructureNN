@@ -28,18 +28,13 @@ model=$dir/data_nn.model
 
    echo "SVM with NN training start..................................."
 
-   snnet/train.sh --rand-lattice "false" --n-lattice 1 \
+   snnet/train.sh --GibbsIter 1000 \
       ark:$dir/train.ark ark:$dir/train.lab ark:$dir/train.lat \
       ark:$dir/dev.ark   ark:$dir/dev.lab   ark:$dir/dev.lat $model \
       2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
    
    echo "SVM with NN testing start..................................."
 
-   snnet-test ark:$dir/test.ark ark:$dir/test.lab \
-      "ark:lattice-to-nbest --n=100 ark:$dir/test.lat ark:- | lattice-to-vec ark:- ark:- |" \
-      $model ark,t:$dir/test.tags \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-   
    snnet-gibbs ark:$dir/test.ark $model ark,t:$dir/test.tags \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 

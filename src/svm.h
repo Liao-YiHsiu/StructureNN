@@ -94,7 +94,7 @@ void makeFeature(const Matrix<BaseFloat> &feat, const vector<int32> &path, int32
       //int32 offset = (path[i]-1)*feat_dim;
       //for(int k = 0; k < feat_dim; ++k)
       //   vec(offset+k) = feat(i,k); 
-      obs.CopyFromVec(feat.Row(i));
+      obs.AddVec(1, feat.Row(i));
 
       if(i > 0){
          tran((path[i-1]-1)*maxState + path[i]-1) += 1;

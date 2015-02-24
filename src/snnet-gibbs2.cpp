@@ -108,7 +108,6 @@ int main(int argc, char *argv[]) {
 
     int batch_num = mini_batch / max_state;
 
-    Matrix<BaseFloat> feats(batch_num * max_state, featsN);
     vector<BaseFloat> probArr(max_state);
 
     vector< Matrix<BaseFloat> > featArr(batch_num);
@@ -147,6 +146,7 @@ int main(int argc, char *argv[]) {
 
        for(int i = 0; i < GibbsIter; ++i){
 
+          Matrix<BaseFloat> feats(batch_num * max_state, featsN);
           for(int j = 0; j < index; ++j){
              for(int k = 0; k < max_state; ++k){
                 pathArr[j][ i % pathArr[j].size() ] = k + 1;

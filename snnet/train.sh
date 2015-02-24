@@ -35,10 +35,10 @@ learn_rate=0.004
 momentum=0.9
 minibatch_size=256
 randomizer_size=32768
-n_lattice=300
 negative_num=100
-rand_lattice="true"
+GibbsIter=10000
 train_tool="snnet-train-shuff"
+test_tool="snnet-gibbs"
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
@@ -84,6 +84,14 @@ halving=0
 for iter in $(seq -w $max_iters); do
    mlp_next=$dir/nnet/nnet.${iter}
 
+# find negitive example
+   log=$dir/log/iter${iter}.ptr.log; hostname>$log
+   $test_tool --seed=$seed --GibbsIter=$GibbsIter "$feat_data" $mlp_best ark:$dir/test.ark \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   seed=$((seed + 1))
+
+
 # train
    log=$dir/log/iter${iter}.tr.log; hostname>$log
 
@@ -92,13 +100,20 @@ for iter in $(seq -w $max_iters); do
       --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
       --verbose=$verbose --binary=true --randomizer-seed=$seed \
       --negative-num=$negative_num \
-      "$feat_data" "$label_data" "ark:lattice-to-nbest --n=$n_lattice --random=$rand_lattice $lattice_data ark:- | lattice-to-vec ark:- ark:- |" \
+      "$feat_data" "$label_data" ark:$dir/test.ark \
       $mlp_best $mlp_next \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
       seed=$((seed + 1))
    loss_tr=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
    echo -n "TRAIN AVG.LOSS $(printf "%.4f" $loss_tr), "
+
+# find negitive example
+   log=$dir/log/iter${iter}.ptr.log; hostname>$log
+   $test_tool --seed=$seed --GibbsIter=$GibbsIter "$cv_feat_data" $mlp_next ark:$dir/cv.ark \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   seed=$((seed + 1))
 
 # CV
    log=$dir/log/iter${iter}.cv.log; hostname>$log
@@ -107,8 +122,8 @@ for iter in $(seq -w $max_iters); do
       --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
       --verbose=$verbose --binary=true --randomizer-seed=$seed\
       --cross-validate=true \
-      --negative-num=$negative_num \
-      "$cv_feat_data" "$cv_label_data" "ark:lattice-to-nbest --n=$n_lattice --random=$rand_lattice $cv_lattice_data ark:- | lattice-to-vec ark:- ark:- |" \
+      --negative-num=0 \
+      "$cv_feat_data" "$cv_label_data" ark:$dir/cv.ark \
       $mlp_next \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
       seed=$((seed + 1))
