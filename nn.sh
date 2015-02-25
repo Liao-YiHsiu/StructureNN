@@ -1,6 +1,8 @@
 #!/bin/bash
 GibbsIter=10000
 error_function="per"
+dnn_depth=1
+dnn_width=200
 
 echo "$0 $@"  # Print the command line for logging
 
@@ -31,6 +33,7 @@ model=$dir/data_nn.model
    echo "SVM with NN training start..................................."
 
    snnet/train.sh --GibbsIter $GibbsIter --error-function $error_function \
+      --dnn-depth $dnn_depth --dnn-width $dnn_width \
       ark:$dir/train.ark ark:$dir/train.lab ark:$dir/train.lat \
       ark:$dir/dev.ark   ark:$dir/dev.lab   ark:$dir/dev.lat $model \
       2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;

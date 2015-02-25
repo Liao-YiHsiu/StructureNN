@@ -10,7 +10,7 @@ LDLIBS += $(CUDA_LDLIBS)
 
 BINFILES = post-phn acc con-svm nnet-pop lab-lda gen-lab lattice-to-vec \
            snnet-train-shuff snnet-test snnet-gibbs path-fer snnet-gibbs2 split-path-score\
-           trim-path svmout-to-vec
+           trim-path svmout-to-vec combine-score-path
 
 OBJFILES = 
 
