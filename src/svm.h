@@ -6,6 +6,7 @@
 #include "util/common-utils.h"
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
+#include "util/edit-distance.h"
 #include <sstream>
 
 using namespace std;
@@ -17,9 +18,11 @@ typedef ValueVectorPair<BaseFloat, int32> ScorePath;
 typedef SequentialTableReader<KaldiObjectHolder<ScorePath> > SequentialScorePathReader;
 typedef TableWriter<KaldiObjectHolder<ScorePath> > ScorePathWriter;
 
-double path_acc(const vector<int32> path1, const vector<int32> path2);
+double frame_acc(const vector<int32>& path1, const vector<int32>& path2);
+double phone_acc(const vector<int32>& path1, const vector<int32>& path2);
 int32 sample(const vector<BaseFloat> &arr);
 int32 best(const vector<BaseFloat> &arr);
+void trim_path(const vector<int32>& scr_path, vector<int32>& des_path);
 
 template<class V, class T> class ValueVectorPair{
    public:
@@ -72,7 +75,7 @@ template<class V, class T> class ValueVectorPair{
 
 };
 
-double path_acc(const vector<int32> path1, const vector<int32> path2){
+double frame_acc(const vector<int32>& path1, const vector<int32>& path2){
 
    assert(path1.size() == path2.size());
    int corr = 0;
@@ -82,6 +85,25 @@ double path_acc(const vector<int32> path1, const vector<int32> path2){
 
    return corr / (double)path1.size();
 }
+
+// reference is path1.
+double phone_acc(const vector<int32>& path1, const vector<int32>& path2){
+   assert(path1.size() == path2.size());
+
+   vector<int32> path1_trim;
+   vector<int32> path2_trim;
+   trim_path(path1, path1_trim);
+   trim_path(path2, path2_trim);
+
+   int32 dist = LevenshteinEditDistance(path1_trim, path2_trim);
+
+   int32 corr = path1_trim.size() - dist; 
+
+   if(corr < 0) corr = 0;
+
+   return corr / (double)path1_trim.size();
+}
+
 
 void makeFeature(const Matrix<BaseFloat> &feat, const vector<int32> &path, int32 maxState, SubVector<BaseFloat> vec){
    assert(feat.NumRows() == path.size());
@@ -105,9 +127,22 @@ void makeFeature(const Matrix<BaseFloat> &feat, const vector<int32> &path, int32
    vec.Scale(1/(double)path.size());
 }
 
+/*
 void makePost(const vector<int32> &realPath, const vector<int32> &path, Posterior &post){
    double acc = path_acc(realPath, path);
 
+   vector< pair<int32, BaseFloat> > arr; 
+
+   if(acc != 0.0)
+      arr.push_back(make_pair(0, acc));
+   if(acc != 1.0)
+      arr.push_back(make_pair(1, 1-acc));
+
+   post.push_back(arr);
+}
+*/
+
+void makePost(double acc, Posterior &post){
    vector< pair<int32, BaseFloat> > arr; 
 
    if(acc != 0.0)
@@ -144,3 +179,18 @@ int32 best(const vector<BaseFloat> &arr){
      }
    return index;
 }
+
+void trim_path(const vector<int32>& scr_path, vector<int32>& des_path){
+   des_path.clear();
+
+   int32 prev = scr_path[0];
+   des_path.push_back(scr_path[0]);
+
+   for(int i = 1; i < scr_path.size(); ++i){
+      if(prev != scr_path[i]){
+         prev = scr_path[i];
+         des_path.push_back(scr_path[i]);
+      }
+   }
+}
+

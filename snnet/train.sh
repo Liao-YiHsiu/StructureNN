@@ -37,6 +37,7 @@ minibatch_size=256
 randomizer_size=32768
 negative_num=100
 GibbsIter=10000
+error_function="fer"
 train_tool="snnet-train-shuff"
 test_tool="snnet-gibbs"
 # End configuration.
@@ -99,7 +100,7 @@ for iter in $(seq -w $max_iters); do
       --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
       --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
       --verbose=$verbose --binary=true --randomizer-seed=$seed \
-      --negative-num=$negative_num \
+      --negative-num=$negative_num --error-function=$error_function\
       "$feat_data" "$label_data" ark:$dir/test.ark \
       $mlp_best $mlp_next \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
@@ -122,7 +123,7 @@ for iter in $(seq -w $max_iters); do
       --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
       --verbose=$verbose --binary=true --randomizer-seed=$seed\
       --cross-validate=true \
-      --negative-num=0 \
+      --negative-num=0 --error-function=$error_function\
       "$cv_feat_data" "$cv_label_data" ark:$dir/cv.ark \
       $mlp_next \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;

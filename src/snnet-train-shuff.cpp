@@ -44,6 +44,9 @@ int main(int argc, char *argv[]) {
     string objective_function = "xent";
     po.Register("objective-function", &objective_function, "Objective function : xent|mse");
 
+    string error_function = "fer";
+    po.Register("error-function", &error_function, "Error function : fer|per");
+
     string use_gpu="yes";
     po.Register("use-gpu", &use_gpu, "yes|no|optional, only has effect if compiled with CUDA");
 
@@ -69,6 +72,19 @@ int main(int argc, char *argv[]) {
       score_path_rspecifier = po.GetArg(3),
       model_filename        = po.GetArg(4),
       target_model_filename;
+
+    // function pointer used in calculating target.
+    double (*acc_function)(const vector<int32>& path1, const vector<int32>& path2);
+
+    if(error_function == "fer")
+       acc_function = frame_acc;
+    else if(error_function == "per")
+       acc_function = phone_acc; 
+    else{
+       po.PrintUsage();
+       exit(1);
+    }
+
         
     if (!crossvalidate) {
       target_model_filename = po.GetArg(5);
@@ -142,12 +158,14 @@ int main(int argc, char *argv[]) {
 
         // positive example
         makeFeature(feat, label, max_state, feats.Row(0));
-        makePost(label, label, targets);
+
+        makePost(acc_function(label, label), targets);
 
         // input example
         for(int i = 0; i < table.size(); ++i){
            makeFeature(feat, table[i].second, max_state, feats.Row(i+1));
-           makePost(label, table[i].second, targets);
+
+           makePost(acc_function(label, table[i].second), targets);
         }
 
         // random negitive example
@@ -156,7 +174,7 @@ int main(int argc, char *argv[]) {
            for(int j = 0; j < neg_arr.size(); ++j)
               neg_arr[j] = rand() % max_state + 1;
            makeFeature(feat, neg_arr, max_state, feats.Row(table.size()+1+i));
-           makePost(label, neg_arr, targets);
+           makePost(acc_function(label, neg_arr), targets);
         }
 
         // TODO: pos example weight can be larger.

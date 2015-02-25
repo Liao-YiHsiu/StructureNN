@@ -1,5 +1,6 @@
 #!/bin/bash
-GibbsIter=1000
+GibbsIter=10000
+error_function="per"
 
 echo "$0 $@"  # Print the command line for logging
 
@@ -29,14 +30,22 @@ model=$dir/data_nn.model
 
    echo "SVM with NN training start..................................."
 
-   snnet/train.sh --GibbsIter $GibbsIter \
+   snnet/train.sh --GibbsIter $GibbsIter --error-function $error_function \
       ark:$dir/train.ark ark:$dir/train.lab ark:$dir/train.lat \
       ark:$dir/dev.ark   ark:$dir/dev.lab   ark:$dir/dev.lat $model \
       2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
    
    echo "SVM with NN testing start..................................."
 
-   snnet-gibbs ark:$dir/test.ark $model ark,t:$dir/test.tags \
+   snnet-gibbs ark:$dir/test.ark $model ark,t:$dir/test_nn.tags \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   echo "Calculating Error rate."
+
+   path-fer ark:$dir/test.lab "ark:split-path-score ark:$dir/test_nn.tags ark:/dev/null ark:- |" \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   compute-wer "ark:trim-path ark:$dir/test.lab ark:- |" "ark:split-path-score ark:$dir/test_nn.tags ark:/dev/null ark:- | trim-path ark:- ark:- |" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 
