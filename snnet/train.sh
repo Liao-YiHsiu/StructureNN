@@ -37,8 +37,11 @@ minibatch_size=256
 randomizer_size=32768
 negative_num=100
 GibbsIter=10000
+error_function="fer"
 train_tool="snnet-train-shuff"
 test_tool="snnet-gibbs"
+dnn_depth=1
+dnn_width=200
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
@@ -73,7 +76,7 @@ feat_dim=$(feat-to-dim "$feat_data" -)
 SVM_dim=$(( (max_state + feat_dim) * max_state ))
 mlp_init=$dir/nnet.init
 mlp_proto=$dir/nnet.proto
-$timit_root/utils/nnet/make_nnet_proto.py $SVM_dim 2 1 200 > $mlp_proto || exit 1
+$timit_root/utils/nnet/make_nnet_proto.py $SVM_dim 2 $dnn_depth $dnn_width > $mlp_proto || exit 1
 nnet-initialize $mlp_proto $mlp_init || exit 1; 
 
 mlp_best=$mlp_init
@@ -86,8 +89,17 @@ for iter in $(seq -w $max_iters); do
 
 # find negitive example
    log=$dir/log/iter${iter}.ptr.log; hostname>$log
-   $test_tool --seed=$seed --GibbsIter=$GibbsIter "$feat_data" $mlp_best ark:$dir/test.ark \
+   $test_tool --seed=$seed --GibbsIter=$GibbsIter "$feat_data" $mlp_best ark:$dir/test_tmp.ark \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   if [ $iter -eq 1 ]; then
+      cp $dir/test_tmp.ark $dir/test.ark
+   else
+      combine-score-path ark:$dir/test_tmp2.ark ark:$dir/test.ark ark:$dir/test_tmp.ark
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+      cp -f $dir/test_tmp2.ark $dir/test.ark
+   fi
 
    seed=$((seed + 1))
 
@@ -99,7 +111,7 @@ for iter in $(seq -w $max_iters); do
       --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
       --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
       --verbose=$verbose --binary=true --randomizer-seed=$seed \
-      --negative-num=$negative_num \
+      --negative-num=$negative_num --error-function=$error_function\
       "$feat_data" "$label_data" ark:$dir/test.ark \
       $mlp_best $mlp_next \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
@@ -122,7 +134,7 @@ for iter in $(seq -w $max_iters); do
       --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
       --verbose=$verbose --binary=true --randomizer-seed=$seed\
       --cross-validate=true \
-      --negative-num=0 \
+      --negative-num=0 --error-function=$error_function\
       "$cv_feat_data" "$cv_label_data" ark:$dir/cv.ark \
       $mlp_next \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;

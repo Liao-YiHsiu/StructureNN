@@ -40,17 +40,9 @@ int main(int argc, char *argv[]) {
 
     int N = 0;
     for ( ; !path_reader.Done(); path_reader.Next(), N++) {
-       const vector<int32>& arr = path_reader.Value();
        vector<int32> tmp;
-       int32 prev = arr[0];
-       tmp.push_back(arr[0]);
+       trim_path(path_reader.Value(), tmp);
 
-       for(int i = 1; i < arr.size(); ++i){
-          if(prev != arr[i]){
-             prev = arr[i];
-             tmp.push_back(arr[i]);
-          }
-       }
        path_writer.Write(path_reader.Key(), tmp);
     }
     KALDI_LOG << "Finish " << N << " utterance.";

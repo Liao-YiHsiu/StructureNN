@@ -25,6 +25,9 @@ int main(int argc, char *argv[]) {
 
     ParseOptions po(usage.c_str());
 
+    string cheat="no";
+    po.Register("cheat", &cheat, "yes|no, yes to insert reference label when predicting."); 
+
     string use_gpu="yes";
     po.Register("use-gpu", &use_gpu, "yes|no|optional, only has effect if compiled with CUDA");
 
@@ -100,12 +103,16 @@ int main(int argc, char *argv[]) {
 
        
 
-       //Matrix<BaseFloat> feats(table.size() + 1, featsN);
-       Matrix<BaseFloat> feats(table.size(), featsN);
+       Matrix<BaseFloat> feats;
        Posterior         targets;
 
-       //TODO delete the reference
-       //makeFeature(feat, label, max_state, feats.Row(table.size()));
+       if(cheat == "yes"){
+          feats.Resize(table.size() + 1, featsN);
+          makeFeature(feat, label, max_state, feats.Row(table.size()));
+       }else{
+          feats.Resize(table.size(), featsN);
+       }
+
        for(int i = 0; i < table.size(); ++i){
           makeFeature(feat, table[i].second, max_state, feats.Row(i));
        }
