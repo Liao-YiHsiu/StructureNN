@@ -24,6 +24,14 @@ int32 sample(const vector<BaseFloat> &arr);
 int32 best(const vector<BaseFloat> &arr);
 void trim_path(const vector<int32>& scr_path, vector<int32>& des_path);
 
+typedef struct{
+   const Matrix<BaseFloat> *feat;
+   vector<int32>           *path;
+   int32                   maxState;
+   SubMatrix<BaseFloat>    *mat;
+   int32                   chgID;
+} FData;
+
 template<class V, class T> class ValueVectorPair{
    public:
       typedef vector< pair < V, vector<T> > > Table;
@@ -105,6 +113,7 @@ double phone_acc(const vector<int32>& path1, const vector<int32>& path2){
 }
 
 
+
 void makeFeature(const Matrix<BaseFloat> &feat, const vector<int32> &path, int32 maxState, SubVector<BaseFloat> vec){
    assert(feat.NumRows() == path.size());
 
@@ -122,6 +131,88 @@ void makeFeature(const Matrix<BaseFloat> &feat, const vector<int32> &path, int32
          tran((path[i-1]-1)*maxState + path[i]-1) += 1;
       }
    }
+
+   // normalization
+   vec.Scale(1/(double)path.size());
+}
+
+void* makeFeatureP(void *param){
+   FData* fData = (FData*) param;
+
+   for(int i = 0; i < fData->maxState; ++i){
+      vector<int32> path = *(fData->path);
+      path[fData->chgID] = i+1;
+      makeFeature(*(fData->feat), path, fData->maxState, fData->mat->Row(i));
+   }
+   return NULL;
+}
+
+void makeFeatureBatch(const Matrix<BaseFloat> &feat, const vector<int32> &path, int chgID, int32 maxState, SubMatrix<BaseFloat> mat){
+   assert(feat.NumRows() == path.size());
+   assert(mat.NumRows() == maxState);
+
+   int feat_dim = feat.NumCols();
+
+   // compute commonly used vector
+   {
+      SubVector<BaseFloat> vec = mat.Row(0);
+
+      SubVector<BaseFloat> tran(vec, feat_dim * maxState, maxState*maxState);
+      for(int i = 0; i < path.size(); ++i){
+         if(i == chgID)continue;
+
+         SubVector<BaseFloat> obs(vec, (path[i]-1)*feat_dim, feat_dim);
+         obs.AddVec(1, feat.Row(i));
+
+         if(i > 0 && i-1 != chgID){
+            tran((path[i-1]-1)*maxState + path[i]-1) += 1;
+         }
+      }
+      // copy to specified Matrix
+      for(int i = 1; i < maxState; ++i)
+         mat.Row(i).CopyFromVec(vec);
+   }
+
+
+   for(int i = 0; i < maxState; ++i){
+      SubVector<BaseFloat> vec = mat.Row(i);
+
+      SubVector<BaseFloat> tran(vec, feat_dim * maxState, maxState*maxState);
+      SubVector<BaseFloat> obs(vec, i*feat_dim, feat_dim);
+      obs.AddVec(1, feat.Row(chgID));
+
+      if(chgID >= 1)
+         tran((path[chgID-1]-1)*maxState + i) += 1;
+      if(chgID+1 < path.size())
+         tran(i*maxState + path[chgID+1]-1) += 1;
+   }
+
+   // normalization
+   for(int i = 1; i < maxState; ++i)
+         mat.Scale(1/(double)path.size());
+
+}
+
+void makeFeature(const CuMatrix<BaseFloat> &feat, const vector<int32> &path, int32 maxState, CuSubVector<BaseFloat> vec){
+   assert(feat.NumRows() == path.size());
+
+   int feat_dim = feat.NumCols();
+
+   Vector<BaseFloat> tran_tmp(maxState*maxState);
+   for(int i = 0; i < path.size(); ++i){
+      CuSubVector<BaseFloat> obs(vec, (path[i]-1)*feat_dim, feat_dim);
+      //int32 offset = (path[i]-1)*feat_dim;
+      //for(int k = 0; k < feat_dim; ++k)
+      //   vec(offset+k) = feat(i,k); 
+      obs.AddVec(1, feat.Row(i));
+
+      if(i > 0){
+         tran_tmp((path[i-1]-1)*maxState + path[i]-1) += 1;
+      }
+   }
+
+   CuSubVector<BaseFloat> tran(vec, feat_dim * maxState, maxState*maxState);
+   tran.CopyFromVec(tran_tmp);
 
    // normalization
    vec.Scale(1/(double)path.size());

@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
 
        if(imax != table.size()){
           path_writer.Write(feature_reader.Key(), table[imax].second);
-          corr += path_acc(table[imax].second, label) * label.size();
+          corr += frame_acc(table[imax].second, label) * label.size();
        }else{
           path_writer.Write(feature_reader.Key(), label);
           corr += label.size();

@@ -8,6 +8,8 @@
 #include "cudamatrix/cu-device.h"
 #include "svm.h"
 #include <sstream>
+#include <pthread.h>
+
 
 using namespace std;
 using namespace kaldi;
@@ -86,13 +88,13 @@ int main(int argc, char *argv[]) {
 
     vector<BaseFloat> probArr(max_state);
 
-    vector< Matrix<BaseFloat> > featArr(batch_num);
-    vector< string >            featKey(batch_num);
-    vector< BaseFloat >         pathVal(batch_num);
-    vector<vector<int32> >      pathArr(batch_num);
+    vector< Matrix<BaseFloat> >   featArr(batch_num);
+    vector< string >              featKey(batch_num);
+    vector< BaseFloat >           pathVal(batch_num);
+    vector<vector<int32> >        pathArr(batch_num);
 
-    vector< int32 >             sameCnt(batch_num);
-    vector< int32 >             old(batch_num);
+    vector< int32 >               sameCnt(batch_num);
+    vector< int32 >               old(batch_num);
 
     for ( ; !feature_reader.Done();) {
 
@@ -124,13 +126,43 @@ int main(int argc, char *argv[]) {
           for(int j = 0; j < index; ++j)
              old[j] = pathArr[j][i % pathArr[j].size()];
 
+          //vector<pthread_t> threads(index*max_state);
+          //vector<FData>     fData(index*max_state);
+          vector<pthread_t> threads(index);
+          vector<FData>     fData(index);
+          int rc;
+
           Matrix<BaseFloat> feats(batch_num * max_state, featsN);
           for(int j = 0; j < index; ++j){
-             for(int k = 0; k < max_state; ++k){
-                pathArr[j][ i % pathArr[j].size() ] = k + 1;
-                makeFeature(featArr[j], pathArr[j], max_state, feats.Row(j*max_state + k));
-             }
+            // makeFeatureBatch(featArr[j], pathArr[j], i % pathArr[j].size(), max_state,
+            //       feats.RowRange(j*max_state, max_state));
+
+             fData[j].feat     = &featArr[j];
+             fData[j].path     = &pathArr[j];
+             fData[j].maxState = max_state;
+             fData[j].mat      = new SubMatrix<BaseFloat>(feats.RowRange(j*max_state, max_state));
+             fData[j].chgID    = i % pathArr[j].size();
+
+             // use threads
+             rc = pthread_create(&threads[j], NULL, makeFeatureP, (void *) &fData[j]);
+             assert(0 == rc);
+             //rc = pthread_create(&threads[j*max_state+k], NULL, makeFeatureP, (void *) &fData[ID]);
+
+             //for(int k = 0; k < max_state; ++k){
+             //   //pathArr[j][ i % pathArr[j].size() ] = k + 1;
+             //   //makeFeature(featArr[j], pathArr[j], max_state, feats.Row(j*max_state + k));
+
+             //}
           }
+
+          for(int j = 0; j < threads.size(); ++j){
+             // block until thread i completes
+             rc = pthread_join(threads[j], NULL);
+             assert(0 == rc);
+
+             delete fData[j].mat;
+          }
+
           nnet_in.Resize(feats.NumRows(), feats.NumCols());
           nnet_in.CopyFromMat(feats);
 
