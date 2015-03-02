@@ -76,7 +76,8 @@ feat_dim=$(feat-to-dim "$feat_data" -)
 SVM_dim=$(( (max_state + feat_dim) * max_state ))
 mlp_init=$dir/nnet.init
 mlp_proto=$dir/nnet.proto
-$timit_root/utils/nnet/make_nnet_proto.py $SVM_dim 2 $dnn_depth $dnn_width > $mlp_proto || exit 1
+$timit_root/utils/nnet/make_nnet_proto.py --no-softmax $SVM_dim 1 $dnn_depth $dnn_width | sed '$ i\
+       <Sigmoid> <InputDim> 1 <OutputDim> 1'> $mlp_proto || exit 1
 nnet-initialize $mlp_proto $mlp_init || exit 1; 
 
 mlp_best=$mlp_init

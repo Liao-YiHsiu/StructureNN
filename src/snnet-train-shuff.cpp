@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     po.Register("cross-validate", &crossvalidate, "Perform cross-validation (don't backpropagate)");
     po.Register("randomize", &randomize, "Perform the frame-level shuffling within the Cache");
 
-    string objective_function = "xent";
+    string objective_function = "mse";
     po.Register("objective-function", &objective_function, "Objective function : xent|mse");
 
     string error_function = "fer";

@@ -236,10 +236,10 @@ void makePost(const vector<int32> &realPath, const vector<int32> &path, Posterio
 void makePost(double acc, Posterior &post){
    vector< pair<int32, BaseFloat> > arr; 
 
-   if(acc != 0.0)
+   //if(acc != 0.0)
       arr.push_back(make_pair(0, acc));
-   if(acc != 1.0)
-      arr.push_back(make_pair(1, 1-acc));
+   //if(acc != 1.0)
+   //   arr.push_back(make_pair(1, 1-acc));
 
    post.push_back(arr);
 }
