@@ -1,5 +1,8 @@
 KALDISRC=/home/loach/kaldi/kaldi-trunk/src
 
+O3: CXXFLAGS += -O3
+O3: all
+
 all:
 EXTRA_CXXFLAGS = -Wno-sign-compare
 include $(KALDISRC)/kaldi.mk
