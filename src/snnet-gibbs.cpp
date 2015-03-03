@@ -19,109 +19,28 @@ typedef struct{
    Matrix<BaseFloat>  *mat;
    BaseFloat          *val;
    vector<int32>      *seq;
+   bool               done;
 } GTask;
 
-pthread_mutex_t task_mutex;
-pthread_mutex_t cuda_mutex;
-pthread_mutex_t print_mutex;
-int max_state;
-int32 featsN;
-int GibbsIter;
-int32 num_done = 0;
-Nnet nnet;
+pthread_mutex_t   task_mutex;
+pthread_mutex_t   outer_mutex;
+pthread_mutex_t   print_mutex;
 
-void* runner(void *param){
-   vector<GTask> *taskArr = (vector<GTask>*)param;
+pthread_mutex_t   cuda_mutex;
+pthread_cond_t    cuda_cond;
+pthread_mutex_t   cuda_finish_mutex;
+pthread_cond_t    cuda_finish_cond;
 
-   Matrix<BaseFloat> feats(max_state, featsN);
-   Matrix<BaseFloat> nnet_out_host;
-   CuMatrix<BaseFloat> nnet_out, nnet_in;
-   vector<BaseFloat> probArr(max_state);
+int               max_state;
+int               GibbsIter;
+int32             featsN;
+int               running;
+int32             num_done;
+Matrix<BaseFloat> *pnnet_in_host, *pnnet_out_host; 
+bool              waiting;
+bool              finished;
 
-   while(true){
-      GTask task;
-
-      pthread_mutex_lock(&task_mutex);
-      {
-         if(taskArr->size() == 0){
-            pthread_mutex_unlock(&task_mutex);
-            return NULL;
-         }
-         task = taskArr->back();
-         taskArr->pop_back();
-      }
-      pthread_mutex_unlock(&task_mutex);
-
-      vector<int32>     &path = *(task.seq);
-      Matrix<BaseFloat> &feat = *(task.mat);
-      BaseFloat         &val  = *(task.val);
-
-      int32 old;
-      int32 sameCnt = 0;
-
-      // start training
-      for(int i = 0; i < GibbsIter; ++i){
-         for(int j = 0; j < path.size(); ++j){
-            old = path[j];
-
-            // make feature
-            for(int k = 0; k < max_state; ++k){
-               path[j] = k + 1;
-               makeFeature(feat, path, max_state, feats.Row(k));
-            }
-
-
-            pthread_mutex_lock(&cuda_mutex);
-            {
-
-#if HAVE_CUDA==1
-               // check the GPU is not overheated
-               CuDevice::Instantiate().CheckGpuHealth();
-#endif
-               nnet_in.Resize(feats.NumRows(), feats.NumCols());
-               nnet_in.CopyFromMat(feats);
-
-               nnet.Feedforward(nnet_in, &nnet_out);
-
-               //download from GPU
-               nnet_out_host.Resize(nnet_out.NumRows(), nnet_out.NumCols());
-               nnet_out.CopyToMat(&nnet_out_host);
-            }
-            pthread_mutex_unlock(&cuda_mutex);
-
-            assert(nnet_out_host.NumRows() == feats.NumRows());
-
-            // choose max
-            for(int k = 0; k < max_state; ++k){
-               probArr[k] = nnet_out_host(k, 0); 
-            }
-            int32 choose = best(probArr);
-            path[j] = choose + 1;
-            val = probArr[choose];
-
-            if(choose + 1 == old)
-               sameCnt++;
-            else
-               sameCnt = 0;
-
-
-         }
-
-         if(sameCnt >= path.size()){
-            break;
-         }
-
-      }
-
-      pthread_mutex_lock(&print_mutex);
-      {
-         num_done++;
-         KALDI_LOG << num_done; 
-      }
-      pthread_mutex_unlock(&print_mutex);
-
-   }
-}
+void* runner(void *param);
 
 int main(int argc, char *argv[]) {
   
@@ -162,8 +81,8 @@ int main(int argc, char *argv[]) {
     }
 
     string feat_rspecifier  = po.GetArg(1),
-      model_filename        = po.GetArg(2),
-      score_path_wspecifier       = po.GetArg(3);
+           model_filename   = po.GetArg(2),
+      score_path_wspecifier = po.GetArg(3);
 
 
     ScorePathWriter                  score_path_writer(score_path_wspecifier);
@@ -175,54 +94,103 @@ int main(int argc, char *argv[]) {
     CuDevice::Instantiate().DisableCaching();
 #endif
 
+    Nnet nnet;
     nnet.Read(model_filename);
     nnet.SetDropoutRetention(1.0);
+
+    featsN = nnet.InputDim();
+
 
     KALDI_LOG << "GIBBS SAMPLING STARTED";
 
     Timer time;
     num_done = 0;
-    featsN = nnet.InputDim();
+    //featsN = nnet.InputDim();
 
 
-    vector< Matrix<BaseFloat> >   featArr;
+    //vector< Matrix<BaseFloat> >   featArr;
     vector< string >              featKey;
-    vector< BaseFloat >           pathVal; // score
-    vector< vector<int32> >       pathArr;
+    //vector< BaseFloat >           pathVal; // score
+    //vector< vector<int32> >       pathArr;
 
     vector< GTask >               taskArr;
 
     // put tasks into thread pull;
     for(; !feature_reader.Done(); feature_reader.Next()){
        const Matrix<BaseFloat>& mat = feature_reader.Value();
-       featArr.push_back(mat);
+       //featArr.push_back(mat);
        featKey.push_back(feature_reader.Key());
-       pathVal.push_back(0);
+       //pathVal.push_back(0);
 
        vector<int32> path(mat.NumRows());
        for(int j = 0; j < path.size(); ++j)
           path[j] = rand() % max_state + 1;
 
-       pathArr.push_back(path);
+       //pathArr.push_back(path);
 
        GTask task;
-       task.mat = &featArr.back(); 
-       task.val = &pathVal.back();
-       task.seq = &pathArr.back();
+       task.mat  = new Matrix<BaseFloat>(mat); 
+       task.val  = new BaseFloat(0);
+       task.seq  = new vector<int32>(path);
+       task.done = false;
+       //task.nnet = &nnet;
 
        taskArr.push_back(task);
     }
+    
+    KALDI_LOG << "READ ALL SAMPLE";
 
     pthread_mutex_init(&task_mutex, NULL);
+    pthread_mutex_init(&outer_mutex, NULL);
     pthread_mutex_init(&cuda_mutex, NULL);
+    pthread_cond_init (&cuda_cond, NULL);
+    pthread_mutex_init(&cuda_finish_mutex, NULL);
+    pthread_cond_init (&cuda_finish_cond, NULL);
     pthread_mutex_init(&print_mutex, NULL);
 
     vector<pthread_t> threads(thread_num);
+
+    waiting  = false;
+    finished = false;
+    running  = threads.size();
     // new threads to do tasks.
+    //runner(&taskArr);
+    //CU_SAFE_CALL(cublasGetError());
     for(int i = 0; i < threads.size(); ++i){
        int rc = pthread_create(&threads[i], NULL, runner, (void *) &taskArr);
        assert(0 == rc);
     }
+    CuMatrix<BaseFloat> nnet_in, nnet_out;
+
+    // handling NN forward
+    pthread_mutex_lock(&cuda_mutex);
+    while(true){
+       if(!waiting){
+          pthread_cond_wait(&cuda_cond, &cuda_mutex);
+          if(running == 0) break;
+       }
+       waiting = false;
+
+       nnet_in.Resize(pnnet_in_host->NumRows(), pnnet_in_host->NumCols(),
+             kUndefined);
+
+       nnet_in.CopyFromMat(*pnnet_in_host);
+
+       nnet.Feedforward(nnet_in, &nnet_out);
+
+       pnnet_out_host->Resize(nnet_out.NumRows(), nnet_out.NumCols(),
+             kUndefined);
+       pnnet_out_host->CopyFromMat(nnet_out);
+
+       pthread_mutex_lock(&cuda_finish_mutex);
+       {
+          finished = true;
+          pthread_cond_signal(&cuda_finish_cond);
+       }
+       pthread_mutex_unlock(&cuda_finish_mutex);
+
+    }
+    pthread_mutex_unlock(&cuda_mutex);
 
     // wait until threads finished.
     for(int j = 0; j < threads.size(); ++j){
@@ -230,13 +198,22 @@ int main(int argc, char *argv[]) {
        assert(0 == rc);
     }
     pthread_mutex_destroy(&task_mutex);
+    pthread_mutex_destroy(&outer_mutex);
     pthread_mutex_destroy(&cuda_mutex);
+    pthread_cond_destroy (&cuda_cond);
+    pthread_mutex_destroy(&cuda_finish_mutex);
+    pthread_cond_destroy (&cuda_finish_cond);
     pthread_mutex_destroy(&print_mutex);
 
-    for(int j = 0; j < pathArr.size(); ++j){
+    //for(int j = 0; j < pathArr.size(); ++j){
+    for(int i = 0; i < taskArr.size(); ++i){
        ScorePath::Table table;
-       table.push_back(make_pair(pathVal[j], pathArr[j]));
-       score_path_writer.Write(featKey[j], ScorePath(table));
+       table.push_back(make_pair(*taskArr[i].val, *taskArr[i].seq));
+       score_path_writer.Write(featKey[i], ScorePath(table));
+
+       delete taskArr[i].mat;
+       delete taskArr[i].val;
+       delete taskArr[i].seq;
     }
 
 
@@ -255,5 +232,123 @@ int main(int argc, char *argv[]) {
   }
 }
 
+void* runner(void *param){
 
 
+   vector<GTask> *taskArr = (vector<GTask>*)param;
+
+   Matrix<BaseFloat> feats(max_state, featsN);
+   Matrix<BaseFloat> nnet_out_host;
+   //CuMatrix<BaseFloat> nnet_out, nnet_in;
+   vector<BaseFloat> probArr(max_state);
+
+   while(true){
+      GTask task;
+
+      pthread_mutex_lock(&task_mutex);
+      {
+         int index = -1;
+         for(int i = 0; i < taskArr->size(); ++i)
+            if(!(*taskArr)[i].done){
+               index = i;
+               break;
+            }
+
+         if(index == -1){
+            running--;
+
+            if(running == 0){
+               pthread_mutex_lock(&cuda_mutex);
+               pthread_cond_signal(&cuda_cond);
+               pthread_mutex_unlock(&cuda_mutex);
+            }
+
+            pthread_mutex_unlock(&task_mutex);
+            return NULL;
+         }
+         task = (*taskArr)[index];
+         (*taskArr)[index].done = true;
+      }
+      pthread_mutex_unlock(&task_mutex);
+
+      vector<int32>     &path = *(task.seq);
+      Matrix<BaseFloat> &feat = *(task.mat);
+      BaseFloat         &val  = *(task.val);
+      //Nnet              &nnet = *(task.nnet);
+
+      int32 old;
+      int32 sameCnt = 0;
+
+      // start training
+      for(int i = 0; i < GibbsIter; ++i){
+         for(int j = 0; j < path.size(); ++j){
+            old = path[j];
+
+            // make feature
+            for(int k = 0; k < max_state; ++k){
+               path[j] = k + 1;
+               makeFeature(feat, path, max_state, feats.Row(k));
+            }
+
+            //nnet_in.Resize(feats.NumRows(), feats.NumCols());
+            //nnet_in.CopyFromMat(feats);
+
+            pthread_mutex_lock(&outer_mutex);
+            {
+
+               pthread_mutex_lock(&cuda_mutex);
+               {
+
+                  pnnet_in_host  = &feats;
+                  pnnet_out_host = &nnet_out_host;
+
+                  waiting = true;
+                  pthread_cond_signal(&cuda_cond);
+
+               }
+               pthread_mutex_unlock(&cuda_mutex);
+
+               // wait until finished
+               pthread_mutex_lock(&cuda_finish_mutex);
+               if(!finished){
+                  pthread_cond_wait(&cuda_finish_cond, &cuda_finish_mutex);
+               }
+               finished = false;
+               pthread_mutex_unlock(&cuda_finish_mutex);
+
+            }
+            pthread_mutex_unlock(&outer_mutex);
+
+            assert(nnet_out_host.NumRows() == feats.NumRows());
+
+            // choose max
+            for(int k = 0; k < max_state; ++k){
+               probArr[k] = nnet_out_host(k, 0); 
+            }
+            int32 choose = best(probArr);
+            path[j] = choose + 1;
+            val = probArr[choose];
+
+            if(choose + 1 == old)
+               sameCnt++;
+            else
+               sameCnt = 0;
+
+
+         }
+
+         if(sameCnt >= path.size()){
+            break;
+         }
+
+      }
+
+      pthread_mutex_lock(&print_mutex);
+      {
+         num_done++;
+         KALDI_LOG << num_done; 
+      }
+      pthread_mutex_unlock(&print_mutex);
+
+   }
+}

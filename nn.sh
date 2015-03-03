@@ -1,5 +1,5 @@
 #!/bin/bash
-GibbsIter=10000
+GibbsIter=50
 error_function="per"
 dnn_depth=1
 dnn_width=200
