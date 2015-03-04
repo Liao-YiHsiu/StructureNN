@@ -346,7 +346,8 @@ void* runner(void *param){
       pthread_mutex_lock(&print_mutex);
       {
          num_done++;
-         KALDI_LOG << num_done; 
+         if(num_done % 100 == 0)
+            KALDI_LOG << num_done; 
       }
       pthread_mutex_unlock(&print_mutex);
 

@@ -58,6 +58,10 @@ int main(int argc, char *argv[]) {
 
     int negative_num = 0;
     po.Register("negative-num", &negative_num, "insert negative example in training");
+
+    bool reweight = false;
+    po.Register("reweight", &reweight, "reweight training examles");
+
     
     po.Read(argc, argv);
 
@@ -181,6 +185,12 @@ int main(int argc, char *argv[]) {
         Vector<BaseFloat> weights;
         weights.Resize(feats.NumRows());
         weights.Set(1.0);
+
+        // reweight input example
+        if(reweight){
+           weights.Range(1, table.size()).Scale(1/(double)table.size());
+           weights.Range(1 + table.size(), negative_num).Scale(1/(double)negative_num);
+        }
 
         
         feature_randomizer.AddData(CuMatrix<BaseFloat>(feats));
