@@ -1,5 +1,5 @@
 #!/bin/bash
-GibbsIter=50
+GibbsIter=1000
 error_function="per"
 dnn_depth=1
 dnn_width=200
@@ -20,8 +20,8 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-log=$dir/data_nn.log
-model=$dir/data_nn.model
+log=$dir/data_nn.log_${GibbsIter}_${dnn_depth}_${dnn_width}
+model=$dir/data_nn.model_${GibbsIter}_${dnn_depth}_${dnn_width}
 
 
    #check file existence.
@@ -49,6 +49,13 @@ model=$dir/data_nn.model
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    compute-wer "ark:trim-path ark:$dir/test.lab ark:- |" "ark:split-path-score ark:$dir/test_nn.tags ark:/dev/null ark:- | trim-path ark:- ark:- |" \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   echo "Calculating Error rate.(39)"
+   path-fer "ark:trans.sh ark:$dir/test.lab ark:- |" "ark:split-path-score ark:$dir/test_nn.tags ark:/dev/null ark:- | trans.sh ark:- ark:- |" \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   compute-wer "ark:trim-path ark:$dir/test.lab ark:- | trans.sh ark:- ark:- |" "ark:split-path-score ark:$dir/test_nn.tags ark:/dev/null ark:- | trim-path ark:- ark:- | trans.sh ark:- ark:- |" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 
