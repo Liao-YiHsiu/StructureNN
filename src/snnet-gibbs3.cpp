@@ -101,10 +101,11 @@ int main(int argc, char *argv[]) {
 
          BaseFloat value;
 
+         myCuMatrix<BaseFloat> feat_my(feat);
 
          int i;
          for(i = 0; i < GibbsIter; ++i){
-            makeFeatureCuda(myCuMatrix<BaseFloat>(feat), lab, max_state, nnet_in);
+            makeFeatureCuda(feat_my, lab, max_state, nnet_in);
             nnet.Feedforward(nnet_in, &nnet_out);
             val.CopyColFromMat(nnet_out, 0);
             if(!updateLabelCuda(val, lab, max_state, value))

@@ -316,10 +316,10 @@ void makeFeatureCuda(const myCuMatrix<BaseFloat> &feats, const CuIntVector &lab,
 
    cuda_make_tran( (L * S)/BLOCKSIZE+1, BLOCKSIZE, dim.rows, dim.cols, lab.Data(), 
          ret.Data(), ret.Dim().stride, S);
-   //assert( cudaSuccess == cudaGetLastError() );
+   assert( cudaSuccess == cudaGetLastError() );
 
    // TODO
-   ret.Scale(1/(double)L);
+   //ret.Scale(1/(double)L);
 
    //KALDI_LOG << "sum = " << ret.Sum();
 
