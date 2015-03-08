@@ -89,6 +89,8 @@ void makePost(double acc, Posterior &post);
 
 bool updateLabelCuda(const myCuVector<BaseFloat> &arr, CuIntVector &lab, int S, BaseFloat &value);
 void makeFeatureCuda(const myCuMatrix<BaseFloat> &feats, const CuIntVector &lab, int S, myCuMatrix<BaseFloat> &ret);
+bool updateLabelCuda(const myCuVector<BaseFloat> &arr, int row, CuIntVector &lab, int l, int S, BaseFloat &value);
+void makeFeatureCuda(const myCuMatrix<BaseFloat> &feats, const CuIntVector &lab, int l, int S, myCuMatrix<BaseFloat> &ret, int row);
 
 typedef struct{
    const Matrix<BaseFloat> *feat;
@@ -103,6 +105,7 @@ template<typename Real> class myCuMatrix : public CuMatrix<Real>{
    public:
       myCuMatrix():CuMatrix<Real>(){}
       myCuMatrix(CuMatrix<Real> &mat):CuMatrix<Real>(mat){}
+      myCuMatrix(Matrix<Real> &mat):CuMatrix<Real>(mat){}
       myCuMatrix(MatrixIndexT rows, MatrixIndexT cols, MatrixResizeType resize_type = kSetZero):
          CuMatrix<Real>(rows, cols, resize_type){}
 
@@ -121,7 +124,7 @@ template<typename Real> class myCuVector: public CuVector<Real>{
 
 class CuIntVector{
    public:
-      CuIntVector(int dim):data_(0), dim_(0){ Resize(dim); }
+      CuIntVector(int dim = 0):data_(0), dim_(0){ Resize(dim); }
       CuIntVector(const vector<int> &arr): data_(0), dim_(0){ Resize(arr.size()); CopyFromVec(arr); }
 
       ~CuIntVector(){ Destroy(); }

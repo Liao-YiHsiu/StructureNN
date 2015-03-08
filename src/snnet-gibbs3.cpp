@@ -41,6 +41,9 @@ int main(int argc, char *argv[]) {
       int max_state = 48;
       po.Register("max-state", &max_state, "max state ID");
 
+      int batch_num=5;
+      po.Register("batch-num", &batch_num, "Mini Batch Size");
+
       int GibbsIter = 10000;
       po.Register("GibbsIter", &GibbsIter, "Gibbs Sampling Iteration");
 
@@ -73,7 +76,6 @@ int main(int argc, char *argv[]) {
 
       Posterior targets;
       CuMatrix<BaseFloat> nnet_out;
-      myCuMatrix<BaseFloat> nnet_in;
 
 
       KALDI_LOG << "GIBBS SAMPLING STARTED";
@@ -81,49 +83,88 @@ int main(int argc, char *argv[]) {
       Timer time;
       int32 num_done = 0;
 
-      for ( ; !feature_reader.Done(); feature_reader.Next()) {
+      int32 featsN = nnet.InputDim();
+
+      myCuMatrix<BaseFloat> nnet_in(batch_num*max_state, featsN);
+      myCuVector<BaseFloat> val(batch_num*max_state);
+
+      vector< myCuMatrix<BaseFloat> >   featArr(batch_num);
+      vector< CuIntVector >             pathArr(batch_num);
+      vector< string >                  featKey(batch_num);
+      vector< BaseFloat >               pathVal(batch_num);
+
+      vector< int32 >               sameCnt(batch_num);
+
+      for ( ; !feature_reader.Done(); ) {
 
 #if HAVE_CUDA==1
          // check the GPU is not overheated
          CuDevice::Instantiate().CheckGpuHealth();
 #endif
+         // prepare data
+         int index;
+         for(index = 0; index < batch_num && !feature_reader.Done();
+               ++index, feature_reader.Next()){
 
-         // one at a time.
-         //const Matrix<BaseFloat>& mat = feature_reader.Value();
-         CuMatrix<BaseFloat> feat(feature_reader.Value());
+            const Matrix<BaseFloat> &mat = feature_reader.Value();
+            featArr[index].Resize(mat.NumRows(), mat.NumCols(), kUndefined);
+            featArr[index].CopyFromMat(mat);
+            featKey[index] = feature_reader.Key();
+            sameCnt[index] = 0;
 
-         vector<int> lab_host(feat.NumRows());
-         for(int i = 0; i < feat.NumRows(); ++i)
-            lab_host[i] = rand() % max_state;
+            // random start
+            vector<int> lab_host(featArr[index].NumRows());
+            for(int i = 0; i < featArr[index].NumRows(); ++i)
+               lab_host[i] = rand() % max_state;
 
-         CuIntVector          lab(lab_host);
-         CuVector<BaseFloat>  val(lab_host.size() * max_state);
+            pathArr[index].CopyFromVec(lab_host);
+         }
 
-         BaseFloat value;
+         // start sampling 
+         for(int i = 0; i < GibbsIter; ++i){
+            nnet_in.SetZero();
 
-         myCuMatrix<BaseFloat> feat_my(feat);
+            for(int j = 0; j < index; ++j){
+               makeFeatureCuda(featArr[j], pathArr[j], i % pathArr[j].Dim(), max_state, nnet_in, j);
+            }
 
-         int i;
-         for(i = 0; i < GibbsIter; ++i){
-            makeFeatureCuda(feat_my, lab, max_state, nnet_in);
             nnet.Feedforward(nnet_in, &nnet_out);
             val.CopyColFromMat(nnet_out, 0);
-            if(!updateLabelCuda(val, lab, max_state, value))
-               break;
 
+            BaseFloat value;
+            for(int j = 0; j < index; ++j){
+               if(updateLabelCuda(val, j, pathArr[j], i % pathArr[j].Dim(), max_state, value))
+                  sameCnt[j] = 0;
+               else
+                  sameCnt[j]++;
+
+               pathVal[j] = value;
+            }
+
+            bool finished = true;
+            for(int j = 0; j < index; ++j)
+               if(sameCnt[j] < pathArr[j].Dim() * 2){
+                  finished = false;
+                  break;
+               }
+            if(finished) break;
          }
-         num_done++;
-         KALDI_LOG << num_done << "\t" << i;
 
-         vector<int> arr;
-         lab.CopyToVec(arr);
-         for(i = 0; i < arr.size(); ++i)
-            arr[i] += 1;
+         num_done += index;
+         KALDI_LOG << num_done ;
 
-         ScorePath::Table table;
-         table.push_back(make_pair(value, arr));
-         score_path_writer.Write(feature_reader.Key(), ScorePath(table));
+         for(int i = 0; i < index; ++i){
+            vector<int> arr;
+            pathArr[i].CopyToVec(arr);
+            for(int j = 0; j < arr.size(); ++j)
+               arr[j] += 1;
+
+            ScorePath::Table table;
+            table.push_back(make_pair(pathVal[i], arr));
+            score_path_writer.Write(featKey[i], ScorePath(table));
          
+         }
+
       }
 
       // final message

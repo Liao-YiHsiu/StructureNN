@@ -95,7 +95,7 @@ for iter in $(seq -w $max_iters); do
    if [ $iter -eq 1 ]; then
       cp $dir/test_tmp.ark $dir/test.ark
    else
-      combine-score-path ark:$dir/test_tmp2.ark ark:$dir/test.ark ark:$dir/test_tmp.ark
+      combine-score-path ark:$dir/test_tmp2.ark ark:$dir/test_tmp.ark ark:$dir/test.ark
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
       cp -f $dir/test_tmp2.ark $dir/test.ark

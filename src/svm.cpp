@@ -219,6 +219,46 @@ void findMax(const myCuVector<BaseFloat> &arr, Vector<BaseFloat> &arr_host, int 
    }
 }
 
+bool updateLabelCuda(const myCuVector<BaseFloat> &arr, int row, CuIntVector &lab, int l, int S, BaseFloat &value){
+   Timer tim;
+   // find max prob
+   int sharemem = BLOCKSIZE*(sizeof(int) + sizeof(BaseFloat));
+
+   assert(S < BLOCKSIZE);
+
+   myCuVector<BaseFloat> tmparr(1);
+   CuIntVector           tmpidx(1);
+
+   cuda_find_max(1, BLOCKSIZE, sharemem, arr.Data()+ row*S , S, tmparr.Data(), tmpidx.Data());
+
+   Vector<BaseFloat> host_arr(tmparr.Dim());
+   vector<int32>     host_idx(tmpidx.Dim());
+   vector<int32>     host_lab(lab.Dim());
+
+   host_arr.CopyFromVec(tmparr);
+   tmpidx.CopyToVec(host_idx);
+   lab.CopyToVec(host_lab);
+
+   value = host_arr(0);
+
+   int32 s = host_idx[0];
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+
+   assert(l < host_lab.size());
+
+   if(host_lab[l] == s)
+      return false;
+
+   // update
+   host_lab[l] = s;
+   lab.CopyFromVec(host_lab);
+
+   return true;
+   //_update_label<<<1, 1>>>(tmparr.Data(), tmpidx.Data(), lab.Data(), lab.Dim(), S);
+   //val = tmparr(0);
+}
+
 bool updateLabelCuda(const myCuVector<BaseFloat> &arr, CuIntVector &lab, int S, BaseFloat &value){
    Timer tim;
 
@@ -292,6 +332,66 @@ bool updateLabelCuda(const myCuVector<BaseFloat> &arr, CuIntVector &lab, int S, 
    return true;
    //_update_label<<<1, 1>>>(tmparr.Data(), tmpidx.Data(), lab.Data(), lab.Dim(), S);
    //val = tmparr(0);
+}
+
+void makeFeatureCuda(const myCuMatrix<BaseFloat> &feats, const CuIntVector &lab, int l, int S, myCuMatrix<BaseFloat> &ret, int ret_row){
+   Timer tim;
+
+   MatrixDim dim = feats.Dim();
+   int L = dim.rows;
+   int F = dim.cols;
+
+   assert( L == lab.Dim() );
+
+   //KALDI_LOG << "sum = " << ret.Sum();
+
+   assert( cudaSuccess == cudaGetLastError() );
+   cuda_make_obs( (S * F)/BLOCKSIZE+1, BLOCKSIZE, feats.Data(), dim.rows, dim.cols,
+         dim.stride, lab.Data(), l, ret.Data() + ret_row *S* ret.Dim().stride, ret.Dim().stride, S);
+
+   //KALDI_LOG << "sum = " << ret.Sum();
+
+   cuda_make_tran( S/BLOCKSIZE+1, BLOCKSIZE, dim.rows, dim.cols, lab.Data(), l,
+         ret.Data() + ret_row *S * ret.Dim().stride, ret.Dim().stride, S);
+
+   //KALDI_LOG << "sum = " << ret.Sum();
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+
+   //KALDI_LOG << "sum = " << ret.Sum();
+
+   // check generated features.
+   //Matrix<BaseFloat> feats_host(feats.NumRows(), feats.NumCols());
+   //feats_host.CopyFromMat(feats);
+
+   //KALDI_LOG << "feats sum = " << feats_host.Sum();
+
+   //Matrix<BaseFloat> ret_host(ret.NumRows(), ret.NumCols());
+   //ret_host.CopyFromMat(ret);
+   //
+   //KALDI_LOG << "sum = " << ret_host.Sum();
+
+
+   //vector<int> lab_host;
+   //lab.CopyToVec(lab_host);
+   //for(int i = 0; i < lab_host.size(); ++i)
+   //   lab_host[i] += 1;
+
+   //Matrix<BaseFloat> cpu(S, F*S + S*S);
+   //for(int s = 0; s < S; ++s){
+   //   lab_host[l] = s + 1;
+   //   makeFeature(feats_host, lab_host, S, cpu.Row(s));
+   //}
+
+   //KALDI_LOG << "sum = " << cpu.Sum();
+
+
+   //float err = 0;
+   //for(int i = 0; i < S; ++i)
+   //   for(int j = 0; j < cpu.NumCols(); ++j)
+   //      err += (cpu(i, j) - ret_host(i+ret_row*S, j))*(cpu(i, j) - ret_host(i+ret_row*S, j));
+
+   //assert(err < 0.01);
 }
 
 void makeFeatureCuda(const myCuMatrix<BaseFloat> &feats, const CuIntVector &lab, int S, myCuMatrix<BaseFloat> &ret){
@@ -372,7 +472,9 @@ void CuIntVector::Destroy(){
 }
 
 void CuIntVector::CopyFromVec(const vector<int> &src){
-   assert(src.size() == dim_); 
+   if(src.size() != dim_)
+      Resize(src.size());
+   //assert(src.size() == dim_); 
    Timer tim;
    CU_SAFE_CALL(cudaMemcpy(data_, src.data(), dim_ * sizeof(int), cudaMemcpyHostToDevice));
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
@@ -388,11 +490,14 @@ void CuIntVector::CopyToVec(vector<int> &des)const{
 
 void CuIntVector::Resize(int dim){
    if( dim_ == dim ) return; // don't set zeros
+
    Destroy();
+   dim_ = dim;
+   if(dim == 0) return;
+
    Timer tim;
 
    this->data_ = static_cast<int*>(CuDevice::Instantiate().Malloc(dim * sizeof(int)));
-   dim_ = dim;
 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());    
 }

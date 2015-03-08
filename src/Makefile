@@ -61,4 +61,4 @@ ifeq ($(CUDA), true)
 endif
 
 %.o : %.cu 
-	$(CUDATKDIR)/bin/nvcc -c $< -o $@ $(CUDA_INCLUDE) $(CUDA_FLAGS) $(CUDA_ARCH) -I$(KALDISRC)
+	$(CUDATKDIR)/bin/nvcc -O3 -c $< -o $@ $(CUDA_INCLUDE) $(CUDA_FLAGS) $(CUDA_ARCH) -I$(KALDISRC)
