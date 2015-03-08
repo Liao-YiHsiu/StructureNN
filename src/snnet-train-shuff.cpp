@@ -188,7 +188,11 @@ int main(int argc, char *argv[]) {
 
         // reweight input example
         if(reweight){
-           weights.Range(1, table.size()).Scale(1/(double)table.size());
+           double decay = 1;
+           for(int i = 0; i < table.size(); ++i){
+              weights(i+1) *= decay;
+              decay *= 0.9;
+           }
            weights.Range(1 + table.size(), negative_num).Scale(1/(double)negative_num);
         }
 
