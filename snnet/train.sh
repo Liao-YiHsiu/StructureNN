@@ -18,7 +18,7 @@ config=
 # training options
 l1_penalty=0
 l2_penalty=0
-max_iters=100
+max_iters=200
 min_iters=
 keep_lr_iters=1
 start_halving_impr=0.005
@@ -36,12 +36,14 @@ momentum=0.9
 minibatch_size=256
 randomizer_size=32768
 negative_num=100
-GibbsIter=50
+GibbsIter=1000
+num_inference=10
 error_function="fer"
 train_tool="snnet-train-shuff"
 test_tool="snnet-gibbs"
 dnn_depth=1
 dnn_width=200
+early_stop=1.0
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
@@ -79,6 +81,9 @@ mlp_proto=$dir/nnet.proto
 $timit_root/utils/nnet/make_nnet_proto.py $SVM_dim 2 $dnn_depth $dnn_width > $mlp_proto || exit 1
 nnet-initialize $mlp_proto $mlp_init || exit 1; 
 
+init-score-path "$feat_data" ark:$dir/test.ark
+init-score-path "$cv_feat_data" ark:$dir/cv.ark
+
 mlp_best=$mlp_init
 
 loss=0
@@ -87,21 +92,19 @@ halving=0
 for iter in $(seq -w $max_iters); do
    mlp_next=$dir/nnet/nnet.${iter}
 
-# find negitive example
-   log=$dir/log/iter${iter}.ptr.log; hostname>$log
-   $test_tool --seed=$seed --GibbsIter=$GibbsIter "$feat_data" $mlp_best ark:$dir/test_tmp.ark \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+   if [ $((iter % num_inference)) -eq 0 ]; then
+      # find negitive example
+      log=$dir/log/iter${iter}.ptr.log; hostname>$log
+      $test_tool --seed=$seed --GibbsIter=$GibbsIter --early-stop=$early_stop \
+         "$feat_data" $mlp_best ark:$dir/test_tmp.ark \
+         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   if [ $iter -eq 1 ]; then
-      cp $dir/test_tmp.ark $dir/test.ark
-   else
       combine-score-path ark:$dir/test_tmp2.ark ark:$dir/test_tmp.ark ark:$dir/test.ark
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
       cp -f $dir/test_tmp2.ark $dir/test.ark
+      seed=$((seed + 1))
    fi
-
-   seed=$((seed + 1))
 
 
 # train
@@ -121,11 +124,12 @@ for iter in $(seq -w $max_iters); do
    echo -n "TRAIN AVG.LOSS $(printf "%.4f" $loss_tr), "
 
 # find negitive example
-   log=$dir/log/iter${iter}.ptr.log; hostname>$log
-   $test_tool --seed=$seed --GibbsIter=$GibbsIter "$cv_feat_data" $mlp_next ark:$dir/cv.ark \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   seed=$((seed + 1))
+#   log=$dir/log/iter${iter}.ptr.log; hostname>$log
+#   $test_tool --seed=$seed --GibbsIter=$GibbsIter --early-stop=$early_stop\
+#      "$cv_feat_data" $mlp_next ark:$dir/cv.ark \
+#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+#
+#   seed=$((seed + 1))
 
 # CV
    log=$dir/log/iter${iter}.cv.log; hostname>$log

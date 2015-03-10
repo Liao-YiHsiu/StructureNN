@@ -13,7 +13,7 @@ LDLIBS += $(CUDA_LDLIBS) -lpthread
 
 BINFILES = post-phn acc con-svm nnet-pop lab-lda gen-lab lattice-to-vec \
            snnet-train-shuff snnet-test snnet-gibbs path-fer snnet-gibbs2 split-path-score\
-           trim-path svmout-to-vec combine-score-path snnet-gibbs3
+           trim-path svmout-to-vec combine-score-path snnet-gibbs3 init-score-path
 
 OBJFILES = kernel.o svm.o
 
