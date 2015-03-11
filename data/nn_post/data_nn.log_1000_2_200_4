@@ -1,0 +1,353 @@
+snnet/train.sh --GibbsIter 1000 --error-function per --dnn-depth 2 --dnn-width 200 --early-stop 1.0 --num-inference 4 ark:data/nn_post//train.ark ark:data/nn_post//train.lab ark:data/nn_post//train.lat ark:data/nn_post//dev.ark ark:data/nn_post//dev.lab ark:data/nn_post//dev.lat data/nn_post//data_nn.model_1000_2_200_4
+copy-int-vector ark:data/nn_post//train.lab ark,t:- 
+LOG (copy-int-vector:main():copy-int-vector.cc:83) Copied 3696 vectors of int32.
+feat-to-dim ark:data/nn_post//train.ark - 
+nnet-initialize /tmp/tmp.WTa3kkggwq/nnet.proto /tmp/tmp.WTa3kkggwq/nnet.init 
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <NnetProto>
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <AffineTransform> <InputDim> 4656 <OutputDim> 200 <BiasMean> -2.000000 <BiasRange> 4.000000 <ParamStddev> 0.020505 <MaxNorm> 0.000000
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <Sigmoid> <InputDim> 200 <OutputDim> 200
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <AffineTransform> <InputDim> 200 <OutputDim> 200 <BiasMean> -2.000000 <BiasRange> 4.000000 <ParamStddev> 0.247487 <MaxNorm> 0.000000
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <Sigmoid> <InputDim> 200 <OutputDim> 200
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <AffineTransform> <InputDim> 200 <OutputDim> 2 <BiasMean> 0.000000 <BiasRange> 0.000000 <ParamStddev> 0.348263 <LearnRateCoef> 1.000000 <BiasLearnRateCoef> 0.100000
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <Softmax> <InputDim> 2 <OutputDim> 2
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) </NnetProto>
+LOG (nnet-initialize:main():nnet-initialize.cc:64) Written initialized model to /tmp/tmp.WTa3kkggwq/nnet.init
+init-score-path ark:data/nn_post//train.ark ark:/tmp/tmp.WTa3kkggwq/test.ark 
+init-score-path ark:data/nn_post//dev.ark ark:/tmp/tmp.WTa3kkggwq/cv.ark 
+snnet-train-shuff --learn-rate=0.004 --momentum=0.9 --l1-penalty=0 --l2-penalty=0 --minibatch-size=256 --randomizer-size=32768 --randomize=true --verbose=1 --binary=true --randomizer-seed=777 --negative-num=100 --error-function=per ark:data/nn_post//train.ark ark:data/nn_post//train.lab ark:/tmp/tmp.WTa3kkggwq/test.ark /tmp/tmp.WTa3kkggwq/nnet.init /tmp/tmp.WTa3kkggwq/nnet/nnet.001 
+LOG (snnet-train-shuff:Init():nnet-randomizer.cc:31) Seeding by srand with : 777
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2159M, used:911M, total:3071M, free/total:0.703103
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-train-shuff:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2145M, used:925M, total:3071M, free/total:0.698545 version 3.5
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-train-shuff:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:134) TRAINING STARTED
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:253) ### After 0 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:254) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.28777, mean 0.000428806, variance 1.84587e-06, skewness 26.516, kurtosis 3855.65 ) 
+[1] output of <AffineTransform> ( min -3.95573, max 0.00265361, mean -1.96475, variance 1.3002, skewness -0.035515, kurtosis -1.13517 ) 
+[2] output of <Sigmoid> ( min 0.018785, max 0.500663, mean 0.171562, variance 0.0197158, skewness 0.814844, kurtosis -0.533153 ) 
+[3] output of <AffineTransform> ( min -5.20002, max 0.85476, mean -1.93988, variance 2.02844, skewness -0.138619, kurtosis -0.844392 ) 
+[4] output of <Sigmoid> ( min 0.00548621, max 0.701565, mean 0.196032, variance 0.0324854, skewness 0.965932, kurtosis -0.119939 ) 
+[5] output of <AffineTransform> ( min 0.180541, max 0.791296, mean 0.487759, variance 0.0911914, skewness -4.40805e-06, kurtosis -1.99998 ) 
+[6] output of <Softmax> ( min 0.352347, max 0.647653, mean 0.5, variance 0.0214802, skewness 1.73339e-08, kurtosis -1.99999 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:256) ### Backward propagation buffer content :
+[0] diff of <Input>  ( min -0.0280174, max 0.0222505, mean 9.89589e-06, variance 1.19093e-05, skewness 0.0546383, kurtosis 0.254626 ) 
+[1] diff-output of <AffineTransform> ( min -0.061823, max 0.0851054, mean -0.00132683, variance 0.000137023, skewness -0.727371, kurtosis 4.20381 ) 
+[2] diff-output of <Sigmoid> ( min -0.383394, max 0.372499, mean -0.00714448, variance 0.00634656, skewness -0.0769069, kurtosis 0.130916 ) 
+[3] diff-output of <AffineTransform> ( min -0.14084, max 0.146567, mean 0.000281601, variance 0.000540704, skewness 0.207055, kurtosis 2.34125 ) 
+[4] diff-output of <Sigmoid> ( min -0.878487, max 0.893411, mean -0.00371291, variance 0.0263769, skewness 0.0163688, kurtosis 0.225829 ) 
+[5] diff-output of <AffineTransform> ( min -0.647653, max 0.647653, mean 8.14907e-10, variance 0.129522, skewness 7.64843e-09, kurtosis -1.92073 ) 
+[6] diff-output of <Softmax> ( min -0.647653, max 0.647653, mean 8.14907e-10, variance 0.129522, skewness 7.64843e-09, kurtosis -1.92073 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:257) ### Gradient stats :
+Component 1 : <AffineTransform>, 
+  linearity_grad ( min -0.0384425, max 0.0447224, mean -0.000145652, variance 2.46857e-06, skewness -2.55211, kurtosis 64.8605 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -11.3766, max 8.27083, mean -0.339668, variance 7.89824, skewness -0.909105, kurtosis 3.5513 ) , lr-coef 1
+Component 2 : <Sigmoid>, 
+Component 3 : <AffineTransform>, 
+  linearity_grad ( min -9.7797, max 9.41579, mean 0.0123681, variance 1.5347, skewness 0.433079, kurtosis 11.0546 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -19.5777, max 18.8492, mean 0.0720898, variance 31.221, skewness 0.250398, kurtosis 1.94565 ) , lr-coef 1
+Component 4 : <Sigmoid>, 
+Component 5 : <AffineTransform>, 
+  linearity_grad ( min -60.634, max 60.634, mean 3.76254e-08, variance 530.354, skewness 1.24275e-08, kurtosis 0.269424 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -86.4804, max 86.4804, mean 0, variance 7478.86, skewness 0, kurtosis -2 ) , lr-coef 0.1
+Component 6 : <Softmax>, 
+
+VLOG[1] (snnet-train-shuff:Eval():nnet-loss.cc:112) ProgressLoss[1.00053h/1.00053h]: 0.032601 (Xent)
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:278) ### After 373248 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:279) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.252381, mean 0.000428763, variance 1.83815e-06, skewness 17.5331, kurtosis 1811.84 ) 
+[1] output of <AffineTransform> ( min -3.94238, max 0.337632, mean -2.06386, variance 1.06342, skewness -0.178206, kurtosis -1.12693 ) 
+[2] output of <Sigmoid> ( min 0.0190327, max 0.583615, mean 0.151074, variance 0.0126576, skewness 0.66019, kurtosis -0.705439 ) 
+[3] output of <AffineTransform> ( min -8.46447, max 7.66803, mean -3.41335, variance 2.21637, skewness 2.31693, kurtosis 14.1696 ) 
+[4] output of <Sigmoid> ( min 0.000210784, max 0.999533, mean 0.0621711, variance 0.0169086, skewness 5.19772, kurtosis 30.2532 ) 
+[5] output of <AffineTransform> ( min -5.32316, max 4.76787, mean -0.283177, variance 23.7639, skewness 0.00108059, kurtosis -1.99277 ) 
+[6] output of <Softmax> ( min 4.14482e-05, max 0.999959, mean 0.5, variance 0.249853, skewness -1.65456e-08, kurtosis -1.99999 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:281) ### Backward propagation buffer content :
+[0] diff of <Input>  ( min -0.329364, max 0.0108242, mean 4.07154e-08, variance 4.521e-07, skewness -244.736, kurtosis 93982.7 ) 
+[1] diff-output of <AffineTransform> ( min -0.0259783, max 0.0129543, mean -1.44295e-06, variance 9.01742e-08, skewness -37.3242, kurtosis 2717.21 ) 
+[2] diff-output of <Sigmoid> ( min -0.105336, max 0.0549482, mean -1.44679e-06, variance 1.80711e-06, skewness -25.9597, kurtosis 1874.35 ) 
+[3] diff-output of <AffineTransform> ( min -0.0165318, max 0.0148406, mean 2.50446e-07, variance 1.85239e-08, skewness -0.603506, kurtosis 7714.62 ) 
+[4] diff-output of <Sigmoid> ( min -0.100758, max 0.122733, mean 2.85708e-05, variance 2.07212e-06, skewness 16.5666, kurtosis 1834.1 ) 
+[5] diff-output of <AffineTransform> ( min -0.0136413, max 0.0136413, mean -2.75577e-09, variance 9.28889e-07, skewness 3.19918e-05, kurtosis 159.898 ) 
+[6] diff-output of <Softmax> ( min -0.0136413, max 0.0136413, mean -2.75577e-09, variance 9.28889e-07, skewness 3.19918e-05, kurtosis 159.898 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:282) ### Gradient stats :
+Component 1 : <AffineTransform>, 
+  linearity_grad ( min -0.0224427, max 0.0111245, mean 5.07686e-07, variance 1.88098e-08, skewness -40.1103, kurtosis 4095.77 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.0883508, max 0.117107, mean 0.0011849, variance 0.000462584, skewness 1.41206, kurtosis 8.97589 ) , lr-coef 1
+Component 2 : <Sigmoid>, 
+Component 3 : <AffineTransform>, 
+  linearity_grad ( min -0.053351, max 0.0553781, mean -0.000341535, variance 3.71975e-06, skewness -0.892761, kurtosis 148.355 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.0925069, max 0.0940998, mean -0.00255798, variance 0.000132458, skewness -0.194298, kurtosis 42.9791 ) , lr-coef 1
+Component 4 : <Sigmoid>, 
+Component 5 : <AffineTransform>, 
+  linearity_grad ( min -0.105099, max 0.105091, mean -2.86879e-07, variance 0.00011427, skewness -0.000677076, kurtosis 51.7874 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.021123, max 0.0211138, mean -4.61657e-06, variance 0.000445987, skewness 0, kurtosis -2 ) , lr-coef 0.1
+Component 6 : <Softmax>, 
+
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:290) Done 3696 files, 0 with no tgt_mats, 0 with other errors. [TRAINING, RANDOMIZED, 0.494435 min, fps12581.6]
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:299) AvgLoss: 0.0314656 (Xent), [AvgXent: 0.0314656, AvgTargetEnt: 0]
+progress: [0.032601 ]
+
+FRAME_ACCURACY >> 99.5127% <<
+LOG (snnet-train-shuff:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+Sigmoid	0.054522s
+Sum	0.0649776s
+AddMatVec	0.112095s
+Set	0.136015s
+AddMat	0.146101s
+FindRowMaxId	0.150688s
+CuVector::SetZero	0.157699s
+Randomize	0.178278s
+Destroy	0.210455s
+CuVector::Resize	0.249674s
+CuMatrix::Resize	0.365172s
+CuMatrix::SetZero	0.412604s
+CuMatrixBase::CopyFromMat(from other CuMatrixBase)	0.540779s
+CuMatrixBase::CopyFromMat(from CPU)	1.13844s
+AddMatMat	1.96918s
+Total GPU time:	6.2676s (may involve some double-counting)
+-----
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 1331675136 bytes.
+TRAIN AVG.LOSS 0.0315, snnet-gibbs --seed=778 --GibbsIter=1000 ark:data/nn_post//dev.ark /tmp/tmp.WTa3kkggwq/nnet/nnet.001 ark:/tmp/tmp.WTa3kkggwq/cv.ark 
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2138M, used:932M, total:3071M, free/total:0.696428
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-gibbs:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2115M, used:955M, total:3071M, free/total:0.68894 version 3.5
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-gibbs:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:84) GIBBS SAMPLING STARTED
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 5
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 10
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 15
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 20
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 25
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 30
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 35
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 40
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 45
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 50
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 55
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 60
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 65
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 70
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 75
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 80
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 85
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 90
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 95
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:176) Done 400 files in 6.48782min
+LOG (snnet-gibbs:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+CopyFromVec	0.942698s
+CuVectorBase::CopyColFromMat	1.08299s
+ApplySoftMaxPerRow	1.2426s
+Destroy	2.11066s
+makeFeatureCuda	2.43513s
+Resize	2.54896s
+Sigmoid	2.91017s
+AddVecToRows	3.78492s
+CuVector::SetZero	4.72441s
+CuVector::Resize	7.79825s
+CopyToVec	12.4344s
+updateLabelCuda	26.1978s
+AddMatMat	48.1406s
+CuMatrix::Resize	287.609s
+CuMatrix::SetZero	290.763s
+Total GPU time:	694.789s (may involve some double-counting)
+-----
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 79175680 bytes.
+path-fer ark:data/nn_post//dev.lab 'ark:split-path-score ark:/tmp/tmp.WTa3kkggwq/cv.ark ark:/dev/null ark:- |' 
+split-path-score ark:/tmp/tmp.WTa3kkggwq/cv.ark ark:/dev/null ark:- 
+LOG (path-fer:main():path-fer.cpp:56) Frame Error Rate = 0.856719
+CROSSVAL FER= 0.8567, nnet accepted (nnet.001_learnrate0.004_tr0.0000_cv0.8567_keep-lr-iters-1)
+snnet-train-shuff --learn-rate=0.004 --momentum=0.9 --l1-penalty=0 --l2-penalty=0 --minibatch-size=256 --randomizer-size=32768 --randomize=true --verbose=1 --binary=true --randomizer-seed=779 --negative-num=100 --error-function=per ark:data/nn_post//train.ark ark:data/nn_post//train.lab ark:/tmp/tmp.WTa3kkggwq/test.ark /tmp/tmp.WTa3kkggwq/nnet/nnet.001_learnrate0.004_tr0.0000_cv0.8567_keep-lr-iters-1 /tmp/tmp.WTa3kkggwq/nnet/nnet.002 
+LOG (snnet-train-shuff:Init():nnet-randomizer.cc:31) Seeding by srand with : 779
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2148M, used:922M, total:3071M, free/total:0.699684
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-train-shuff:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2125M, used:945M, total:3071M, free/total:0.692196 version 3.5
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-train-shuff:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:134) TRAINING STARTED
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:253) ### After 0 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:254) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.202279, mean 0.000428793, variance 1.66415e-06, skewness 13.2196, kurtosis 1147.96 ) 
+[1] output of <AffineTransform> ( min -3.94744, max 0.307996, mean -2.06411, variance 1.06279, skewness -0.179161, kurtosis -1.12777 ) 
+[2] output of <Sigmoid> ( min 0.0189384, max 0.576396, mean 0.151022, variance 0.0126354, skewness 0.657486, kurtosis -0.714576 ) 
+[3] output of <AffineTransform> ( min -8.43304, max 7.63469, mean -3.41217, variance 2.21557, skewness 2.3164, kurtosis 14.152 ) 
+[4] output of <Sigmoid> ( min 0.000217511, max 0.999517, mean 0.0622323, variance 0.0169217, skewness 5.19327, kurtosis 30.2063 ) 
+[5] output of <AffineTransform> ( min -5.30485, max 4.74845, mean -0.282212, variance 23.9333, skewness 0.000726809, kurtosis -1.99509 ) 
+[6] output of <Softmax> ( min 4.30417e-05, max 0.999957, mean 0.5, variance 0.249894, skewness -9.08619e-09, kurtosis -1.99999 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:256) ### Backward propagation buffer content :
+[0] diff of <Input>  ( min -0.157599, max 0.00517887, mean -3.28786e-08, variance 1.4876e-07, skewness -213.641, kurtosis 67374 ) 
+[1] diff-output of <AffineTransform> ( min -0.0123499, max 0.00610927, mean 2.82179e-07, variance 2.95533e-08, skewness -32.561, kurtosis 1913.77 ) 
+[2] diff-output of <Sigmoid> ( min -0.0504289, max 0.0260595, mean 1.35187e-06, variance 5.93446e-07, skewness -22.8345, kurtosis 1337.44 ) 
+[3] diff-output of <AffineTransform> ( min -0.00793101, max 0.0066116, mean -8.24812e-07, variance 6.1393e-09, skewness -3.80872, kurtosis 5054.85 ) 
+[4] diff-output of <Sigmoid> ( min -0.0526462, max 0.0641301, mean -2.2385e-06, variance 7.81223e-07, skewness 15.3134, kurtosis 1444.84 ) 
+[5] diff-output of <AffineTransform> ( min -0.00712717, max 0.00712712, mean -1.35271e-09, variance 3.50044e-07, skewness -3.43123e-05, kurtosis 125.357 ) 
+[6] diff-output of <Softmax> ( min -0.00712717, max 0.00712712, mean -1.35271e-09, variance 3.50044e-07, skewness -3.43123e-05, kurtosis 125.357 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:257) ### Gradient stats :
+Component 1 : <AffineTransform>, 
+  linearity_grad ( min -0.00209285, max 0.0010329, mean 3.09097e-08, variance 2.58796e-10, skewness -43.4213, kurtosis 3838.61 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.00786683, max 0.0102909, mean 7.22379e-05, variance 3.54724e-06, skewness 1.39075, kurtosis 9.31947 ) , lr-coef 1
+Component 2 : <Sigmoid>, 
+Component 3 : <AffineTransform>, 
+  linearity_grad ( min -0.0050684, max 0.00486507, mean -2.74217e-05, variance 2.81956e-08, skewness -2.40575, kurtosis 175.962 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.00893389, max 0.00803637, mean -0.000211152, variance 1.0112e-06, skewness -1.10748, kurtosis 49.6634 ) , lr-coef 1
+Component 4 : <Sigmoid>, 
+Component 5 : <AffineTransform>, 
+  linearity_grad ( min -0.00953974, max 0.00953921, mean -2.14034e-08, variance 9.5746e-07, skewness -0.000521901, kurtosis 54.2515 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.000735185, max 0.000734493, mean -3.45928e-07, variance 5.39989e-07, skewness 0, kurtosis -2 ) , lr-coef 0.1
+Component 6 : <Softmax>, 
+
+VLOG[1] (snnet-train-shuff:Eval():nnet-loss.cc:112) ProgressLoss[1.00053h/1.00053h]: 8.18264e-05 (Xent)
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:278) ### After 373248 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:279) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.219081, mean 0.00042877, variance 1.96357e-06, skewness 21.4453, kurtosis 2019.73 ) 
+[1] output of <AffineTransform> ( min -3.94633, max 0.767615, mean -2.05901, variance 1.0735, skewness -0.168162, kurtosis -1.11569 ) 
+[2] output of <Sigmoid> ( min 0.018959, max 0.683005, mean 0.15199, variance 0.0129759, skewness 0.692662, kurtosis -0.580868 ) 
+[3] output of <AffineTransform> ( min -8.84619, max 8.09029, mean -3.40389, variance 2.2964, skewness 2.25607, kurtosis 13.3752 ) 
+[4] output of <Sigmoid> ( min 0.000143909, max 0.999694, mean 0.064244, variance 0.0179102, skewness 4.95954, kurtosis 27.5037 ) 
+[5] output of <AffineTransform> ( min -5.96105, max 5.41819, mean -0.277903, variance 30.1547, skewness 0.000765712, kurtosis -1.99632 ) 
+[6] output of <Softmax> ( min 1.14302e-05, max 0.999989, mean 0.5, variance 0.249977, skewness 2.44506e-09, kurtosis -2 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:281) ### Backward propagation buffer content :
+[0] diff of <Input>  ( min -0.0288033, max 0.000956887, mean -3.22727e-08, variance 3.28072e-09, skewness -251.314, kurtosis 102714 ) 
+[1] diff-output of <AffineTransform> ( min -0.00214172, max 0.00110126, mean 4.94273e-07, variance 5.88213e-10, skewness -37.8492, kurtosis 2933.71 ) 
+[2] diff-output of <Sigmoid> ( min -0.00887904, max 0.00463076, mean 9.80005e-07, variance 1.18588e-08, skewness -27.0847, kurtosis 2095.12 ) 
+[3] diff-output of <AffineTransform> ( min -0.00127746, max 0.000936747, mean -5.16806e-07, variance 1.13455e-10, skewness -3.9294, kurtosis 6310.91 ) 
+[4] diff-output of <Sigmoid> ( min -0.0102609, max 0.0122943, mean -7.58285e-06, variance 1.64684e-08, skewness 18.8246, kurtosis 2799.14 ) 
+[5] diff-output of <AffineTransform> ( min -0.00127631, max 0.00127633, mean 2.15156e-10, variance 6.9087e-09, skewness 0.000288552, kurtosis 214.354 ) 
+[6] diff-output of <Softmax> ( min -0.00127631, max 0.00127633, mean 2.15156e-10, variance 6.9087e-09, skewness 0.000288552, kurtosis 214.354 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:282) ### Gradient stats :
+Component 1 : <AffineTransform>, 
+  linearity_grad ( min -0.010822, max 0.00562392, mean -3.82118e-07, variance 5.26953e-09, skewness -36.9638, kurtosis 3353.47 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.0233457, max 0.00353583, mean -0.000890083, variance 1.25199e-05, skewness -3.8232, kurtosis 16.5183 ) , lr-coef 1
+Component 2 : <Sigmoid>, 
+Component 3 : <AffineTransform>, 
+  linearity_grad ( min -0.0203313, max 0.01854, mean 2.61229e-05, variance 2.27842e-07, skewness -0.165351, kurtosis 506.891 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.00779938, max 0.00796642, mean 3.03597e-05, variance 8.66118e-07, skewness -0.04791, kurtosis 51.8245 ) , lr-coef 1
+Component 4 : <Sigmoid>, 
+Component 5 : <AffineTransform>, 
+  linearity_grad ( min -0.038044, max 0.0380445, mean 4.72516e-08, variance 1.84317e-05, skewness 0.000262896, kurtosis 44.9127 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.0197354, max 0.0197369, mean 7.34814e-07, variance 0.000389516, skewness 0, kurtosis -2 ) , lr-coef 0.1
+Component 6 : <Softmax>, 
+
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:290) Done 3696 files, 0 with no tgt_mats, 0 with other errors. [TRAINING, RANDOMIZED, 0.493328 min, fps12609.9]
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:299) AvgLoss: 8.03137e-05 (Xent), [AvgXent: 8.03137e-05, AvgTargetEnt: 0]
+progress: [8.18264e-05 ]
+
+FRAME_ACCURACY >> 99.9997% <<
+LOG (snnet-train-shuff:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+Sigmoid	0.052249s
+Sum	0.0624127s
+AddMatVec	0.107237s
+Set	0.12819s
+AddMat	0.141221s
+FindRowMaxId	0.143631s
+CuVector::SetZero	0.145586s
+Randomize	0.175258s
+Destroy	0.21244s
+CuVector::Resize	0.234574s
+CuMatrix::Resize	0.376412s
+CuMatrix::SetZero	0.398887s
+CuMatrixBase::CopyFromMat(from other CuMatrixBase)	0.527562s
+CuMatrixBase::CopyFromMat(from CPU)	1.17321s
+AddMatMat	1.95788s
+Total GPU time:	6.20409s (may involve some double-counting)
+-----
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 1300742144 bytes.
+TRAIN AVG.LOSS 0.0001, snnet-gibbs --seed=780 --GibbsIter=1000 ark:data/nn_post//dev.ark /tmp/tmp.WTa3kkggwq/nnet/nnet.002 ark:/tmp/tmp.WTa3kkggwq/cv.ark 
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2148M, used:922M, total:3071M, free/total:0.699684
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-gibbs:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2134M, used:936M, total:3071M, free/total:0.695126 version 3.5
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-gibbs:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:84) GIBBS SAMPLING STARTED
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 5
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 10
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 15
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 20
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 25
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 30
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 35
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 40
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 45
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 50
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 55
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 60
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 65
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 70

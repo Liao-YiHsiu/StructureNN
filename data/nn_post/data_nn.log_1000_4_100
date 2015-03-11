@@ -1,0 +1,3349 @@
+snnet/train.sh --GibbsIter 1000 --error-function per --dnn-depth 4 --dnn-width 100 --early-stop 0.8 ark:data/nn_post//train.ark ark:data/nn_post//train.lab ark:data/nn_post//train.lat ark:data/nn_post//dev.ark ark:data/nn_post//dev.lab ark:data/nn_post//dev.lat data/nn_post//data_nn.model_1000_4_100
+copy-int-vector ark:data/nn_post//train.lab ark,t:- 
+LOG (copy-int-vector:main():copy-int-vector.cc:83) Copied 3696 vectors of int32.
+feat-to-dim ark:data/nn_post//train.ark - 
+nnet-initialize /tmp/tmp.XrEr8XVsPL/nnet.proto /tmp/tmp.XrEr8XVsPL/nnet.init 
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <NnetProto>
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <AffineTransform> <InputDim> 4656 <OutputDim> 100 <BiasMean> -2.000000 <BiasRange> 4.000000 <ParamStddev> 0.020719 <MaxNorm> 0.000000
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <Sigmoid> <InputDim> 100 <OutputDim> 100
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <AffineTransform> <InputDim> 100 <OutputDim> 100 <BiasMean> -2.000000 <BiasRange> 4.000000 <ParamStddev> 0.350000 <MaxNorm> 0.000000
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <Sigmoid> <InputDim> 100 <OutputDim> 100
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <AffineTransform> <InputDim> 100 <OutputDim> 100 <BiasMean> -2.000000 <BiasRange> 4.000000 <ParamStddev> 0.350000 <MaxNorm> 0.000000
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <Sigmoid> <InputDim> 100 <OutputDim> 100
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <AffineTransform> <InputDim> 100 <OutputDim> 100 <BiasMean> -2.000000 <BiasRange> 4.000000 <ParamStddev> 0.350000 <MaxNorm> 0.000000
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <Sigmoid> <InputDim> 100 <OutputDim> 100
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <AffineTransform> <InputDim> 100 <OutputDim> 2 <BiasMean> 0.000000 <BiasRange> 0.000000 <ParamStddev> 0.490098 <LearnRateCoef> 1.000000 <BiasLearnRateCoef> 0.100000
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) <Softmax> <InputDim> 2 <OutputDim> 2
+VLOG[1] (nnet-initialize:Init():nnet-nnet.cc:373) </NnetProto>
+LOG (nnet-initialize:main():nnet-initialize.cc:64) Written initialized model to /tmp/tmp.XrEr8XVsPL/nnet.init
+snnet-gibbs --seed=777 --GibbsIter=1000 --early-stop=0.8 ark:data/nn_post//train.ark /tmp/tmp.XrEr8XVsPL/nnet.init ark:/tmp/tmp.XrEr8XVsPL/test_tmp.ark 
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2422M, used:648M, total:3071M, free/total:0.788734
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-gibbs:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2408M, used:662M, total:3071M, free/total:0.784176 version 3.5
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-gibbs:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:84) GIBBS SAMPLING STARTED
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 5
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 10
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 15
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 20
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 25
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 30
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 35
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 40
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 45
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 50
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 55
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 60
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 65
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 70
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 75
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 80
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 85
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 90
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 95
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 405
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 410
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 415
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 420
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 425
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 430
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 435
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 440
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 445
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 450
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 455
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 460
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 465
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 470
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 475
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 480
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 485
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 490
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 495
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 500
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 505
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 510
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 515
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 520
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 525
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 530
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 535
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 540
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 545
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 550
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 555
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 560
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 565
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 570
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 575
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 580
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 585
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 590
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 595
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 600
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 605
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 610
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 615
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 620
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 625
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 630
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 635
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 640
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 645
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 650
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 655
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 660
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 665
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 670
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 675
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 680
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 685
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 690
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 695
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 700
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 705
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 710
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 715
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 720
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 725
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 730
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 735
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 740
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 745
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 750
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 755
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 760
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 765
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 770
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 775
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 780
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 785
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 790
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 795
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 800
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 805
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 810
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 815
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 820
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 825
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 830
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 835
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 840
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 845
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 850
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 855
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 860
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 865
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 870
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 875
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 880
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 885
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 890
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 895
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 900
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 905
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 910
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 915
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 920
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 925
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 930
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 935
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 940
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 945
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 950
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 955
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 960
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 965
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 970
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 975
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 980
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 985
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 990
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 995
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1000
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1005
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1010
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1015
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1020
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1025
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1030
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1035
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1040
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1045
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1050
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1055
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1060
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1065
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1070
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1075
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1080
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1085
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1090
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1095
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1405
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1410
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1415
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1420
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1425
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1430
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1435
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1440
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1445
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1450
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1455
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1460
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1465
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1470
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1475
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1480
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1485
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1490
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1495
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1500
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1505
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1510
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1515
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1520
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1525
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1530
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1535
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1540
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1545
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1550
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1555
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1560
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1565
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1570
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1575
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1580
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1585
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1590
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1595
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1600
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1605
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1610
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1615
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1620
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1625
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1630
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1635
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1640
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1645
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1650
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1655
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1660
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1665
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1670
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1675
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1680
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1685
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1690
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1695
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1700
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1705
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1710
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1715
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1720
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1725
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1730
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1735
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1740
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1745
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1750
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1755
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1760
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1765
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1770
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1775
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1780
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1785
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1790
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1795
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1800
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1805
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1810
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1815
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1820
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1825
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1830
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1835
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1840
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1845
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1850
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1855
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1860
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1865
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1870
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1875
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1880
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1885
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1890
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1895
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1900
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1905
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1910
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1915
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1920
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1925
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1930
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1935
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1940
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1945
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1950
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1955
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1960
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1965
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1970
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1975
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1980
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1985
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1990
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1995
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2000
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2005
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2010
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2015
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2020
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2025
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2030
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2035
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2040
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2045
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2050
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2055
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2060
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2065
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2070
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2075
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2080
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2085
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2090
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2095
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2405
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2410
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2415
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2420
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2425
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2430
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2435
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2440
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2445
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2450
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2455
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2460
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2465
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2470
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2475
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2480
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2485
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2490
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2495
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2500
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2505
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2510
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2515
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2520
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2525
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2530
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2535
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2540
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2545
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2550
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2555
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2560
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2565
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2570
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2575
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2580
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2585
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2590
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2595
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2600
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2605
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2610
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2615
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2620
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2625
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2630
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2635
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2640
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2645
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2650
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2655
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2660
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2665
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2670
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2675
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2680
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2685
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2690
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2695
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2700
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2705
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2710
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2715
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2720
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2725
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2730
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2735
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2740
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2745
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2750
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2755
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2760
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2765
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2770
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2775
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2780
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2785
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2790
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2795
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2800
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2805
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2810
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2815
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2820
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2825
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2830
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2835
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2840
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2845
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2850
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2855
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2860
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2865
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2870
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2875
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2880
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2885
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2890
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2895
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2900
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2905
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2910
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2915
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2920
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2925
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2930
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2935
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2940
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2945
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2950
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2955
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2960
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2965
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2970
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2975
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2980
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2985
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2990
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2995
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3000
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3005
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3010
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3015
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3020
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3025
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3030
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3035
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3040
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3045
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3050
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3055
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3060
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3065
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3070
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3075
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3080
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3085
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3090
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3095
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3405
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3410
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3415
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3420
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3425
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3430
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3435
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3440
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3445
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3450
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3455
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3460
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3465
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3470
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3475
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3480
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3485
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3490
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3495
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3500
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3505
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3510
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3515
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3520
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3525
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3530
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3535
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3540
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3545
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3550
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3555
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3560
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3565
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3570
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3575
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3580
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3585
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3590
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3595
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3600
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3605
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3610
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3615
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3620
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3625
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3630
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3635
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3640
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3645
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3650
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3655
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3660
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3665
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3670
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3675
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3680
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3685
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3690
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3695
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3696
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:176) Done 3696 files in 60.1853min
+LOG (snnet-gibbs:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+CuVectorBase::CopyColFromMat	8.65635s
+Destroy	9.95215s
+ApplySoftMaxPerRow	11.1123s
+CopyFromVec	11.3639s
+makeFeatureCuda	21.2302s
+Resize	21.9629s
+CuVector::SetZero	41.2575s
+Sigmoid	42.461s
+AddVecToRows	47.6235s
+CuVector::Resize	67.6373s
+CopyToVec	111.155s
+updateLabelCuda	230.73s
+AddMatMat	433.404s
+CuMatrix::Resize	2638.82s
+CuMatrix::SetZero	2713.22s
+Total GPU time:	6411.07s (may involve some double-counting)
+-----
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 111550464 bytes.
+snnet-train-shuff --learn-rate=0.004 --momentum=0.9 --l1-penalty=0 --l2-penalty=0 --minibatch-size=256 --randomizer-size=32768 --randomize=true --verbose=1 --binary=true --randomizer-seed=778 --negative-num=100 --error-function=per ark:data/nn_post//train.ark ark:data/nn_post//train.lab ark:/tmp/tmp.XrEr8XVsPL/test.ark /tmp/tmp.XrEr8XVsPL/nnet.init /tmp/tmp.XrEr8XVsPL/nnet/nnet.001 
+LOG (snnet-train-shuff:Init():nnet-randomizer.cc:31) Seeding by srand with : 778
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2408M, used:663M, total:3071M, free/total:0.784054
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-train-shuff:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2394M, used:677M, total:3071M, free/total:0.779495 version 3.5
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-train-shuff:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:134) TRAINING STARTED
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:253) ### After 0 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:254) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.160784, mean 0.000428796, variance 1.88979e-06, skewness 16.4905, kurtosis 1055.14 ) 
+[1] output of <AffineTransform> ( min -3.92793, max -0.0280436, mean -2.07056, variance 1.25687, skewness 0.0831106, kurtosis -1.13995 ) 
+[2] output of <Sigmoid> ( min 0.0193043, max 0.49299, mean 0.158048, variance 0.0181078, skewness 0.948476, kurtosis -0.309444 ) 
+[3] output of <AffineTransform> ( min -5.23067, max 1.37036, mean -2.14762, variance 1.57587, skewness 0.319579, kurtosis -0.263499 ) 
+[4] output of <Sigmoid> ( min 0.00532147, max 0.797438, mean 0.15815, variance 0.0259737, skewness 1.64111, kurtosis 2.47689 ) 
+[5] output of <AffineTransform> ( min -4.95599, max 0.446436, mean -2.05241, variance 1.78015, skewness -0.227543, kurtosis -1.05688 ) 
+[6] output of <Sigmoid> ( min 0.00699188, max 0.609791, mean 0.175033, variance 0.0227464, skewness 0.79638, kurtosis -0.325889 ) 
+[7] output of <AffineTransform> ( min -5.17707, max 1.69657, mean -1.9671, variance 1.65812, skewness 0.145652, kurtosis -0.273803 ) 
+[8] output of <Sigmoid> ( min 0.00561284, max 0.845086, mean 0.179866, variance 0.0291273, skewness 1.46504, kurtosis 1.84712 ) 
+[9] output of <AffineTransform> ( min -1.75386, max 1.00601, mean -0.374111, variance 1.90308, skewness 5.35662e-08, kurtosis -2 ) 
+[10] output of <Softmax> ( min 0.0595462, max 0.940454, mean 0.5, variance 0.193972, skewness -4.25846e-09, kurtosis -2 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:256) ### Backward propagation buffer content :
+[0] diff of <Input>  ( min -0.00521642, max 0.00582828, mean 4.94225e-07, variance 4.86701e-08, skewness 0.126598, kurtosis 117.533 ) 
+[1] diff-output of <AffineTransform> ( min -0.0291601, max 0.0303684, mean 2.70522e-05, variance 1.17184e-06, skewness -0.0615728, kurtosis 242.924 ) 
+[2] diff-output of <Sigmoid> ( min -0.137561, max 0.161957, mean 6.23759e-05, variance 6.87667e-05, skewness 1.54724, kurtosis 124.772 ) 
+[3] diff-output of <AffineTransform> ( min -0.0535007, max 0.050742, mean 0.00012969, variance 6.2592e-06, skewness -3.44926, kurtosis 178.974 ) 
+[4] diff-output of <Sigmoid> ( min -0.355683, max 0.460345, mean 0.00108935, variance 0.00043578, skewness -1.18228, kurtosis 126.809 ) 
+[5] diff-output of <AffineTransform> ( min -0.148548, max 0.131236, mean -8.19763e-05, variance 4.22313e-05, skewness -2.33323, kurtosis 206.664 ) 
+[6] diff-output of <Sigmoid> ( min -0.987925, max 0.826718, mean -0.000752717, variance 0.0021431, skewness -2.58484, kurtosis 138.478 ) 
+[7] diff-output of <AffineTransform> ( min -0.205909, max 0.476858, mean -0.000564949, variance 0.000174412, skewness 9.88084, kurtosis 358.305 ) 
+[8] diff-output of <Sigmoid> ( min -1.62927, max 1.92427, mean -0.00190302, variance 0.00913307, skewness 1.69352, kurtosis 113.282 ) 
+[9] diff-output of <AffineTransform> ( min -0.940454, max 0.940454, mean -9.96806e-10, variance 0.0173128, skewness -3.10544e-07, kurtosis 37.8152 ) 
+[10] diff-output of <Softmax> ( min -0.940454, max 0.940454, mean -9.96806e-10, variance 0.0173128, skewness -3.10544e-07, kurtosis 37.8152 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:257) ### Gradient stats :
+Component 1 : <AffineTransform>, 
+  linearity_grad ( min -0.0124946, max 0.0130256, mean 2.96985e-06, variance 1.66749e-08, skewness -0.0244875, kurtosis 1361.76 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.362517, max 0.347762, mean 0.00692537, variance 0.00852498, skewness -0.226903, kurtosis 3.11654 ) , lr-coef 1
+Component 2 : <Sigmoid>, 
+Component 3 : <AffineTransform>, 
+  linearity_grad ( min -0.297866, max 0.313338, mean 0.00524726, variance 0.00194953, skewness 0.631912, kurtosis 10.5301 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.607821, max 0.639394, mean 0.0332006, variance 0.0447764, skewness 0.131138, kurtosis 1.40961 ) , lr-coef 1
+Component 4 : <Sigmoid>, 
+Component 5 : <AffineTransform>, 
+  linearity_grad ( min -1.25113, max 1.41578, mean -0.00331868, variance 0.0157381, skewness 0.93143, kurtosis 21.9774 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -1.56983, max 1.77642, mean -0.0209859, variance 0.308467, skewness 0.537588, kurtosis 2.22752 ) , lr-coef 1
+Component 6 : <Sigmoid>, 
+Component 7 : <AffineTransform>, 
+  linearity_grad ( min -3.47844, max 1.50096, mean -0.0253131, variance 0.067571, skewness -2.56282, kurtosis 22.3684 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -5.70558, max 2.46199, mean -0.144627, variance 1.25698, skewness -1.38734, kurtosis 5.25741 ) , lr-coef 1
+Component 8 : <Sigmoid>, 
+Component 9 : <AffineTransform>, 
+  linearity_grad ( min -9.50678, max 9.50678, mean -2.68966e-08, variance 7.78339, skewness -2.35183e-08, kurtosis 1.24685 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -11.2519, max 11.2519, mean -9.53674e-07, variance 126.606, skewness 0, kurtosis -2 ) , lr-coef 0.1
+Component 10 : <Softmax>, 
+
+VLOG[1] (snnet-train-shuff:Eval():nnet-loss.cc:112) ProgressLoss[1.00053h/1.00053h]: 0.0556389 (Xent)
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:278) ### After 376832 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:279) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.211538, mean 0.000428778, variance 1.73844e-06, skewness 13.7466, kurtosis 1272.59 ) 
+[1] output of <AffineTransform> ( min -3.92777, max 0.346437, mean -2.04282, variance 1.30515, skewness 0.07542, kurtosis -1.1742 ) 
+[2] output of <Sigmoid> ( min 0.0193073, max 0.585753, mean 0.16296, variance 0.0193606, skewness 0.905071, kurtosis -0.44691 ) 
+[3] output of <AffineTransform> ( min -5.22894, max 1.24924, mean -2.07382, variance 1.65689, skewness 0.169889, kurtosis -0.722697 ) 
+[4] output of <Sigmoid> ( min 0.00533062, max 0.777169, mean 0.170219, variance 0.0267304, skewness 1.16676, kurtosis 0.665459 ) 
+[5] output of <AffineTransform> ( min -5.09865, max 0.757309, mean -2.09966, variance 1.74316, skewness -0.21417, kurtosis -1.07265 ) 
+[6] output of <Sigmoid> ( min 0.00606795, max 0.680769, mean 0.168472, variance 0.0214084, skewness 0.792792, kurtosis -0.539807 ) 
+[7] output of <AffineTransform> ( min -4.99533, max 1.11631, mean -2.46888, variance 0.842954, skewness -0.144126, kurtosis 0.0626853 ) 
+[8] output of <Sigmoid> ( min 0.00672396, max 0.753304, mean 0.102718, variance 0.00696815, skewness 2.23458, kurtosis 7.64477 ) 
+[9] output of <AffineTransform> ( min -2.34618, max 1.63847, mean -0.353237, variance 3.87004, skewness -0.000252577, kurtosis -1.99469 ) 
+[10] output of <Softmax> ( min 0.0182594, max 0.981741, mean 0.5, variance 0.230491, skewness 1.6438e-09, kurtosis -1.99775 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:281) ### Backward propagation buffer content :
+[0] diff of <Input>  ( min -3.85291, max 0.138052, mean 5.88524e-08, variance 7.60169e-05, skewness -207.079, kurtosis 73258 ) 
+[1] diff-output of <AffineTransform> ( min -0.797396, max 0.423073, mean 0.000324936, variance 0.000157037, skewness -14.7999, kurtosis 1124.11 ) 
+[2] diff-output of <Sigmoid> ( min -3.19089, max 1.83591, mean 0.00237119, variance 0.00405874, skewness -7.58966, kurtosis 543.989 ) 
+[3] diff-output of <AffineTransform> ( min -0.603455, max 0.31689, mean 0.000516305, variance 0.000106469, skewness -20.5732, kurtosis 974.814 ) 
+[4] diff-output of <Sigmoid> ( min -2.44052, max 1.31514, mean 0.00265722, variance 0.00257452, skewness -12.178, kurtosis 507.657 ) 
+[5] diff-output of <AffineTransform> ( min -0.401529, max 0.300627, mean 0.000117242, variance 7.3972e-05, skewness -18.2217, kurtosis 913.736 ) 
+[6] diff-output of <Sigmoid> ( min -1.69543, max 1.30054, mean -0.000226741, variance 0.00190085, skewness -8.70741, kurtosis 504.568 ) 
+[7] diff-output of <AffineTransform> ( min -0.478155, max 0.606728, mean -0.000434107, variance 6.68082e-05, skewness 14.592, kurtosis 2184.23 ) 
+[8] diff-output of <Sigmoid> ( min -2.18655, max 2.95364, mean -0.00274463, variance 0.0039613, skewness 8.82105, kurtosis 544.384 ) 
+[9] diff-output of <AffineTransform> ( min -0.893479, max 0.893479, mean 3.45608e-10, variance 0.00580074, skewness -7.89343e-07, kurtosis 112.141 ) 
+[10] diff-output of <Softmax> ( min -0.893479, max 0.893479, mean 3.45608e-10, variance 0.00580074, skewness -7.89343e-07, kurtosis 112.141 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:282) ### Gradient stats :
+Component 1 : <AffineTransform>, 
+  linearity_grad ( min -2.53836, max 1.36821, mean -6.26843e-05, variance 0.000191061, skewness -30.5281, kurtosis 6654.64 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -4.10334, max 1.5994, mean -0.146262, variance 0.517665, skewness -1.81187, kurtosis 8.8385 ) , lr-coef 1
+Component 2 : <Sigmoid>, 
+Component 3 : <AffineTransform>, 
+  linearity_grad ( min -2.91248, max 1.53657, mean -0.0268981, variance 0.0245449, skewness -4.14828, kurtosis 46.7095 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -2.64155, max 1.34293, mean -0.148621, variance 0.320666, skewness -1.47682, kurtosis 4.36561 ) , lr-coef 1
+Component 4 : <Sigmoid>, 
+Component 5 : <AffineTransform>, 
+  linearity_grad ( min -1.76759, max 1.38718, mean -0.00988116, variance 0.0218739, skewness -3.47089, kurtosis 34.8109 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -1.76949, max 1.41199, mean -0.0520178, variance 0.227483, skewness -1.47207, kurtosis 4.2254 ) , lr-coef 1
+Component 6 : <Sigmoid>, 
+Component 7 : <AffineTransform>, 
+  linearity_grad ( min -2.18273, max 2.61157, mean 0.015946, variance 0.0180425, skewness 2.05725, kurtosis 112.815 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -2.72026, max 3.00342, mean 0.0888001, variance 0.246809, skewness 0.205775, kurtosis 19.6987 ) , lr-coef 1
+Component 8 : <Sigmoid>, 
+Component 9 : <AffineTransform>, 
+  linearity_grad ( min -3.84446, max 3.84446, mean -5.30574e-08, variance 0.376512, skewness -2.07144e-07, kurtosis 13.5952 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -4.75428, max 4.75428, mean -4.76837e-07, variance 22.6032, skewness 0, kurtosis -2 ) , lr-coef 0.1
+Component 10 : <Softmax>, 
+
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:290) Done 3696 files, 0 with no tgt_mats, 0 with other errors. [TRAINING, RANDOMIZED, 0.513449 min, fps12232]
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:299) AvgLoss: 0.0552872 (Xent), [AvgXent: 0.0552872, AvgTargetEnt: 0]
+progress: [0.0556389 ]
+
+FRAME_ACCURACY >> 99.0197% <<
+LOG (snnet-train-shuff:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+Sigmoid	0.0935071s
+AddMat	0.142426s
+AddMatVec	0.157824s
+FindRowMaxId	0.158589s
+Set	0.170941s
+Randomize	0.189617s
+CuVector::SetZero	0.194948s
+Destroy	0.221847s
+AddVec	0.245619s
+CuVector::Resize	0.303297s
+CuMatrix::Resize	0.370834s
+CuMatrix::SetZero	0.559419s
+CuMatrixBase::CopyFromMat(from other CuMatrixBase)	0.570188s
+CuMatrixBase::CopyFromMat(from CPU)	1.19406s
+AddMatMat	1.9202s
+Total GPU time:	6.97136s (may involve some double-counting)
+-----
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 1307295744 bytes.
+TRAIN AVG.LOSS 0.0553, snnet-gibbs --seed=779 --GibbsIter=1000 --early-stop=0.8 ark:data/nn_post//dev.ark /tmp/tmp.XrEr8XVsPL/nnet/nnet.001 ark:/tmp/tmp.XrEr8XVsPL/cv.ark 
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2408M, used:663M, total:3071M, free/total:0.784054
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-gibbs:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2394M, used:677M, total:3071M, free/total:0.779495 version 3.5
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-gibbs:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:84) GIBBS SAMPLING STARTED
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 5
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 10
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 15
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 20
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 25
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 30
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 35
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 40
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 45
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 50
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 55
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 60
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 65
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 70
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 75
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 80
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 85
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 90
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 95
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:176) Done 400 files in 6.80019min
+LOG (snnet-gibbs:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+CopyFromVec	1.10108s
+CuVectorBase::CopyColFromMat	1.11461s
+Destroy	1.26377s
+ApplySoftMaxPerRow	1.32466s
+makeFeatureCuda	2.45014s
+Resize	2.59858s
+Sigmoid	5.21687s
+CuVector::SetZero	5.41434s
+AddVecToRows	7.33714s
+CuVector::Resize	8.59598s
+CopyToVec	13.9991s
+updateLabelCuda	28.6452s
+AddMatMat	47.67s
+CuMatrix::Resize	293.163s
+CuMatrix::SetZero	302.134s
+Total GPU time:	722.085s (may involve some double-counting)
+-----
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 144494592 bytes.
+snnet-train-shuff --learn-rate=0.004 --momentum=0.9 --l1-penalty=0 --l2-penalty=0 --minibatch-size=256 --randomizer-size=32768 --randomize=true --verbose=1 --binary=true --randomizer-seed=780 --cross-validate=true --negative-num=0 --error-function=per ark:data/nn_post//dev.ark ark:data/nn_post//dev.lab ark:/tmp/tmp.XrEr8XVsPL/cv.ark /tmp/tmp.XrEr8XVsPL/nnet/nnet.001 
+LOG (snnet-train-shuff:Init():nnet-randomizer.cc:31) Seeding by srand with : 780
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2362M, used:709M, total:3071M, free/total:0.769144
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-train-shuff:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2348M, used:723M, total:3071M, free/total:0.764586 version 3.5
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-train-shuff:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:134) CROSS-VALIDATION STARTED
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:253) ### After 0 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:254) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.998652, mean 0.000428847, variance 0.000125907, skewness 76.9052, kurtosis 6702.85 ) 
+[1] output of <AffineTransform> ( min -3.92311, max 1.34075, mean -2.00927, variance 1.42007, skewness 0.203579, kurtosis -0.933762 ) 
+[2] output of <Sigmoid> ( min 0.0193958, max 0.792614, mean 0.170188, variance 0.023855, skewness 1.23776, kurtosis 0.886182 ) 
+[3] output of <AffineTransform> ( min -5.19892, max 1.61531, mean -2.02614, variance 1.96436, skewness 0.306595, kurtosis -0.677681 ) 
+[4] output of <Sigmoid> ( min 0.00549221, max 0.834147, mean 0.184835, variance 0.0369811, skewness 1.28065, kurtosis 0.588513 ) 
+[5] output of <AffineTransform> ( min -5.2186, max 1.82848, mean -2.10982, variance 2.11184, skewness 0.183856, kurtosis -0.510812 ) 
+[6] output of <Sigmoid> ( min 0.00538574, max 0.861581, mean 0.176036, variance 0.0344502, skewness 1.60439, kurtosis 2.07194 ) 
+[7] output of <AffineTransform> ( min -5.08645, max 2.35164, mean -2.55809, variance 0.836396, skewness 0.574152, kurtosis 3.64268 ) 
+[8] output of <Sigmoid> ( min 0.00614194, max 0.913065, mean 0.0940932, variance 0.0089259, skewness 4.93843, kurtosis 34.6571 ) 
+[9] output of <AffineTransform> ( min -1.21614, max 0.552893, mean -0.307898, variance 0.244375, skewness -0.073787, kurtosis -1.24706 ) 
+[10] output of <Softmax> ( min 0.145663, max 0.854337, mean 0.5, variance 0.0476893, skewness 1.26356e-08, kurtosis -1.44704 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:278) ### After 768 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:279) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.998198, mean 0.000428774, variance 0.000126043, skewness 76.8187, kurtosis 6686.1 ) 
+[1] output of <AffineTransform> ( min -3.92099, max 1.39618, mean -2.00911, variance 1.42083, skewness 0.20464, kurtosis -0.93145 ) 
+[2] output of <Sigmoid> ( min 0.0194362, max 0.801577, mean 0.170225, variance 0.023885, skewness 1.24, kurtosis 0.895852 ) 
+[3] output of <AffineTransform> ( min -5.20373, max 1.66961, mean -2.02595, variance 1.96594, skewness 0.30739, kurtosis -0.676456 ) 
+[4] output of <Sigmoid> ( min 0.00546601, max 0.841524, mean 0.184893, variance 0.0370309, skewness 1.28168, kurtosis 0.591678 ) 
+[5] output of <AffineTransform> ( min -5.22444, max 1.87448, mean -2.10986, variance 2.11365, skewness 0.185442, kurtosis -0.507868 ) 
+[6] output of <Sigmoid> ( min 0.00535456, max 0.866975, mean 0.176063, variance 0.0345028, skewness 1.60625, kurtosis 2.07831 ) 
+[7] output of <AffineTransform> ( min -5.09101, max 2.39105, mean -2.55835, variance 0.836824, skewness 0.57732, kurtosis 3.65747 ) 
+[8] output of <Sigmoid> ( min 0.0061142, max 0.916142, mean 0.0940795, variance 0.00893593, skewness 4.94111, kurtosis 34.6766 ) 
+[9] output of <AffineTransform> ( min -1.32805, max 0.659596, mean -0.307755, variance 0.242274, skewness -0.071313, kurtosis -1.31281 ) 
+[10] output of <Softmax> ( min 0.120506, max 0.879494, mean 0.5, variance 0.0477721, skewness 6.61447e-09, kurtosis -1.50275 ) 
+
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:290) Done 400 files, 0 with no tgt_mats, 0 with other errors. [CROSS-VALIDATION, RANDOMIZED, 0.00246696 min, fps5188.56]
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:299) AvgLoss: 1.17295 (Xent), [AvgXent: 1.23879, AvgTargetEnt: 0.0658367]
+
+FRAME_ACCURACY >> 1.04167% <<
+LOG (snnet-train-shuff:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+Sum	0.000150681s
+Set	0.000222683s
+Sigmoid	0.00022459s
+AddVecToRows	0.000255346s
+CuVector::SetZero	0.000380039s
+FindRowMaxId	0.00043869s
+CheckGpuHealth	0.000560999s
+CuVector::Resize	0.000695467s
+AddMatMat	0.00193596s
+Destroy	0.00218678s
+CuMatrix::CopyToMatD2H	0.0039258s
+CuMatrix::SetZero	0.00556421s
+CuMatrixBase::CopyFromMat(from other CuMatrixBase)	0.00781798s
+CuMatrix::Resize	0.009305s
+CuMatrixBase::CopyFromMat(from CPU)	0.0101342s
+Total GPU time:	0.0446639s (may involve some double-counting)
+-----
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 637575168 bytes.
+CROSSVAL AVG.LOSS 1.1730, nnet accepted (nnet.001_learnrate0.004_tr0.0000_cv1.1730_keep-lr-iters-1)
+snnet-gibbs --seed=781 --GibbsIter=1000 --early-stop=0.8 ark:data/nn_post//train.ark /tmp/tmp.XrEr8XVsPL/nnet/nnet.001_learnrate0.004_tr0.0000_cv1.1730_keep-lr-iters-1 ark:/tmp/tmp.XrEr8XVsPL/test_tmp.ark 
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2362M, used:709M, total:3071M, free/total:0.769144
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-gibbs:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2348M, used:723M, total:3071M, free/total:0.764586 version 3.5
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-gibbs:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:84) GIBBS SAMPLING STARTED
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 5
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 10
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 15
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 20
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 25
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 30
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 35
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 40
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 45
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 50
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 55
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 60
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 65
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 70
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 75
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 80
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 85
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 90
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 95
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 405
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 410
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 415
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 420
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 425
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 430
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 435
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 440
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 445
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 450
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 455
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 460
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 465
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 470
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 475
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 480
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 485
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 490
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 495
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 500
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 505
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 510
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 515
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 520
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 525
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 530
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 535
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 540
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 545
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 550
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 555
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 560
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 565
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 570
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 575
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 580
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 585
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 590
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 595
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 600
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 605
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 610
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 615
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 620
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 625
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 630
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 635
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 640
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 645
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 650
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 655
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 660
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 665
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 670
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 675
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 680
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 685
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 690
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 695
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 700
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 705
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 710
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 715
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 720
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 725
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 730
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 735
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 740
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 745
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 750
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 755
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 760
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 765
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 770
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 775
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 780
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 785
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 790
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 795
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 800
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 805
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 810
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 815
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 820
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 825
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 830
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 835
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 840
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 845
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 850
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 855
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 860
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 865
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 870
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 875
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 880
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 885
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 890
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 895
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 900
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 905
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 910
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 915
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 920
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 925
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 930
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 935
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 940
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 945
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 950
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 955
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 960
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 965
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 970
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 975
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 980
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 985
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 990
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 995
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1000
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1005
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1010
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1015
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1020
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1025
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1030
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1035
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1040
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1045
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1050
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1055
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1060
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1065
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1070
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1075
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1080
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1085
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1090
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1095
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1405
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1410
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1415
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1420
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1425
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1430
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1435
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1440
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1445
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1450
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1455
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1460
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1465
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1470
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1475
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1480
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1485
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1490
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1495
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1500
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1505
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1510
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1515
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1520
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1525
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1530
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1535
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1540
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1545
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1550
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1555
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1560
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1565
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1570
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1575
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1580
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1585
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1590
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1595
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1600
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1605
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1610
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1615
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1620
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1625
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1630
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1635
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1640
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1645
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1650
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1655
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1660
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1665
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1670
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1675
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1680
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1685
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1690
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1695
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1700
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1705
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1710
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1715
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1720
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1725
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1730
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1735
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1740
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1745
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1750
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1755
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1760
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1765
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1770
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1775
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1780
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1785
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1790
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1795
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1800
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1805
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1810
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1815
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1820
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1825
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1830
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1835
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1840
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1845
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1850
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1855
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1860
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1865
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1870
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1875
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1880
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1885
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1890
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1895
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1900
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1905
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1910
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1915
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1920
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1925
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1930
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1935
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1940
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1945
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1950
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1955
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1960
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1965
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1970
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1975
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1980
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1985
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1990
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1995
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2000
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2005
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2010
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2015
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2020
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2025
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2030
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2035
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2040
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2045
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2050
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2055
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2060
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2065
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2070
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2075
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2080
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2085
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2090
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2095
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2405
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2410
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2415
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2420
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2425
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2430
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2435
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2440
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2445
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2450
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2455
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2460
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2465
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2470
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2475
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2480
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2485
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2490
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2495
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2500
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2505
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2510
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2515
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2520
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2525
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2530
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2535
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2540
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2545
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2550
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2555
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2560
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2565
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2570
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2575
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2580
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2585
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2590
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2595
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2600
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2605
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2610
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2615
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2620
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2625
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2630
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2635
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2640
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2645
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2650
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2655
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2660
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2665
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2670
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2675
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2680
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2685
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2690
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2695
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2700
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2705
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2710
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2715
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2720
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2725
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2730
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2735
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2740
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2745
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2750
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2755
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2760
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2765
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2770
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2775
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2780
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2785
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2790
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2795
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2800
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2805
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2810
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2815
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2820
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2825
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2830
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2835
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2840
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2845
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2850
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2855
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2860
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2865
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2870
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2875
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2880
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2885
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2890
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2895
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2900
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2905
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2910
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2915
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2920
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2925
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2930
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2935
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2940
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2945
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2950
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2955
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2960
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2965
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2970
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2975
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2980
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2985
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2990
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2995
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3000
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3005
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3010
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3015
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3020
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3025
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3030
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3035
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3040
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3045
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3050
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3055
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3060
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3065
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3070
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3075
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3080
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3085
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3090
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3095
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3405
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3410
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3415
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3420
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3425
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3430
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3435
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3440
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3445
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3450
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3455
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3460
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3465
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3470
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3475
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3480
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3485
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3490
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3495
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3500
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3505
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3510
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3515
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3520
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3525
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3530
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3535
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3540
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3545
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3550
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3555
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3560
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3565
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3570
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3575
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3580
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3585
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3590
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3595
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3600
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3605
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3610
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3615
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3620
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3625
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3630
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3635
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3640
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3645
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3650
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3655
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3660
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3665
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3670
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3675
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3680
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3685
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3690
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3695
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3696
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:176) Done 3696 files in 60.3754min
+LOG (snnet-gibbs:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+CopyFromVec	8.81602s
+CuVectorBase::CopyColFromMat	9.21513s
+Destroy	10.2883s
+ApplySoftMaxPerRow	11.4885s
+makeFeatureCuda	21.6804s
+Resize	21.972s
+CuVector::SetZero	43.7305s
+Sigmoid	44.3896s
+AddVecToRows	54.6241s
+CuVector::Resize	70.8069s
+CopyToVec	116.198s
+updateLabelCuda	239.568s
+AddMatMat	433.201s
+CuMatrix::Resize	2633.21s
+CuMatrix::SetZero	2710.49s
+Total GPU time:	6430.17s (may involve some double-counting)
+-----
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 145584128 bytes.
+combine-score-path ark:/tmp/tmp.XrEr8XVsPL/test_tmp2.ark ark:/tmp/tmp.XrEr8XVsPL/test_tmp.ark ark:/tmp/tmp.XrEr8XVsPL/test.ark 
+snnet-train-shuff --learn-rate=0.004 --momentum=0.9 --l1-penalty=0 --l2-penalty=0 --minibatch-size=256 --randomizer-size=32768 --randomize=true --verbose=1 --binary=true --randomizer-seed=782 --negative-num=100 --error-function=per ark:data/nn_post//train.ark ark:data/nn_post//train.lab ark:/tmp/tmp.XrEr8XVsPL/test.ark /tmp/tmp.XrEr8XVsPL/nnet/nnet.001_learnrate0.004_tr0.0000_cv1.1730_keep-lr-iters-1 /tmp/tmp.XrEr8XVsPL/nnet/nnet.002 
+LOG (snnet-train-shuff:Init():nnet-randomizer.cc:31) Seeding by srand with : 782
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2315M, used:755M, total:3071M, free/total:0.753896
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-train-shuff:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2301M, used:769M, total:3071M, free/total:0.749337 version 3.5
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-train-shuff:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:134) TRAINING STARTED
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:253) ### After 0 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:254) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.996575, mean 0.000428806, variance 3.5387e-06, skewness 255.156, kurtosis 132065 ) 
+[1] output of <AffineTransform> ( min -3.92754, max 0.960559, mean -2.04181, variance 1.30777, skewness 0.0775362, kurtosis -1.17027 ) 
+[2] output of <Sigmoid> ( min 0.0193117, max 0.723234, mean 0.163158, variance 0.0194519, skewness 0.911726, kurtosis -0.415774 ) 
+[3] output of <AffineTransform> ( min -5.22757, max 1.24293, mean -2.06893, variance 1.67352, skewness 0.174698, kurtosis -0.733543 ) 
+[4] output of <Sigmoid> ( min 0.00533791, max 0.776074, mean 0.171372, variance 0.0272759, skewness 1.15813, kurtosis 0.589502 ) 
+[5] output of <AffineTransform> ( min -5.17817, max 1.50273, mean -2.09886, variance 1.77284, skewness -0.177345, kurtosis -1.03399 ) 
+[6] output of <Sigmoid> ( min 0.00560668, max 0.817981, mean 0.169466, variance 0.0225752, skewness 0.895352, kurtosis -0.227015 ) 
+[7] output of <AffineTransform> ( min -5.05543, max 2.04624, mean -2.48224, variance 0.822127, skewness -0.116301, kurtosis 0.311833 ) 
+[8] output of <Sigmoid> ( min 0.00633425, max 0.885567, mean 0.100853, variance 0.00684198, skewness 2.62968, kurtosis 11.657 ) 
+[9] output of <AffineTransform> ( min -1.9741, max 1.27812, mean -0.346749, variance 2.5195, skewness -0.00125729, kurtosis -1.98202 ) 
+[10] output of <Softmax> ( min 0.0372472, max 0.962753, mean 0.5, variance 0.209199, skewness -2.37154e-09, kurtosis -1.9882 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:256) ### Backward propagation buffer content :
+[0] diff of <Input>  ( min -3.51162, max 1.12103, mean 1.60203e-06, variance 0.000163876, skewness -108.256, kurtosis 24683.2 ) 
+[1] diff-output of <AffineTransform> ( min -0.721598, max 0.381297, mean 0.000809911, variance 0.00033356, skewness -8.05883, kurtosis 378.83 ) 
+[2] diff-output of <Sigmoid> ( min -2.88645, max 1.6428, mean 0.00548445, variance 0.00860108, skewness -4.23042, kurtosis 180.771 ) 
+[3] diff-output of <AffineTransform> ( min -0.538078, max 0.27969, mean 0.00117734, variance 0.000222975, skewness -10.9568, kurtosis 322.207 ) 
+[4] diff-output of <Sigmoid> ( min -2.18128, max 1.16216, mean 0.00585656, variance 0.00538965, skewness -6.4485, kurtosis 167.243 ) 
+[5] diff-output of <AffineTransform> ( min -0.353874, max 0.262462, mean 0.000329229, variance 0.000153713, skewness -9.38121, kurtosis 293.306 ) 
+[6] diff-output of <Sigmoid> ( min -1.52291, max 1.15733, mean -0.000214456, variance 0.00408166, skewness -4.28465, kurtosis 161.264 ) 
+[7] diff-output of <AffineTransform> ( min -0.424286, max 0.519297, mean -0.00086809, variance 0.000141329, skewness 6.26778, kurtosis 620.342 ) 
+[8] diff-output of <Sigmoid> ( min -2.08167, max 2.77198, mean -0.00662159, variance 0.00982212, skewness 3.22567, kurtosis 172.351 ) 
+[9] diff-output of <AffineTransform> ( min -0.840066, max 0.840066, mean 4.58385e-10, variance 0.0144192, skewness 2.3584e-07, kurtosis 33.517 ) 
+[10] diff-output of <Softmax> ( min -0.840066, max 0.840066, mean 4.58385e-10, variance 0.0144192, skewness 2.3584e-07, kurtosis 33.517 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:257) ### Gradient stats :
+Component 1 : <AffineTransform>, 
+  linearity_grad ( min -0.176092, max 0.149521, mean 8.891e-05, variance 3.76787e-06, skewness -6.81824, kurtosis 1290.11 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -4.42644, max 7.52852, mean 0.207337, variance 2.32179, skewness 0.70593, kurtosis 5.76474 ) , lr-coef 1
+Component 2 : <Sigmoid>, 
+Component 3 : <AffineTransform>, 
+  linearity_grad ( min -1.58508, max 2.88893, mean 0.0489972, variance 0.0719584, skewness 2.80557, kurtosis 22.2976 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -3.31987, max 6.07397, mean 0.301399, variance 1.53837, skewness 1.37388, kurtosis 4.97428 ) , lr-coef 1
+Component 4 : <Sigmoid>, 
+Component 5 : <AffineTransform>, 
+  linearity_grad ( min -2.39383, max 3.1781, mean 0.0143629, variance 0.0630989, skewness 2.99548, kurtosis 27.2049 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -3.08474, max 4.09509, mean 0.0842826, variance 1.13091, skewness 1.5332, kurtosis 4.84777 ) , lr-coef 1
+Component 6 : <Sigmoid>, 
+Component 7 : <AffineTransform>, 
+  linearity_grad ( min -3.14752, max 2.39134, mean -0.0375575, variance 0.0456184, skewness -2.64293, kurtosis 63.4295 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -6.07625, max 4.61474, mean -0.222231, variance 0.883748, skewness -1.29874, kurtosis 19.8669 ) , lr-coef 1
+Component 8 : <Sigmoid>, 
+Component 9 : <AffineTransform>, 
+  linearity_grad ( min -4.37791, max 4.37791, mean -1.86265e-09, variance 1.02195, skewness -1.89296e-07, kurtosis 2.72752 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -7.71602, max 7.71602, mean -4.76837e-07, variance 59.537, skewness 0, kurtosis -2 ) , lr-coef 0.1
+Component 10 : <Softmax>, 
+
+VLOG[1] (snnet-train-shuff:Eval():nnet-loss.cc:112) ProgressLoss[1.00053h/1.00053h]: 0.0510043 (Xent)
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:278) ### After 380672 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:279) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.998028, mean 0.00042877, variance 5.30847e-06, skewness 274.535, kurtosis 116820 ) 
+[1] output of <AffineTransform> ( min -5.54276, max 3.06737, mean -2.12135, variance 2.21468, skewness 1.35956, kurtosis 2.42333 ) 
+[2] output of <Sigmoid> ( min 0.00390044, max 0.955527, mean 0.16445, variance 0.046468, skewness 2.40203, kurtosis 5.06426 ) 
+[3] output of <AffineTransform> ( min -21.0825, max 13.2479, mean -2.83623, variance 18.8759, skewness -0.145195, kurtosis 4.47231 ) 
+[4] output of <Sigmoid> ( min 6.98212e-10, max 0.999998, mean 0.191757, variance 0.0921081, skewness 1.84285, kurtosis 1.95574 ) 
+[5] output of <AffineTransform> ( min -15.2179, max 10.7067, mean -2.42123, variance 15.1837, skewness -0.020125, kurtosis 3.03651 ) 
+[6] output of <Sigmoid> ( min 2.46018e-07, max 0.999978, mean 0.221765, variance 0.0948608, skewness 1.55064, kurtosis 1.03922 ) 
+[7] output of <AffineTransform> ( min -15.0448, max 18.6079, mean -3.27242, variance 9.38395, skewness 3.91073, kurtosis 28.4532 ) 
+[8] output of <Sigmoid> ( min 2.925e-07, max 1, mean 0.0647834, variance 0.0276245, skewness 5.31426, kurtosis 26.9523 ) 
+[9] output of <AffineTransform> ( min -3.1783, max 1.28389, mean -0.947288, variance 4.97661, skewness 8.94245e-08, kurtosis -2 ) 
+[10] output of <Softmax> ( min 0.0114056, max 0.988594, mean 0.5, variance 0.238719, skewness -9.98114e-10, kurtosis -2 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:281) ### Backward propagation buffer content :
+[0] diff of <Input>  ( min -0.0222528, max 0.00222129, mean 7.19611e-08, variance 7.53357e-09, skewness -94.2135, kurtosis 16108.5 ) 
+[1] diff-output of <AffineTransform> ( min -0.00273738, max 0.00742423, mean 4.94379e-07, variance 3.20541e-08, skewness 17.8943, kurtosis 603.426 ) 
+[2] diff-output of <Sigmoid> ( min -0.0244191, max 0.0298624, mean 2.43246e-06, variance 2.07482e-06, skewness 3.92089, kurtosis 177.442 ) 
+[3] diff-output of <AffineTransform> ( min -0.00696071, max 0.0125743, mean 3.34438e-07, variance 1.06883e-07, skewness 25.3836, kurtosis 960.999 ) 
+[4] diff-output of <Sigmoid> ( min -0.0632981, max 0.0570985, mean 3.03681e-06, variance 7.23499e-06, skewness 2.53591, kurtosis 272.412 ) 
+[5] diff-output of <AffineTransform> ( min -0.0113947, max 0.0319588, mean 1.39955e-06, variance 5.10012e-07, skewness 27.7684, kurtosis 1076.79 ) 
+[6] diff-output of <Sigmoid> ( min -0.0791519, max 0.132974, mean 9.50685e-06, variance 2.56881e-05, skewness 9.215, kurtosis 270.041 ) 
+[7] diff-output of <AffineTransform> ( min -0.0319532, max 0.0278905, mean -3.40251e-06, variance 1.53488e-06, skewness -7.30656, kurtosis 255.003 ) 
+[8] diff-output of <Sigmoid> ( min -3.28458, max 3.40344, mean -5.04758e-05, variance 0.00563695, skewness 0.275043, kurtosis 991.913 ) 
+[9] diff-output of <AffineTransform> ( min -0.98849, max 0.98849, mean -5.45697e-10, variance 0.0115878, skewness 6.21106e-10, kurtosis 80.3214 ) 
+[10] diff-output of <Softmax> ( min -0.98849, max 0.98849, mean -5.45697e-10, variance 0.0115878, skewness 6.21106e-10, kurtosis 80.3214 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:282) ### Gradient stats :
+Component 1 : <AffineTransform>, 
+  linearity_grad ( min -0.0120566, max 0.0326393, mean 1.33878e-06, variance 3.13509e-08, skewness 51.6601, kurtosis 6718.47 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.0202198, max 0.0526984, mean 0.00312245, variance 0.000154382, skewness 1.18094, kurtosis 2.64913 ) , lr-coef 1
+Component 2 : <Sigmoid>, 
+Component 3 : <AffineTransform>, 
+  linearity_grad ( min -0.044218, max 0.0872368, mean 0.000606004, variance 2.37256e-05, skewness 6.26286, kurtosis 82.2561 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.0513647, max 0.100667, mean 0.00372032, variance 0.000403346, skewness 2.3963, kurtosis 8.82047 ) , lr-coef 1
+Component 4 : <Sigmoid>, 
+Component 5 : <AffineTransform>, 
+  linearity_grad ( min -0.0887124, max 0.219817, mean 0.0018574, variance 0.000256944, skewness 7.21656, kurtosis 79.653 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.0887128, max 0.219818, mean 0.0102203, variance 0.00203572, skewness 2.51639, kurtosis 8.40352 ) , lr-coef 1
+Component 6 : <Sigmoid>, 
+Component 7 : <AffineTransform>, 
+  linearity_grad ( min -0.217409, max 0.207713, mean -0.00360303, variance 0.000910149, skewness -1.0004, kurtosis 12.7007 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.217414, max 0.207718, mean -0.0164287, variance 0.00624103, skewness -0.0123885, kurtosis 0.0105844 ) , lr-coef 1
+Component 8 : <Sigmoid>, 
+Component 9 : <AffineTransform>, 
+  linearity_grad ( min -7.10896, max 7.10897, mean 2.0327e-07, variance 1.60972, skewness 5.53336e-06, kurtosis 26.4692 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -7.10896, max 7.10897, mean 4.29153e-06, variance 50.5374, skewness 0, kurtosis -2 ) , lr-coef 0.1
+Component 10 : <Softmax>, 
+
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:290) Done 3696 files, 0 with no tgt_mats, 0 with other errors. [TRAINING, RANDOMIZED, 0.499211 min, fps12709.1]
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:299) AvgLoss: 0.0512314 (Xent), [AvgXent: 0.0525023, AvgTargetEnt: 0.00127091]
+progress: [0.0510043 ]
+
+FRAME_ACCURACY >> 99.0898% <<
+LOG (snnet-train-shuff:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+Sigmoid	0.0843678s
+AddVecToRows	0.0845685s
+AddMat	0.135096s
+FindRowMaxId	0.146578s
+AddMatVec	0.148398s
+Set	0.159358s
+CuVector::SetZero	0.174016s
+Randomize	0.183412s
+Destroy	0.207413s
+CuVector::Resize	0.275939s
+CuMatrix::Resize	0.347815s
+CuMatrix::SetZero	0.517892s
+CuMatrixBase::CopyFromMat(from other CuMatrixBase)	0.522421s
+CuMatrixBase::CopyFromMat(from CPU)	1.13899s
+AddMatMat	1.85637s
+Total GPU time:	6.42386s (may involve some double-counting)
+-----
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 1307820032 bytes.
+TRAIN AVG.LOSS 0.0512, snnet-gibbs --seed=783 --GibbsIter=1000 --early-stop=0.8 ark:data/nn_post//dev.ark /tmp/tmp.XrEr8XVsPL/nnet/nnet.002 ark:/tmp/tmp.XrEr8XVsPL/cv.ark 
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2315M, used:755M, total:3071M, free/total:0.753896
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-gibbs:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2301M, used:769M, total:3071M, free/total:0.749337 version 3.5
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-gibbs:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:84) GIBBS SAMPLING STARTED
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 5
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 10
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 15
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 20
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 25
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 30
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 35
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 40
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 45
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 50
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 55
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 60
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 65
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 70
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 75
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 80
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 85
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 90
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 95
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:176) Done 400 files in 6.64365min
+LOG (snnet-gibbs:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+CopyFromVec	0.985609s
+CuVectorBase::CopyColFromMat	1.03117s
+Destroy	1.20145s
+ApplySoftMaxPerRow	1.27633s
+makeFeatureCuda	2.44009s
+Resize	2.44053s
+CuVector::SetZero	4.94195s
+Sigmoid	4.95487s
+AddVecToRows	6.02557s
+CuVector::Resize	7.91975s
+CopyToVec	12.9072s
+updateLabelCuda	26.6459s
+AddMatMat	47.4438s
+CuMatrix::Resize	288.89s
+CuMatrix::SetZero	297.451s
+Total GPU time:	706.61s (may involve some double-counting)
+-----
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 70131712 bytes.
+snnet-train-shuff --learn-rate=0.004 --momentum=0.9 --l1-penalty=0 --l2-penalty=0 --minibatch-size=256 --randomizer-size=32768 --randomize=true --verbose=1 --binary=true --randomizer-seed=784 --cross-validate=true --negative-num=0 --error-function=per ark:data/nn_post//dev.ark ark:data/nn_post//dev.lab ark:/tmp/tmp.XrEr8XVsPL/cv.ark /tmp/tmp.XrEr8XVsPL/nnet/nnet.002 
+LOG (snnet-train-shuff:Init():nnet-randomizer.cc:31) Seeding by srand with : 784
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2340M, used:730M, total:3071M, free/total:0.762076
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-train-shuff:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2326M, used:744M, total:3071M, free/total:0.757518 version 3.5
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-train-shuff:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:134) CROSS-VALIDATION STARTED
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:253) ### After 0 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:254) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.895408, mean 0.000428847, variance 6.23081e-05, skewness 54.1427, kurtosis 3964.81 ) 
+[1] output of <AffineTransform> ( min -4.88039, max 2.62198, mean -2.09562, variance 1.90154, skewness 1.20723, kurtosis 1.76647 ) 
+[2] output of <Sigmoid> ( min 0.00753682, max 0.932263, mean 0.164203, variance 0.0407767, skewness 2.37555, kurtosis 5.18035 ) 
+[3] output of <AffineTransform> ( min -20.6721, max 12.9835, mean -2.81526, variance 17.6559, skewness -0.099453, kurtosis 4.50643 ) 
+[4] output of <Sigmoid> ( min 1.05254e-09, max 0.999998, mean 0.188661, variance 0.0907689, skewness 1.87981, kurtosis 2.08763 ) 
+[5] output of <AffineTransform> ( min -15.1621, max 10.7019, mean -2.42149, variance 14.9959, skewness -0.015594, kurtosis 3.05015 ) 
+[6] output of <Sigmoid> ( min 2.60114e-07, max 0.999977, mean 0.220714, variance 0.0942843, skewness 1.56536, kurtosis 1.09015 ) 
+[7] output of <AffineTransform> ( min -15.0196, max 18.5669, mean -3.26504, variance 9.34684, skewness 3.90168, kurtosis 28.343 ) 
+[8] output of <Sigmoid> ( min 2.99972e-07, max 1, mean 0.0650715, variance 0.0276158, skewness 5.31197, kurtosis 26.9368 ) 
+[9] output of <AffineTransform> ( min -3.07914, max 1.18121, mean -0.949786, variance 4.52783, skewness 6.33342e-07, kurtosis -2 ) 
+[10] output of <Softmax> ( min 0.0139211, max 0.986079, mean 0.5, variance 0.236211, skewness 3.16891e-09, kurtosis -2 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:278) ### After 768 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:279) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.916107, mean 0.000428774, variance 6.03154e-05, skewness 53.0958, kurtosis 3875.47 ) 
+[1] output of <AffineTransform> ( min -4.92414, max 2.64499, mean -2.09572, variance 1.90272, skewness 1.20827, kurtosis 1.77022 ) 
+[2] output of <Sigmoid> ( min 0.00721655, max 0.933701, mean 0.164201, variance 0.0407995, skewness 2.376, kurtosis 5.18163 ) 
+[3] output of <AffineTransform> ( min -20.7026, max 12.9989, mean -2.81536, variance 17.6604, skewness -0.0996339, kurtosis 4.50623 ) 
+[4] output of <Sigmoid> ( min 1.02091e-09, max 0.999998, mean 0.188673, variance 0.0907748, skewness 1.87966, kurtosis 2.08707 ) 
+[5] output of <AffineTransform> ( min -15.1658, max 10.7021, mean -2.4215, variance 14.9968, skewness -0.0156216, kurtosis 3.05013 ) 
+[6] output of <Sigmoid> ( min 2.59156e-07, max 0.999978, mean 0.220718, variance 0.0942861, skewness 1.56531, kurtosis 1.08998 ) 
+[7] output of <AffineTransform> ( min -15.0212, max 18.5689, mean -3.26506, variance 9.34698, skewness 3.90171, kurtosis 28.3433 ) 
+[8] output of <Sigmoid> ( min 2.99475e-07, max 1, mean 0.0650705, variance 0.0276158, skewness 5.31198, kurtosis 26.9369 ) 
+[9] output of <AffineTransform> ( min -3.07931, max 1.18161, mean -0.949778, variance 4.52791, skewness 6.72376e-07, kurtosis -2 ) 
+[10] output of <Softmax> ( min 0.0139131, max 0.986087, mean 0.5, variance 0.236212, skewness -7.60535e-09, kurtosis -2 ) 
+
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:290) Done 400 files, 0 with no tgt_mats, 0 with other errors. [CROSS-VALIDATION, RANDOMIZED, 0.00244035 min, fps5245.15]
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:299) AvgLoss: 2.27754 (Xent), [AvgXent: 2.49912, AvgTargetEnt: 0.221577]
+
+FRAME_ACCURACY >> 50% <<
+LOG (snnet-train-shuff:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+Sum	0.000133991s
+Sigmoid	0.000181913s
+Set	0.000186205s
+AddVecToRows	0.000217915s
+CuVector::SetZero	0.000323296s
+FindRowMaxId	0.000366688s
+CheckGpuHealth	0.000550032s
+CuVector::Resize	0.000647306s
+AddMatMat	0.00187325s
+Destroy	0.0021894s
+CuMatrix::CopyToMatD2H	0.00439119s
+CuMatrix::SetZero	0.0053401s
+CuMatrixBase::CopyFromMat(from other CuMatrixBase)	0.00633669s
+CuMatrix::Resize	0.00915551s
+CuMatrixBase::CopyFromMat(from CPU)	0.00922298s
+Total GPU time:	0.0418534s (may involve some double-counting)
+-----
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 637575168 bytes.
+CROSSVAL AVG.LOSS 2.2775, nnet rejected (nnet.002_learnrate0.004_tr0.0000_cv2.2775_rejected)
+snnet-gibbs --seed=785 --GibbsIter=1000 --early-stop=0.8 ark:data/nn_post//train.ark /tmp/tmp.XrEr8XVsPL/nnet/nnet.001_learnrate0.004_tr0.0000_cv1.1730_keep-lr-iters-1 ark:/tmp/tmp.XrEr8XVsPL/test_tmp.ark 
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2340M, used:730M, total:3071M, free/total:0.762076
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-gibbs:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2326M, used:744M, total:3071M, free/total:0.757518 version 3.5
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-gibbs:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:84) GIBBS SAMPLING STARTED
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 5
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 10
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 15
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 20
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 25
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 30
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 35
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 40
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 45
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 50
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 55
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 60
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 65
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 70
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 75
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 80
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 85
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 90
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 95
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 405
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 410
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 415
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 420
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 425
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 430
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 435
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 440
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 445
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 450
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 455
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 460
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 465
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 470
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 475
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 480
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 485
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 490
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 495
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 500
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 505
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 510
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 515
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 520
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 525
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 530
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 535
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 540
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 545
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 550
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 555
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 560
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 565
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 570
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 575
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 580
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 585
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 590
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 595
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 600
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 605
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 610
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 615
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 620
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 625
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 630
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 635
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 640
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 645
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 650
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 655
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 660
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 665
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 670
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 675
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 680
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 685
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 690
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 695
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 700
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 705
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 710
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 715
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 720
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 725
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 730
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 735
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 740
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 745
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 750
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 755
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 760
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 765
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 770
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 775
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 780
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 785
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 790
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 795
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 800
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 805
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 810
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 815
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 820
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 825
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 830
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 835
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 840
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 845
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 850
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 855
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 860
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 865
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 870
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 875
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 880
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 885
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 890
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 895
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 900
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 905
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 910
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 915
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 920
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 925
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 930
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 935
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 940
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 945
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 950
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 955
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 960
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 965
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 970
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 975
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 980
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 985
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 990
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 995
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1000
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1005
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1010
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1015
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1020
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1025
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1030
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1035
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1040
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1045
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1050
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1055
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1060
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1065
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1070
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1075
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1080
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1085
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1090
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1095
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1405
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1410
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1415
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1420
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1425
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1430
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1435
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1440
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1445
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1450
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1455
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1460
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1465
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1470
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1475
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1480
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1485
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1490
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1495
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1500
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1505
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1510
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1515
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1520
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1525
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1530
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1535
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1540
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1545
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1550
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1555
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1560
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1565
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1570
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1575
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1580
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1585
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1590
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1595
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1600
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1605
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1610
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1615
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1620
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1625
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1630
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1635
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1640
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1645
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1650
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1655
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1660
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1665
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1670
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1675
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1680
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1685
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1690
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1695
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1700
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1705
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1710
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1715
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1720
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1725
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1730
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1735
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1740
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1745
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1750
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1755
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1760
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1765
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1770
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1775
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1780
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1785
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1790
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1795
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1800
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1805
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1810
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1815
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1820
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1825
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1830
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1835
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1840
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1845
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1850
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1855
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1860
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1865
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1870
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1875
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1880
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1885
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1890
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1895
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1900
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1905
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1910
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1915
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1920
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1925
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1930
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1935
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1940
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1945
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1950
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1955
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1960
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1965
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1970
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1975
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1980
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1985
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1990
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 1995
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2000
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2005
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2010
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2015
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2020
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2025
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2030
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2035
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2040
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2045
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2050
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2055
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2060
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2065
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2070
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2075
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2080
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2085
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2090
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2095
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2405
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2410
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2415
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2420
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2425
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2430
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2435
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2440
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2445
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2450
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2455
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2460
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2465
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2470
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2475
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2480
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2485
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2490
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2495
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2500
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2505
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2510
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2515
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2520
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2525
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2530
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2535
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2540
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2545
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2550
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2555
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2560
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2565
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2570
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2575
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2580
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2585
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2590
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2595
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2600
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2605
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2610
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2615
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2620
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2625
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2630
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2635
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2640
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2645
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2650
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2655
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2660
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2665
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2670
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2675
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2680
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2685
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2690
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2695
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2700
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2705
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2710
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2715
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2720
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2725
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2730
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2735
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2740
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2745
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2750
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2755
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2760
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2765
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2770
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2775
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2780
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2785
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2790
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2795
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2800
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2805
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2810
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2815
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2820
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2825
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2830
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2835
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2840
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2845
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2850
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2855
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2860
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2865
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2870
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2875
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2880
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2885
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2890
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2895
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2900
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2905
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2910
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2915
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2920
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2925
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2930
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2935
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2940
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2945
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2950
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2955
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2960
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2965
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2970
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2975
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2980
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2985
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2990
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 2995
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3000
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3005
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3010
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3015
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3020
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3025
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3030
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3035
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3040
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3045
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3050
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3055
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3060
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3065
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3070
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3075
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3080
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3085
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3090
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3095
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3405
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3410
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3415
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3420
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3425
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3430
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3435
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3440
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3445
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3450
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3455
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3460
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3465
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3470
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3475
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3480
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3485
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3490
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3495
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3500
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3505
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3510
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3515
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3520
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3525
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3530
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3535
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3540
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3545
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3550
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3555
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3560
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3565
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3570
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3575
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3580
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3585
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3590
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3595
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3600
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3605
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3610
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3615
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3620
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3625
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3630
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3635
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3640
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3645
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3650
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3655
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3660
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3665
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3670
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3675
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3680
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3685
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3690
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3695
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 3696
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:176) Done 3696 files in 59.5229min
+LOG (snnet-gibbs:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+CopyFromVec	8.24893s
+CuVectorBase::CopyColFromMat	8.73041s
+Destroy	9.60123s
+ApplySoftMaxPerRow	11.1619s
+makeFeatureCuda	20.5799s
+Resize	20.9729s
+CuVector::SetZero	41.4756s
+Sigmoid	42.578s
+AddVecToRows	48.9324s
+CuVector::Resize	67.249s
+CopyToVec	110.963s
+updateLabelCuda	228.308s
+AddMatMat	430.091s
+CuMatrix::Resize	2612.93s
+CuMatrix::SetZero	2687.93s
+Total GPU time:	6350.24s (may involve some double-counting)
+-----
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 93331456 bytes.
+combine-score-path ark:/tmp/tmp.XrEr8XVsPL/test_tmp2.ark ark:/tmp/tmp.XrEr8XVsPL/test_tmp.ark ark:/tmp/tmp.XrEr8XVsPL/test.ark 
+snnet-train-shuff --learn-rate=0.002 --momentum=0.9 --l1-penalty=0 --l2-penalty=0 --minibatch-size=256 --randomizer-size=32768 --randomize=true --verbose=1 --binary=true --randomizer-seed=786 --negative-num=100 --error-function=per ark:data/nn_post//train.ark ark:data/nn_post//train.lab ark:/tmp/tmp.XrEr8XVsPL/test.ark /tmp/tmp.XrEr8XVsPL/nnet/nnet.001_learnrate0.004_tr0.0000_cv1.1730_keep-lr-iters-1 /tmp/tmp.XrEr8XVsPL/nnet/nnet.003 
+LOG (snnet-train-shuff:Init():nnet-randomizer.cc:31) Seeding by srand with : 786
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2343M, used:727M, total:3071M, free/total:0.763053
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-train-shuff:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2329M, used:741M, total:3071M, free/total:0.758495 version 3.5
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-train-shuff:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:134) TRAINING STARTED
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:253) ### After 0 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:254) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.997481, mean 0.000428768, variance 8.69835e-06, skewness 260.547, kurtosis 87314.3 ) 
+[1] output of <AffineTransform> ( min -3.92702, max 1.00227, mean -2.04085, variance 1.31151, skewness 0.0830944, kurtosis -1.15837 ) 
+[2] output of <Sigmoid> ( min 0.0193217, max 0.731506, mean 0.163373, variance 0.0196025, skewness 0.929795, kurtosis -0.33135 ) 
+[3] output of <AffineTransform> ( min -5.22863, max 1.28317, mean -2.06766, variance 1.6829, skewness 0.181342, kurtosis -0.725432 ) 
+[4] output of <Sigmoid> ( min 0.00533229, max 0.78299, mean 0.171779, variance 0.0275964, skewness 1.17114, kurtosis 0.626908 ) 
+[5] output of <AffineTransform> ( min -5.18364, max 1.54048, mean -2.09918, variance 1.7838, skewness -0.162087, kurtosis -1.00557 ) 
+[6] output of <Sigmoid> ( min 0.00557629, max 0.823534, mean 0.169666, variance 0.02295, skewness 0.944028, kurtosis -0.00348043 ) 
+[7] output of <AffineTransform> ( min -5.05898, max 2.0845, mean -2.48442, variance 0.823806, skewness -0.0925006, kurtosis 0.417076 ) 
+[8] output of <Sigmoid> ( min 0.00631193, max 0.889388, mean 0.100688, variance 0.00691586, skewness 2.72572, kurtosis 12.7879 ) 
+[9] output of <AffineTransform> ( min -1.97329, max 1.27732, mean -0.345606, variance 2.47729, skewness -0.00340311, kurtosis -1.9645 ) 
+[10] output of <Softmax> ( min 0.0373049, max 0.962695, mean 0.5, variance 0.205652, skewness 4.94921e-09, kurtosis -1.97101 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:256) ### Backward propagation buffer content :
+[0] diff of <Input>  ( min -3.51055, max 1.12758, mean 3.09459e-06, variance 0.000124141, skewness -75.0866, kurtosis 24447.3 ) 
+[1] diff-output of <AffineTransform> ( min -0.721162, max 0.381289, mean 0.00119533, variance 0.000252553, skewness -5.72839, kurtosis 372.316 ) 
+[2] diff-output of <Sigmoid> ( min -2.88467, max 1.64194, mean 0.0074082, variance 0.00669581, skewness -2.86109, kurtosis 171.329 ) 
+[3] diff-output of <AffineTransform> ( min -0.537678, max 0.279387, mean 0.00160952, variance 0.000173125, skewness -7.40144, kurtosis 305.003 ) 
+[4] diff-output of <Sigmoid> ( min -2.1802, max 1.16153, mean 0.00773785, variance 0.00435683, skewness -3.91964, kurtosis 149.403 ) 
+[5] diff-output of <AffineTransform> ( min -0.353733, max 0.262223, mean 0.000505416, variance 0.000125617, skewness -5.43234, kurtosis 254.77 ) 
+[6] diff-output of <Sigmoid> ( min -1.52228, max 1.15687, mean -0.000131284, variance 0.00380179, skewness -1.41374, kurtosis 118.018 ) 
+[7] diff-output of <AffineTransform> ( min -0.424028, max 0.519072, mean -0.00116213, variance 0.000132559, skewness 3.9265, kurtosis 417.692 ) 
+[8] diff-output of <Sigmoid> ( min -2.08126, max 2.77142, mean -0.0110007, variance 0.0123029, skewness -0.684938, kurtosis 109.219 ) 
+[9] diff-output of <AffineTransform> ( min -0.839898, max 0.839898, mean 2.18279e-11, variance 0.0181577, skewness -4.74371e-08, kurtosis 20.3008 ) 
+[10] diff-output of <Softmax> ( min -0.839898, max 0.839898, mean 2.18279e-11, variance 0.0181577, skewness -4.74371e-08, kurtosis 20.3008 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:257) ### Gradient stats :
+Component 1 : <AffineTransform>, 
+  linearity_grad ( min -0.790527, max 1.40037, mean 0.000131204, variance 2.5744e-05, skewness 83.5094, kurtosis 25252.1 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -5.64537, max 9.78675, mean 0.306004, variance 3.96783, skewness 0.756627, kurtosis 5.47926 ) , lr-coef 1
+Component 2 : <Sigmoid>, 
+Component 3 : <AffineTransform>, 
+  linearity_grad ( min -2.17048, max 3.87319, mean 0.0678661, variance 0.127999, skewness 2.75517, kurtosis 20.5483 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -4.26763, max 7.68716, mean 0.412037, variance 2.65559, skewness 1.32371, kurtosis 4.32595 ) , lr-coef 1
+Component 4 : <Sigmoid>, 
+Component 5 : <AffineTransform>, 
+  linearity_grad ( min -3.10479, max 4.07737, mean 0.0227625, variance 0.11729, skewness 2.93429, kurtosis 24.762 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -4.00913, max 5.26477, mean 0.129387, variance 1.98528, skewness 1.48344, kurtosis 4.32621 ) , lr-coef 1
+Component 6 : <Sigmoid>, 
+Component 7 : <AffineTransform>, 
+  linearity_grad ( min -4.45244, max 3.56228, mean -0.0508508, variance 0.0947615, skewness -1.93558, kurtosis 53.9059 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -7.85091, max 6.2008, mean -0.297505, variance 1.71287, skewness -0.854414, kurtosis 15.1991 ) , lr-coef 1
+Component 8 : <Sigmoid>, 
+Component 9 : <AffineTransform>, 
+  linearity_grad ( min -8.71087, max 8.71087, mean -7.45058e-11, variance 2.75775, skewness 3.29367e-07, kurtosis 5.9675 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -12.8189, max 12.8189, mean 0, variance 164.323, skewness 0, kurtosis -2 ) , lr-coef 0.1
+Component 10 : <Softmax>, 
+
+VLOG[1] (snnet-train-shuff:Eval():nnet-loss.cc:112) ProgressLoss[1.00053h/1.00053h]: 0.00540222 (Xent)
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:278) ### After 384256 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:279) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.997537, mean 0.000428759, variance 7.18905e-06, skewness 263.574, kurtosis 96410.1 ) 
+[1] output of <AffineTransform> ( min -3.92905, max 0.548111, mean -2.0253, variance 1.34456, skewness 0.0796602, kurtosis -1.18984 ) 
+[2] output of <Sigmoid> ( min 0.0192833, max 0.633697, mean 0.16642, variance 0.0204352, skewness 0.89129, kurtosis -0.474171 ) 
+[3] output of <AffineTransform> ( min -5.18701, max 1.25529, mean -2.03281, variance 1.68561, skewness 0.143187, kurtosis -0.73715 ) 
+[4] output of <Sigmoid> ( min 0.00555765, max 0.778214, mean 0.175626, variance 0.0278139, skewness 1.15335, kurtosis 0.68307 ) 
+[5] output of <AffineTransform> ( min -5.18778, max 0.937235, mean -1.99926, variance 1.92432, skewness -0.263889, kurtosis -1.00948 ) 
+[6] output of <Sigmoid> ( min 0.00555337, max 0.718541, mean 0.185288, variance 0.0255988, skewness 0.8414, kurtosis -0.0835238 ) 
+[7] output of <AffineTransform> ( min -5.24487, max 2.32933, mean -2.27791, variance 1.57303, skewness 0.235448, kurtosis 0.578039 ) 
+[8] output of <Sigmoid> ( min 0.00524685, max 0.911277, mean 0.139686, variance 0.0203519, skewness 2.43667, kurtosis 8.14731 ) 
+[9] output of <AffineTransform> ( min -5.48775, max 4.52875, mean -0.457825, variance 22.1659, skewness -0.00352861, kurtosis -1.97728 ) 
+[10] output of <Softmax> ( min 4.4655e-05, max 0.999955, mean 0.5, variance 0.24915, skewness -1.48605e-08, kurtosis -1.99949 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:281) ### Backward propagation buffer content :
+[0] diff of <Input>  ( min -0.298499, max 1.04987, mean -6.9473e-07, variance 1.72992e-05, skewness 100.554, kurtosis 16901.1 ) 
+[1] diff-output of <AffineTransform> ( min -0.145383, max 0.233305, mean 1.47145e-05, variance 1.24731e-05, skewness 6.5415, kurtosis 1275.96 ) 
+[2] diff-output of <Sigmoid> ( min -0.590083, max 0.957791, mean 9.24716e-05, variance 0.000271763, skewness 4.94818, kurtosis 814.417 ) 
+[3] diff-output of <AffineTransform> ( min -0.0777991, max 0.116981, mean 1.9561e-05, variance 3.64088e-06, skewness 14.1667, kurtosis 1049.28 ) 
+[4] diff-output of <Sigmoid> ( min -0.311285, max 0.470231, mean 8.94128e-05, variance 7.44684e-05, skewness 10.6987, kurtosis 694.056 ) 
+[5] diff-output of <AffineTransform> ( min -0.0415257, max 0.0528581, mean 3.99192e-06, variance 1.18415e-06, skewness 14.7276, kurtosis 947.73 ) 
+[6] diff-output of <Sigmoid> ( min -0.167017, max 0.213216, mean 1.09887e-06, variance 2.32203e-05, skewness 10.7381, kurtosis 666.982 ) 
+[7] diff-output of <AffineTransform> ( min -0.0463581, max 0.0470441, mean -5.39758e-06, variance 4.28123e-07, skewness -0.951354, kurtosis 2316.87 ) 
+[8] diff-output of <Sigmoid> ( min -0.191088, max 0.188305, mean -3.73842e-05, variance 1.07936e-05, skewness -2.70842, kurtosis 1052.84 ) 
+[9] diff-output of <AffineTransform> ( min -0.0394326, max 0.0394327, mean -2.21004e-09, variance 9.18073e-06, skewness 2.41561e-05, kurtosis 116.494 ) 
+[10] diff-output of <Softmax> ( min -0.0394326, max 0.0394327, mean -2.21004e-09, variance 9.18073e-06, skewness 2.41561e-05, kurtosis 116.494 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:282) ### Gradient stats :
+Component 1 : <AffineTransform>, 
+  linearity_grad ( min -0.413123, max 0.650499, mean 1.79681e-07, variance 4.7264e-06, skewness 26.6295, kurtosis 29828.1 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.0456484, max 0.035092, mean 0.000418793, variance 0.000178149, skewness -0.945661, kurtosis 3.4801 ) , lr-coef 1
+Component 2 : <Sigmoid>, 
+Component 3 : <AffineTransform>, 
+  linearity_grad ( min -0.0267912, max 0.0334806, mean 6.86703e-05, variance 5.46494e-06, skewness 1.38836, kurtosis 36.7972 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.0191976, max 0.0183327, mean 7.46276e-05, variance 4.20455e-05, skewness -0.0875934, kurtosis 1.99208 ) , lr-coef 1
+Component 4 : <Sigmoid>, 
+Component 5 : <AffineTransform>, 
+  linearity_grad ( min -0.0175605, max 0.0203725, mean -0.000180449, variance 2.36431e-06, skewness 1.17255, kurtosis 33.089 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.0133917, max 0.0149438, mean -0.000964091, variance 2.43108e-05, skewness 0.381376, kurtosis 1.80683 ) , lr-coef 1
+Component 6 : <Sigmoid>, 
+Component 7 : <AffineTransform>, 
+  linearity_grad ( min -0.0210685, max 0.0134726, mean -0.00046071, variance 2.532e-06, skewness -4.26343, kurtosis 34.0523 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.0167758, max 0.00396343, mean -0.00246841, variance 1.68821e-05, skewness -1.89876, kurtosis 3.0576 ) , lr-coef 1
+Component 8 : <Sigmoid>, 
+Component 9 : <AffineTransform>, 
+  linearity_grad ( min -0.0573478, max 0.0573347, mean -1.02376e-06, variance 0.000162666, skewness -0.000561083, kurtosis 6.82858 ) , lr-coef 1, max-norm 0
+  bias_grad ( min -0.00393195, max 0.00391731, mean -7.31857e-06, variance 1.54027e-05, skewness 0, kurtosis -2 ) , lr-coef 0.1
+Component 10 : <Softmax>, 
+
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:290) Done 3696 files, 0 with no tgt_mats, 0 with other errors. [TRAINING, RANDOMIZED, 0.501076 min, fps12781]
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:299) AvgLoss: 0.00508773 (Xent), [AvgXent: 0.00760512, AvgTargetEnt: 0.00251738]
+progress: [0.00540222 ]
+
+FRAME_ACCURACY >> 99.8649% <<
+LOG (snnet-train-shuff:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+AddVecToRows	0.0843294s
+Sigmoid	0.0850585s
+AddMat	0.13542s
+FindRowMaxId	0.147608s
+AddMatVec	0.148654s
+Set	0.158434s
+CuVector::SetZero	0.17489s
+Randomize	0.18383s
+Destroy	0.209024s
+CuVector::Resize	0.280804s
+CuMatrix::Resize	0.345885s
+CuMatrix::SetZero	0.514311s
+CuMatrixBase::CopyFromMat(from other CuMatrixBase)	0.521821s
+CuMatrixBase::CopyFromMat(from CPU)	1.19525s
+AddMatMat	1.86184s
+Total GPU time:	6.48916s (may involve some double-counting)
+-----
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 1308082176 bytes.
+TRAIN AVG.LOSS 0.0051, snnet-gibbs --seed=787 --GibbsIter=1000 --early-stop=0.8 ark:data/nn_post//dev.ark /tmp/tmp.XrEr8XVsPL/nnet/nnet.003 ark:/tmp/tmp.XrEr8XVsPL/cv.ark 
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2343M, used:727M, total:3071M, free/total:0.763053
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-gibbs:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2329M, used:741M, total:3071M, free/total:0.758495 version 3.5
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-gibbs:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:84) GIBBS SAMPLING STARTED
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 5
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 10
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 15
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 20
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 25
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 30
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 35
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 40
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 45
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 50
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 55
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 60
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 65
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 70
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 75
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 80
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 85
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 90
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 95
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 195
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 200
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 205
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 210
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 215
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 220
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 225
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 230
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 235
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 240
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 245
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 250
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 255
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 260
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 265
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 270
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 275
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 280
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 285
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 290
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 295
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 300
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 305
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 310
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 315
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 320
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 325
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 330
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 335
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 340
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 345
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 350
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 355
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 360
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 365
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 370
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 375
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 380
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 385
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 390
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 395
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 400
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:176) Done 400 files in 2.41903min
+LOG (snnet-gibbs:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+CuVectorBase::CopyColFromMat	0.344945s
+ApplySoftMaxPerRow	0.436697s
+Destroy	0.437317s
+CopyFromVec	0.827682s
+makeFeatureCuda	0.844604s
+Resize	0.906801s
+CuVector::SetZero	1.57982s
+Sigmoid	1.6733s
+AddVecToRows	1.85202s
+CuVector::Resize	2.6794s
+CopyToVec	4.3734s
+updateLabelCuda	9.15646s
+AddMatMat	17.193s
+CuMatrix::Resize	106.169s
+CuMatrix::SetZero	109.06s
+Total GPU time:	257.59s (may involve some double-counting)
+-----
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 96477184 bytes.
+snnet-train-shuff --learn-rate=0.002 --momentum=0.9 --l1-penalty=0 --l2-penalty=0 --minibatch-size=256 --randomizer-size=32768 --randomize=true --verbose=1 --binary=true --randomizer-seed=788 --cross-validate=true --negative-num=0 --error-function=per ark:data/nn_post//dev.ark ark:data/nn_post//dev.lab ark:/tmp/tmp.XrEr8XVsPL/cv.ark /tmp/tmp.XrEr8XVsPL/nnet/nnet.003 
+LOG (snnet-train-shuff:Init():nnet-randomizer.cc:31) Seeding by srand with : 788
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2343M, used:727M, total:3071M, free/total:0.763053
+LOG (snnet-train-shuff:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-train-shuff:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2329M, used:741M, total:3071M, free/total:0.758495 version 3.5
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-train-shuff:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:134) CROSS-VALIDATION STARTED
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:253) ### After 0 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:254) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.996575, mean 0.000428847, variance 8.08704e-05, skewness 69.5343, kurtosis 6104 ) 
+[1] output of <AffineTransform> ( min -3.92202, max 0.978741, mean -2.00009, variance 1.41463, skewness 0.146255, kurtosis -1.07136 ) 
+[2] output of <Sigmoid> ( min 0.0194165, max 0.726858, mean 0.171473, variance 0.0231269, skewness 1.06997, kurtosis 0.269553 ) 
+[3] output of <AffineTransform> ( min -5.12106, max 1.42117, mean -1.97046, variance 1.96531, skewness 0.213906, kurtosis -0.850899 ) 
+[4] output of <Sigmoid> ( min 0.00593427, max 0.805521, mean 0.192165, variance 0.0366925, skewness 1.10012, kurtosis 0.0821619 ) 
+[5] output of <AffineTransform> ( min -5.25131, max 1.9729, mean -1.99788, variance 2.35608, skewness 0.161268, kurtosis -0.561534 ) 
+[6] output of <Sigmoid> ( min 0.00521333, max 0.877923, mean 0.194748, variance 0.0411524, skewness 1.4988, kurtosis 1.58767 ) 
+[7] output of <AffineTransform> ( min -5.3013, max 3.68769, mean -2.49261, variance 1.44442, skewness 1.21906, kurtosis 3.70058 ) 
+[8] output of <Sigmoid> ( min 0.0049604, max 0.975581, mean 0.115684, variance 0.0243773, skewness 3.26942, kurtosis 10.8966 ) 
+[9] output of <AffineTransform> ( min -4.63979, max 4.70365, mean -0.0678496, variance 12.5462, skewness 0.0277231, kurtosis -1.75572 ) 
+[10] output of <Softmax> ( min 8.75299e-05, max 0.999913, mean 0.5, variance 0.2446, skewness -1.33523e-08, kurtosis -1.99752 ) 
+
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:278) ### After 768 frames,
+VLOG[1] (snnet-train-shuff:main():snnet-train-shuff.cpp:279) ### Forward propagation buffer content :
+[0] output of <Input>  ( min 0, max 0.996825, mean 0.000428774, variance 8.46622e-05, skewness 70.2971, kurtosis 6144.59 ) 
+[1] output of <AffineTransform> ( min -3.91986, max 0.950379, mean -2.00021, variance 1.41407, skewness 0.145406, kurtosis -1.07287 ) 
+[2] output of <Sigmoid> ( min 0.0194578, max 0.721191, mean 0.171443, variance 0.0231025, skewness 1.06812, kurtosis 0.262476 ) 
+[3] output of <AffineTransform> ( min -5.11939, max 1.373, mean -1.97081, variance 1.96358, skewness 0.212946, kurtosis -0.852207 ) 
+[4] output of <Sigmoid> ( min 0.00594413, max 0.797864, mean 0.192081, variance 0.0366298, skewness 1.0987, kurtosis 0.0782833 ) 
+[5] output of <AffineTransform> ( min -5.24808, max 1.91516, mean -1.99787, variance 2.35268, skewness 0.158116, kurtosis -0.566442 ) 
+[6] output of <Sigmoid> ( min 0.0052301, max 0.871598, mean 0.194705, variance 0.041043, skewness 1.49552, kurtosis 1.57891 ) 
+[7] output of <AffineTransform> ( min -5.29804, max 3.61645, mean -2.49181, variance 1.44215, skewness 1.21133, kurtosis 3.67244 ) 
+[8] output of <Sigmoid> ( min 0.00497651, max 0.973826, mean 0.115723, variance 0.0243047, skewness 3.26682, kurtosis 10.8933 ) 
+[9] output of <AffineTransform> ( min -4.59101, max 4.64364, mean -0.069107, variance 12.4539, skewness 0.0284428, kurtosis -1.75051 ) 
+[10] output of <Softmax> ( min 9.75885e-05, max 0.999902, mean 0.5, variance 0.242807, skewness -1.03231e-08, kurtosis -1.9915 ) 
+
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:290) Done 400 files, 0 with no tgt_mats, 0 with other errors. [CROSS-VALIDATION, RANDOMIZED, 0.00243052 min, fps5266.37]
+LOG (snnet-train-shuff:main():snnet-train-shuff.cpp:299) AvgLoss: 3.71517 (Xent), [AvgXent: 3.85569, AvgTargetEnt: 0.140515]
+
+FRAME_ACCURACY >> 50% <<
+LOG (snnet-train-shuff:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+Sum	0.000129461s
+Sigmoid	0.000170231s
+Set	0.000174761s
+AddVecToRows	0.000194788s
+CuVector::SetZero	0.000298262s
+FindRowMaxId	0.000348806s
+CheckGpuHealth	0.000563145s
+CuVector::Resize	0.00060153s
+AddMatMat	0.00186491s
+Destroy	0.00223827s
+CuMatrix::CopyToMatD2H	0.003829s
+CuMatrix::SetZero	0.00531054s
+CuMatrixBase::CopyFromMat(from other CuMatrixBase)	0.00650835s
+CuMatrix::Resize	0.00903821s
+CuMatrixBase::CopyFromMat(from CPU)	0.0097878s
+Total GPU time:	0.0417511s (may involve some double-counting)
+-----
+LOG (snnet-train-shuff:PrintMemoryUsage():cu-device.cc:334) Memory used: 637575168 bytes.
+CROSSVAL AVG.LOSS 3.7152, nnet rejected (nnet.003_learnrate0.002_tr0.0000_cv3.7152_rejected)
+finished, too small rel. improvement 0
+train success
+snnet-gibbs ark:data/nn_post//test.ark data/nn_post//data_nn.model_1000_4_100 ark,t:data/nn_post//test_nn.tags 
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:262) Selecting from 1 GPUs
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:277) cudaSetDevice(0): GeForce GTX 780	free:2343M, used:727M, total:3071M, free/total:0.763053
+LOG (snnet-gibbs:SelectGpuIdAuto():cu-device.cc:310) Selected device: 0 (automatically)
+LOG (snnet-gibbs:FinalizeActiveGpu():cu-device.cc:194) The active GPU is [0]: GeForce GTX 780	free:2329M, used:741M, total:3071M, free/total:0.758495 version 3.5
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 0 bytes.
+LOG (snnet-gibbs:DisableCaching():cu-device.cc:731) Disabling caching of GPU memory.
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:84) GIBBS SAMPLING STARTED
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 5
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 10
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 15
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 20
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 25
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 30
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 35
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 40
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 45
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 50
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 55
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 60
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 65
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 70
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 75
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 80
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 85
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 90
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 95
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 100
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 105
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 110
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 115
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 120
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 125
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 130
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 135
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 140
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 145
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 150
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 155
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 160
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 165
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 170
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 175
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 180
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 185
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 190
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:159) 192
+LOG (snnet-gibbs:main():snnet-gibbs.cpp:176) Done 192 files in 3.92088min
+LOG (snnet-gibbs:PrintProfile():cu-device.cc:360) -----
+[cudevice profile]
+CopyFromVec	0.413602s
+CuVectorBase::CopyColFromMat	0.572832s
+ApplySoftMaxPerRow	0.730434s
+Destroy	0.738463s
+makeFeatureCuda	1.40729s
+Resize	1.48878s
+CuVector::SetZero	2.68097s
+Sigmoid	2.78547s
+AddVecToRows	3.08448s
+CuVector::Resize	4.48446s
+CopyToVec	7.15903s
+updateLabelCuda	15.1589s
+AddMatMat	28.5741s
+CuMatrix::Resize	171.99s
+CuMatrix::SetZero	176.745s
+Total GPU time:	418.04s (may involve some double-counting)
+-----
+LOG (snnet-gibbs:PrintMemoryUsage():cu-device.cc:334) Memory used: 96477184 bytes.
+path-fer ark:data/nn_post//test.lab 'ark:split-path-score ark:data/nn_post//test_nn.tags ark:/dev/null ark:- |' 
+split-path-score ark:data/nn_post//test_nn.tags ark:/dev/null ark:- 
+LOG (path-fer:main():path-fer.cpp:56) Frame Error Rate = 0.855971
+compute-wer 'ark:trim-path ark:data/nn_post//test.lab ark:- |' 'ark:split-path-score ark:data/nn_post//test_nn.tags ark:/dev/null ark:- | trim-path ark:- ark:- |' 
+trim-path ark:data/nn_post//test.lab ark:- 
+split-path-score ark:data/nn_post//test_nn.tags ark:/dev/null ark:- 
+LOG (trim-path:main():trim-path.cpp:48) Finish 192 utterance.
+trim-path ark:- ark:- 
+LOG (trim-path:main():trim-path.cpp:48) Finish 192 utterance.
+%WER 97.34 [ 7016 / 7208, 0 ins, 7016 del, 0 sub ]
+%SER 100.00 [ 192 / 192 ]
+Scored 192 sentences, 0 not present in hyp.
+path-fer 'ark:trans.sh ark:data/nn_post//test.lab ark:- |' 'ark:split-path-score ark:data/nn_post//test_nn.tags ark:/dev/null ark:- | trans.sh ark:- ark:- |' 
+copy-int-vector ark:data/nn_post//test.lab ark,t:- 
+copy-int-vector ark:- ark:- 
+split-path-score ark:data/nn_post//test_nn.tags ark:/dev/null ark:- 
+copy-int-vector ark:- ark,t:- 
+copy-int-vector ark:- ark:- 
+LOG (copy-int-vector:main():copy-int-vector.cc:83) Copied 192 vectors of int32.
+LOG (copy-int-vector:main():copy-int-vector.cc:83) Copied 192 vectors of int32.
+LOG (copy-int-vector:main():copy-int-vector.cc:83) Copied 192 vectors of int32.
+LOG (copy-int-vector:main():copy-int-vector.cc:83) Copied 192 vectors of int32.
+LOG (path-fer:main():path-fer.cpp:56) Frame Error Rate = 0.757403
+compute-wer 'ark:trim-path ark:data/nn_post//test.lab ark:- | trans.sh ark:- ark:- |' 'ark:split-path-score ark:data/nn_post//test_nn.tags ark:/dev/null ark:- | trim-path ark:- ark:- | trans.sh ark:- ark:- |' 
+trim-path ark:data/nn_post//test.lab ark:- 
+copy-int-vector ark:- ark,t:- 
+copy-int-vector ark:- ark:- 
+LOG (trim-path:main():trim-path.cpp:48) Finish 192 utterance.
+LOG (copy-int-vector:main():copy-int-vector.cc:83) Copied 192 vectors of int32.
+split-path-score ark:data/nn_post//test_nn.tags ark:/dev/null ark:- 
+copy-int-vector ark:- ark,t:- 
+trim-path ark:- ark:- 
+copy-int-vector ark:- ark:- 
+LOG (copy-int-vector:main():copy-int-vector.cc:83) Copied 192 vectors of int32.
+LOG (trim-path:main():trim-path.cpp:48) Finish 192 utterance.
+LOG (copy-int-vector:main():copy-int-vector.cc:83) Copied 192 vectors of int32.
+LOG (copy-int-vector:main():copy-int-vector.cc:83) Copied 192 vectors of int32.
+%WER 97.34 [ 7016 / 7208, 0 ins, 7016 del, 0 sub ]
+%SER 100.00 [ 192 / 192 ]
+Scored 192 sentences, 0 not present in hyp.
