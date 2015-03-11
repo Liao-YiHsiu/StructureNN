@@ -101,8 +101,8 @@ for iter in $(seq -w $max_iters); do
       # find negitive example
       log=$dir/log/iter${iter}.ptr.log; hostname>$log
       $test_tool --seed=$seed --GibbsIter=$GibbsIter --early-stop=$early_stop \
-         "$feat_data" $mlp_best ark:$dir/test_tmp.ark \
          ${init_path:+ --init-path=ark:$dir/train.lat} \
+         "$feat_data" $mlp_best ark:$dir/test_tmp.ark \
          2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
       combine-score-path ark:$dir/test_tmp2.ark ark:$dir/test_tmp.ark ark:$dir/test.ark
