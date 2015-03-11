@@ -22,7 +22,7 @@ max_iters=200
 min_iters=
 keep_lr_iters=1
 start_halving_impr=0.005
-end_halving_impr=0.0005
+end_halving_impr=0.00005
 halving_factor=0.5
 
 verbose=1
