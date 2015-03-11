@@ -156,7 +156,8 @@ int main(int argc, char *argv[]) {
          }
 
          num_done += index;
-         KALDI_LOG << num_done ;
+         if(num_done % (batch_num*20) == 0)
+            KALDI_LOG << num_done ;
 
          for(int i = 0; i < index; ++i){
             vector<int> arr;
