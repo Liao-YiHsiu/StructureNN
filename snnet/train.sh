@@ -123,6 +123,7 @@ for iter in $(seq -w $max_iters); do
    loss_tr=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
    echo -n "TRAIN AVG.LOSS $(printf "%.4f" $loss_tr), "
 
+# CV
 # find negitive example
 #   log=$dir/log/iter${iter}.ptr.log; hostname>$log
 #   $test_tool --seed=$seed --GibbsIter=$GibbsIter --early-stop=$early_stop\
@@ -131,22 +132,33 @@ for iter in $(seq -w $max_iters); do
 #
 #   seed=$((seed + 1))
 
-# CV
    log=$dir/log/iter${iter}.cv.log; hostname>$log
-   $train_tool \
-      --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
-      --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
-      --verbose=$verbose --binary=true --randomizer-seed=$seed\
-      --cross-validate=true \
-      --negative-num=0 --error-function=$error_function\
-      "$cv_feat_data" "$cv_label_data" ark:$dir/cv.ark \
-      $mlp_next \
+#   $train_tool \
+#      --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
+#      --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
+#      --verbose=$verbose --binary=true --randomizer-seed=$seed\
+#      --cross-validate=true \
+#      --negative-num=0 --error-function=$error_function\
+#      "$cv_feat_data" "$cv_label_data" ark:$dir/cv.ark \
+#      $mlp_next \
+#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+#      seed=$((seed + 1))
+#
+#
+#   loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
+#   echo -n "CROSSVAL AVG.LOSS $(printf "%.4f" $loss_new), "
+
+   $test_tool --seed=$seed --GibbsIter=$GibbsIter \
+      "$cv_feat_data" $mlp_next ark:$dir/cv.ark \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-      seed=$((seed + 1))
 
+   seed=$((seed + 1))
 
-   loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
-   echo -n "CROSSVAL AVG.LOSS $(printf "%.4f" $loss_new), "
+   path-fer $cv_label_data "ark:split-path-score ark:$dir/cv.ark ark:/dev/null ark:- |" \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   loss_new=$(cat $log | grep 'Frame Error Rate' | tail -n 1 | awk '{ print $7; }')
+   echo -n "CROSSVAL FER= $(printf "%.4f" $loss_new), "
 
 
    # accept or reject new parameters (based on objective function)
