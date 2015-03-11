@@ -50,6 +50,9 @@ int main(int argc, char *argv[]) {
       float early_stop = 1.0;
       po.Register("early-stop", &early_stop, "Early Stop sampling(for speed)");
 
+      string init_path="";
+      po.Register("init-path", &init_path, "use this path instead of random start");
+
       po.Read(argc, argv);
       srand(seed);
 
@@ -65,6 +68,9 @@ int main(int argc, char *argv[]) {
 
       ScorePathWriter                  score_path_writer(score_path_wspecifier);
       SequentialBaseFloatMatrixReader  feature_reader(feat_rspecifier);
+      SequentialInt32VectorReader      init_path_reader;
+      if(!init_path.empty())
+         init_path_reader.Open(init_path);
 
       //Select the GPU
 #if HAVE_CUDA==1
@@ -116,11 +122,19 @@ int main(int argc, char *argv[]) {
             sameCnt[index] = 0;
 
             // random start
-            vector<int> lab_host(featArr[index].NumRows());
-            for(int i = 0; i < featArr[index].NumRows(); ++i)
-               lab_host[i] = rand() % max_state;
+            if(init_path.empty()){
+               vector<int> lab_host(featArr[index].NumRows());
+               for(int i = 0; i < featArr[index].NumRows(); ++i)
+                  lab_host[i] = rand() % max_state;
 
-            pathArr[index].CopyFromVec(lab_host);
+               pathArr[index].CopyFromVec(lab_host);
+            }else{
+               assert(init_path_reader.Key() == feature_reader.Key());
+               const vector<int32>& arr = init_path_reader.Value();
+               assert(arr.size() == mat.NumRows());
+               pathArr[index].CopyFromVec(arr);
+               init_path_reader.Next();
+            }
          }
 
          // start sampling 
