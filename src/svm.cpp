@@ -3,7 +3,7 @@
 
 
 
-double frame_acc(const vector<int32>& path1, const vector<int32>& path2){
+double frame_acc(const vector<int32>& path1, const vector<int32>& path2, double param){
 
    assert(path1.size() == path2.size());
    int corr = 0;
@@ -15,7 +15,7 @@ double frame_acc(const vector<int32>& path1, const vector<int32>& path2){
 }
 
 // reference is path1.
-double phone_acc(const vector<int32>& path1, const vector<int32>& path2){
+double phone_acc(const vector<int32>& path1, const vector<int32>& path2, double inst){
    assert(path1.size() == path2.size());
 
    vector<int32> path1_trim;
@@ -23,9 +23,11 @@ double phone_acc(const vector<int32>& path1, const vector<int32>& path2){
    trim_path(path1, path1_trim);
    trim_path(path2, path2_trim);
 
-   int32 dist = LevenshteinEditDistance(path1_trim, path2_trim);
+   int in, de, su;
 
-   int32 corr = path1_trim.size() - dist; 
+   int32 dist = LevenshteinEditDistance(path1_trim, path2_trim, &in, &de, &su);
+
+   double corr = path1_trim.size() - (in*inst + de + su); 
 
    if(corr < 0) corr = 0;
 

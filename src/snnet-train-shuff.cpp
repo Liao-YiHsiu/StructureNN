@@ -47,6 +47,12 @@ int main(int argc, char *argv[]) {
     string error_function = "fer";
     po.Register("error-function", &error_function, "Error function : fer|per");
 
+    double power = 1.0;
+    po.Register("power", &power, "transform the scoring function");
+
+    double insertion_penalty = 1.0;
+    po.Register("insertion_penalty", &insertion_penalty, "PER calculate insertion penalty");
+
     string use_gpu="yes";
     po.Register("use-gpu", &use_gpu, "yes|no|optional, only has effect if compiled with CUDA");
 
@@ -78,7 +84,7 @@ int main(int argc, char *argv[]) {
       target_model_filename;
 
     // function pointer used in calculating target.
-    double (*acc_function)(const vector<int32>& path1, const vector<int32>& path2);
+    double (*acc_function)(const vector<int32>& path1, const vector<int32>& path2, double param);
 
     if(error_function == "fer")
        acc_function = frame_acc;
@@ -163,13 +169,13 @@ int main(int argc, char *argv[]) {
         // positive example
         makeFeature(feat, label, max_state, feats.Row(0));
 
-        makePost(acc_function(label, label), targets);
+        makePost(pow(acc_function(label, label, insertion_penalty), power), targets);
 
         // input example
         for(int i = 0; i < table.size(); ++i){
            makeFeature(feat, table[i].second, max_state, feats.Row(i+1));
 
-           makePost(acc_function(label, table[i].second), targets);
+           makePost(pow(acc_function(label, table[i].second, insertion_penalty), power), targets);
         }
 
         // random negitive example
@@ -178,7 +184,7 @@ int main(int argc, char *argv[]) {
            for(int j = 0; j < neg_arr.size(); ++j)
               neg_arr[j] = rand() % max_state + 1;
            makeFeature(feat, neg_arr, max_state, feats.Row(table.size()+1+i));
-           makePost(acc_function(label, neg_arr), targets);
+           makePost(pow(acc_function(label, neg_arr, insertion_penalty), power), targets);
         }
 
         // TODO: pos example weight can be larger.

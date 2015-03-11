@@ -74,8 +74,8 @@ typedef ValueVectorPair<BaseFloat, int32> ScorePath;
 typedef SequentialTableReader<KaldiObjectHolder<ScorePath> > SequentialScorePathReader;
 typedef TableWriter<KaldiObjectHolder<ScorePath> > ScorePathWriter;
 
-double frame_acc(const vector<int32>& path1, const vector<int32>& path2);
-double phone_acc(const vector<int32>& path1, const vector<int32>& path2);
+double frame_acc(const vector<int32>& path1, const vector<int32>& path2, double param = 1.0);
+double phone_acc(const vector<int32>& path1, const vector<int32>& path2, double param = 1.0);
 int32 sample(const vector<BaseFloat> &arr);
 int32 best(const vector<BaseFloat> &arr);
 void trim_path(const vector<int32>& scr_path, vector<int32>& des_path);
