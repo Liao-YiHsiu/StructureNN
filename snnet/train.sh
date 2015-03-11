@@ -120,7 +120,8 @@ for iter in $(seq -w $max_iters); do
       --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
       --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
       --verbose=$verbose --binary=true --randomizer-seed=$seed \
-      --negative-num=$negative_num --error-function=$error_function "$train_opt"\
+      --negative-num=$negative_num --error-function=$error_function \
+      ${train_opt:+ "$train_opt"} \
       "$feat_data" "$label_data" ark:$dir/test.ark \
       $mlp_best $mlp_next \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
