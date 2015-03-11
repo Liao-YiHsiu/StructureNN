@@ -45,6 +45,7 @@ dnn_depth=1
 dnn_width=200
 early_stop=1.0
 train_opt=
+init_path=
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
@@ -68,7 +69,6 @@ cv_feat_data=$4
 cv_label_data=$5
 cv_lattice_data=$6
 
-init_path=
 model_out=$7
 
 [ ! -d $dir/nnet ] && mkdir $dir/nnet
