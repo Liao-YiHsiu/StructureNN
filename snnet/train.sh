@@ -68,6 +68,7 @@ cv_feat_data=$4
 cv_label_data=$5
 cv_lattice_data=$6
 
+init_path=
 model_out=$7
 
 [ ! -d $dir/nnet ] && mkdir $dir/nnet
@@ -86,6 +87,9 @@ init-score-path "$feat_data" ark:$dir/test.ark
 init-score-path "$cv_feat_data" ark:$dir/cv.ark
 
 mlp_best=$mlp_init
+#TODO use lattice best path as init path to do gibbs
+lattice-to-nbest "$lattice_data" ark:- | lattice-to-vec ark:- ark:- |split-path-score ark:- ark:/dev/null ark:$dir/train.lat
+lattice-to-nbest "$cv_lattice_data" ark:- | lattice-to-vec ark:- ark:- |split-path-score ark:- ark:/dev/null ark:$dir/cv.lat
 
 loss=0
 halving=0
@@ -98,6 +102,7 @@ for iter in $(seq -w $max_iters); do
       log=$dir/log/iter${iter}.ptr.log; hostname>$log
       $test_tool --seed=$seed --GibbsIter=$GibbsIter --early-stop=$early_stop \
          "$feat_data" $mlp_best ark:$dir/test_tmp.ark \
+         ${init_path:+ --init-path=ark:$dir/train.lat} \
          2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
       combine-score-path ark:$dir/test_tmp2.ark ark:$dir/test_tmp.ark ark:$dir/test.ark
@@ -150,6 +155,7 @@ for iter in $(seq -w $max_iters); do
 #   echo -n "CROSSVAL AVG.LOSS $(printf "%.4f" $loss_new), "
 
    $test_tool --seed=$seed --GibbsIter=$GibbsIter \
+      ${init_path:+ --init-path=ark:$dir/cv.lat} \
       "$cv_feat_data" $mlp_next ark:$dir/cv.ark \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
