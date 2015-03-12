@@ -24,6 +24,10 @@ int main(int argc, char *argv[]) {
 
     ParseOptions po(usage.c_str());
 
+    bool neglect = true;
+    po.Register("neglect", &neglect, "neglect duplitated path");
+
+
     po.Read(argc, argv);
 
     if (po.NumArgs() < 2) {
@@ -59,8 +63,22 @@ int main(int argc, char *argv[]) {
        ScorePath::Table table;
        for(int i = 0; i < score_path_readers.size(); ++i){
           const ScorePath::Table& tab = score_path_readers[i].Value().Value();
-          for(int j = 0; j < tab.size(); ++j)
-             table.push_back(tab[j]);
+          for(int j = 0; j < tab.size(); ++j){
+             if(neglect)
+                table.push_back(tab[j]);
+             else{
+                // search in table for tab[j] 
+                bool insert = true;
+                for(int k = 0; k < table.size(); ++k){
+                   if(table[k].second == tab[j].second){
+                      insert = false;
+                      break;
+                   }
+                }
+                if(insert)
+                   table.push_back(tab[j]);
+             }
+          }
        }
 
        score_path_writer.Write(key, ScorePath(table));

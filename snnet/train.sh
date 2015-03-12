@@ -100,13 +100,15 @@ for iter in $(seq -w $max_iters); do
    if [ $((iter % num_inference)) -eq 0 ]; then
       # find negitive example
       log=$dir/log/iter${iter}.ptr.log; hostname>$log
-      $test_tool --seed=$seed --GibbsIter=$GibbsIter --early-stop=$early_stop \
-         ${init_path:+ --init-path=ark:$dir/train.lat} \
-         "$feat_data" $mlp_best ark:$dir/test_tmp.ark \
+      if [ ! -f ${mlp_best}.decode.ark ]; then
+         $test_tool --seed=$seed --GibbsIter=$GibbsIter --early-stop=$early_stop \
+            ${init_path:+ --init-path=ark:$dir/train.lat} \
+            "$feat_data" $mlp_best ark:${mlp_best}.decode.ark \
+            2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+   
+         combine-score-path --neglect=false ark:$dir/test_tmp2.ark ark:${mlp_best}.decode.ark ark:$dir/test.ark \
          2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-      combine-score-path ark:$dir/test_tmp2.ark ark:$dir/test_tmp.ark ark:$dir/test.ark
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+      fi
 
       cp -f $dir/test_tmp2.ark $dir/test.ark
       seed=$((seed + 1))
