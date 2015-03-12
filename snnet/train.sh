@@ -164,12 +164,17 @@ for iter in $(seq -w $max_iters); do
 
    seed=$((seed + 1))
 
-   path-fer $cv_label_data "ark:split-path-score ark:$dir/cv.ark ark:/dev/null ark:- |" \
+#   path-fer $cv_label_data "ark:split-path-score ark:$dir/cv.ark ark:/dev/null ark:- |" \
+#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+#
+#   loss_new=$(cat $log | grep 'Frame Error Rate' | tail -n 1 | awk '{ print $7; }')
+#   echo -n "CROSSVAL FER= $(printf "%.4f" $loss_new), "
+
+   compute-wer "ark:trim-path $cv_label_data ark:- |" "ark:split-path-score ark:$dir/cv.ark ark:/dev/null ark:- | trim-path ark:- ark:- |" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   loss_new=$(cat $log | grep 'Frame Error Rate' | tail -n 1 | awk '{ print $7; }')
-   echo -n "CROSSVAL FER= $(printf "%.4f" $loss_new), "
-
+   loss_new=$(cat $log | grep 'WER' | tail -n 1 | awk '{ print $2; }')
+   echo -n "CROSSVAL WER= $(printf "%.4f" $loss_new), "
 
    # accept or reject new parameters (based on objective function)
    loss_prev=$loss
