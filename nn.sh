@@ -49,22 +49,22 @@ model=$dir/data_nn.model_${GibbsIter}_${dnn_depth}_${dnn_width}_${num_inference}
    
    echo "SVM with NN testing start..................................."
 
-   snnet-gibbs ark:$dir/test.ark $model ark,t:$dir/test_nn.tags \
+   snnet-gibbs ark:$dir/test.ark $model ark,t:${model}.tag \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    echo "Calculating Error rate."
 
-   path-fer ark:$dir/test.lab "ark:split-path-score ark:$dir/test_nn.tags ark:/dev/null ark:- |" \
+   path-fer ark:$dir/test.lab "ark:split-path-score ark:${model}.tag ark:/dev/null ark:- |" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   compute-wer "ark:trim-path ark:$dir/test.lab ark:- |" "ark:split-path-score ark:$dir/test_nn.tags ark:/dev/null ark:- | trim-path ark:- ark:- |" \
+   compute-wer "ark:trim-path ark:$dir/test.lab ark:- |" "ark:split-path-score ark:${model}.tag ark:/dev/null ark:- | trim-path ark:- ark:- |" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    echo "Calculating Error rate.(39)"
-   path-fer "ark:trans.sh ark:$dir/test.lab ark:- |" "ark:split-path-score ark:$dir/test_nn.tags ark:/dev/null ark:- | trans.sh ark:- ark:- |" \
+   path-fer "ark:trans.sh ark:$dir/test.lab ark:- |" "ark:split-path-score ark:${model}.tag ark:/dev/null ark:- | trans.sh ark:- ark:- |" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   compute-wer "ark:trim-path ark:$dir/test.lab ark:- | trans.sh ark:- ark:- |" "ark:split-path-score ark:$dir/test_nn.tags ark:/dev/null ark:- | trim-path ark:- ark:- | trans.sh ark:- ark:- |" \
+   compute-wer "ark:trim-path ark:$dir/test.lab ark:- | trans.sh ark:- ark:- |" "ark:split-path-score ark:${model}.tag ark:/dev/null ark:- | trim-path ark:- ark:- | trans.sh ark:- ark:- |" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 
