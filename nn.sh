@@ -7,6 +7,7 @@ early_stop=1.0
 train_opt=
 init_path=
 keep_lr_iters=
+lat_rand=
 
 echo "$0 $@"  # Print the command line for logging
 
@@ -24,8 +25,8 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-log=$dir/data_nn.log_${GibbsIter}_${dnn_depth}_${dnn_width}__${train_opt}_${init_path}_${keep_lr_iters}
-model=$dir/data_nn.model_${GibbsIter}_${dnn_depth}_${dnn_width}__${train_opt}_${init_path}_${keep_lr_iters}
+log=$dir/data_nn.log_${GibbsIter}_${dnn_depth}_${dnn_width}_${lat_rand}_${train_opt}_${init_path}_${keep_lr_iters}
+model=$dir/data_nn.model_${GibbsIter}_${dnn_depth}_${dnn_width}_${lat_rand}_${train_opt}_${init_path}_${keep_lr_iters}
 
 
    #check file existence.
@@ -41,6 +42,7 @@ model=$dir/data_nn.model_${GibbsIter}_${dnn_depth}_${dnn_width}__${train_opt}_${
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
       ${init_path:+ --init-path "$init_path"} \
+      ${lat_rand:+ --lat-rand "$lat_rand"} \
       ark:$dir/train.ark ark:$dir/train.lab ark:$dir/train.lat \
       ark:$dir/dev.ark   ark:$dir/dev.lab   ark:$dir/dev.lat $model \
       2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;

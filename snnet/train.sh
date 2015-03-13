@@ -45,6 +45,7 @@ dnn_width=200
 early_stop=1.0
 train_opt=
 init_path=
+lat_rand=
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
@@ -94,6 +95,11 @@ loss=0
 halving=0
 # start training
 for iter in $(seq -w $max_iters); do
+   if [ "$lat_rand" == "true" ]; then
+      lattice-to-nbest --random=true --srand=$seed "$lattice_data" ark:- | lattice-to-vec ark:- ark:- |split-path-score ark:- ark:/dev/null ark:$dir/train.lat
+      lattice-to-nbest --random=true --srand=$seed "$cv_lattice_data" ark:- | lattice-to-vec ark:- ark:- |split-path-score ark:- ark:/dev/null ark:$dir/cv.lat
+   fi
+
    mlp_next=$dir/nnet/nnet.${iter}
 
    # find negitive example
