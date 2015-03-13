@@ -4,7 +4,6 @@ error_function="per"
 dnn_depth=1
 dnn_width=200
 early_stop=1.0
-num_inference=1
 train_opt=
 init_path=
 keep_lr_iters=
@@ -25,8 +24,8 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-log=$dir/data_nn.log_${GibbsIter}_${dnn_depth}_${dnn_width}_${num_inference}_${train_opt}_${init_path}_${keep_lr_iters}
-model=$dir/data_nn.model_${GibbsIter}_${dnn_depth}_${dnn_width}_${num_inference}_${train_opt}_${init_path}_${keep_lr_iters}
+log=$dir/data_nn.log_${GibbsIter}_${dnn_depth}_${dnn_width}__${train_opt}_${init_path}_${keep_lr_iters}
+model=$dir/data_nn.model_${GibbsIter}_${dnn_depth}_${dnn_width}__${train_opt}_${init_path}_${keep_lr_iters}
 
 
    #check file existence.
@@ -39,7 +38,6 @@ model=$dir/data_nn.model_${GibbsIter}_${dnn_depth}_${dnn_width}_${num_inference}
 
    [ -f $model ] || snnet/train.sh --GibbsIter $GibbsIter --error-function $error_function \
       --dnn-depth $dnn_depth --dnn-width $dnn_width --early-stop $early_stop\
-      --num-inference $num_inference \
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
       ${init_path:+ --init-path "$init_path"} \
