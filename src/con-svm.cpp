@@ -38,15 +38,17 @@ int main(int argc, char* argv[]){
 
          ofstream fout(po.GetArg(3).c_str());
 
-         SequentialBaseFloatMatrixReader feats_reader(feats_rspecifier);
-         RandomAccessInt32VectorReader   label_reader(label_rspecifier);
+        // SequentialBaseFloatMatrixReader feats_reader(feats_rspecifier);
+        // RandomAccessInt32VectorReader   label_reader(label_rspecifier);
+         RandomAccessBaseFloatMatrixReader feats_reader(feats_rspecifier);
+         SequentialInt32VectorReader       label_reader(label_rspecifier);
 
-         for (int index = 1; !feats_reader.Done(); feats_reader.Next(), index++){
-            const Matrix<BaseFloat> &matrix = feats_reader.Value();
+         for (int index = 1; !label_reader.Done(); label_reader.Next(), index++){
+            //const Matrix<BaseFloat> &matrix = label_reader.Value();
 
-            assert( label_reader.HasKey(feats_reader.Key()) );
+            assert( feats_reader.HasKey(label_reader.Key()) );
 
-            gen(fout, index, matrix, label_reader.Value(feats_reader.Key()), feats_reader.Key());
+            gen(fout, index, feats_reader.Value(label_reader.Key()), label_reader.Value(), label_reader.Key());
          }
       }
    }catch(const exception &e){

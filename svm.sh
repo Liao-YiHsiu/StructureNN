@@ -29,9 +29,9 @@ model=$dir/data_${C}.model
 
    
    #generate svm file
-   [ -f $dir/data.out ] || con-svm ark:$dir/train.lab ark,s,cs:$dir/train.ark $dir/data.out  
-   [ -f $dir/dev.out ]  || con-svm ark:$dir/dev.lab   ark,s,cs:$dir/dev.ark $dir/dev.out  
-   [ -f $dir/test.out ] || con-svm ark:$dir/test.lab ark,s,cs:$dir/test.ark $dir/test.out  
+   [ -f $dir/data.out ] || con-svm ark:$dir/train.lab ark:$dir/train.ark $dir/data.out  
+   [ -f $dir/dev.out ]  || con-svm ark:$dir/dev.lab   ark:$dir/dev.ark $dir/dev.out  
+   [ -f $dir/test.out ] || con-svm ark:$dir/test.lab ark:$dir/test.ark $dir/test.out  
 
    echo "SVM training start..................................."
    [ -f $model ] || svm_hmm/svm_hmm_learn -c $C -e 0.5 $dir/data.out $model &> $log 
