@@ -53,6 +53,9 @@ int main(int argc, char *argv[]) {
       string init_path="";
       po.Register("init-path", &init_path, "use this path instead of random start");
 
+      int output_trace = GibbsIter+1;
+      po.Register("output-trace", &output_trace, "output sampling trace into paths.");
+
       po.Read(argc, argv);
       srand(seed);
 
@@ -97,6 +100,8 @@ int main(int argc, char *argv[]) {
       myCuMatrix<BaseFloat> nnet_in(batch_num*max_state, featsN);
       myCuVector<BaseFloat> val(batch_num*max_state);
 
+      vector< vector< vector<int> > >   traceArr(batch_num);
+
       vector< myCuMatrix<BaseFloat> >   featArr(batch_num);
       vector< CuIntVector >             pathArr(batch_num);
       vector< string >                  featKey(batch_num);
@@ -120,6 +125,7 @@ int main(int argc, char *argv[]) {
             featArr[index].CopyFromMat(mat);
             featKey[index] = feature_reader.Key();
             sameCnt[index] = 0;
+            traceArr[index].clear();
 
             // random start
             if(init_path.empty()){
@@ -143,6 +149,18 @@ int main(int argc, char *argv[]) {
 
             for(int j = 0; j < index; ++j){
                makeFeatureCuda(featArr[j], pathArr[j], i % pathArr[j].Dim(), max_state, nnet_in, j);
+            }
+
+            // keep trace
+            if( (i+1) % output_trace == 0){
+               for(int j = 0; j < index; ++j){
+                  vector<int> arr;
+                  pathArr[j].CopyToVec(arr);
+                  for(int k = 0; k < arr.size(); ++k)
+                     arr[k] += 1;
+
+                  traceArr[j].push_back(arr);
+               }
             }
 
             nnet.Feedforward(nnet_in, &nnet_out);
@@ -181,6 +199,8 @@ int main(int argc, char *argv[]) {
 
             ScorePath::Table table;
             table.push_back(make_pair(pathVal[i], arr));
+            for(int j = 0; j < traceArr[i].size(); ++j)
+               table.push_back(make_pair(0, traceArr[i][j]));
             score_path_writer.Write(featKey[i], ScorePath(table));
          
          }

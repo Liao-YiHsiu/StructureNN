@@ -46,6 +46,7 @@ early_stop=1.0
 train_opt=
 init_path=
 lat_rand=
+output_trace=
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
@@ -107,6 +108,7 @@ for iter in $(seq -w $max_iters); do
    if [ ! -f ${mlp_best}.decode.ark ]; then
       $test_tool --seed=$seed --GibbsIter=$GibbsIter --early-stop=$early_stop \
          ${init_path:+ --init-path=ark:$dir/train.lat} \
+         ${output_trace:+ --output-trace=$output_trace} \
          "$feat_data" $mlp_best ark:${mlp_best}.decode.ark \
          2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
    
