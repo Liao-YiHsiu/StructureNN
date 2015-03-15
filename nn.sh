@@ -29,6 +29,8 @@ dir=$1
 log=$dir/data_nn.log_${GibbsIter}_${dnn_depth}_${dnn_width}_${lat_rand}_${train_opt}_${init_path}_${keep_lr_iters}_${output_trace}
 model=$dir/data_nn.model_${GibbsIter}_${dnn_depth}_${dnn_width}_${lat_rand}_${train_opt}_${init_path}_${keep_lr_iters}_${output_trace}
 
+echo "$0 $@" \
+2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    #check file existence.
    for file in $files;
@@ -36,7 +38,8 @@ model=$dir/data_nn.model_${GibbsIter}_${dnn_depth}_${dnn_width}_${lat_rand}_${tr
       [ -f $dir/$file ] || ( echo "File '$dir/$file' not found." && exit 1 );
    done
 
-   echo "SVM with NN training start..................................."
+   echo "SVM with NN training start..................................."\
+      2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    [ -f $model ] || snnet/train.sh --GibbsIter $GibbsIter --error-function $error_function \
       --dnn-depth $dnn_depth --dnn-width $dnn_width --early-stop $early_stop\
@@ -49,12 +52,14 @@ model=$dir/data_nn.model_${GibbsIter}_${dnn_depth}_${dnn_width}_${lat_rand}_${tr
       ark:$dir/dev.ark   ark:$dir/dev.lab   ark:$dir/dev.lat $model \
       2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
    
-   echo "SVM with NN testing start..................................."
+   echo "SVM with NN testing start..................................."\
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    snnet-gibbs ark:$dir/test.ark $model ark,t:${model}.tag \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   echo "Calculating Error rate."
+   echo "Calculating Error rate." \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    path-fer ark:$dir/test.lab "ark:split-path-score ark:${model}.tag ark:/dev/null ark:- |" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
@@ -62,12 +67,19 @@ model=$dir/data_nn.model_${GibbsIter}_${dnn_depth}_${dnn_width}_${lat_rand}_${tr
    compute-wer "ark:trim-path ark:$dir/test.lab ark:- |" "ark:split-path-score ark:${model}.tag ark:/dev/null ark:- | trim-path ark:- ark:- |" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   echo "Calculating Error rate.(39)"
+   echo "Calculating Error rate.(39)" \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
    path-fer "ark:trans.sh ark:$dir/test.lab ark:- |" "ark:split-path-score ark:${model}.tag ark:/dev/null ark:- | trans.sh ark:- ark:- |" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    compute-wer "ark:trim-path ark:$dir/test.lab ark:- | trans.sh ark:- ark:- |" "ark:split-path-score ark:${model}.tag ark:/dev/null ark:- | trim-path ark:- ark:- | trans.sh ark:- ark:- |" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
+   echo "SNN with best lattice start" \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   ./test_nn.sh $model $dir \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 exit 0;
