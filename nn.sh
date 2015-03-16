@@ -1,14 +1,11 @@
 #!/bin/bash
-GibbsIter=1000
 error_function="per"
 dnn_depth=1
 dnn_width=200
-early_stop=1.0
+lattice_N=1000
 train_opt=
-init_path=
 keep_lr_iters=
-lat_rand=
-output_trace=
+cpus=10
 
 echo "$0 $@"  # Print the command line for logging
 
@@ -26,8 +23,8 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-log=$dir/data_nn.log_${GibbsIter}_${dnn_depth}_${dnn_width}_${lat_rand}_${train_opt}_${init_path}_${keep_lr_iters}_${output_trace}
-model=$dir/data_nn.model_${GibbsIter}_${dnn_depth}_${dnn_width}_${lat_rand}_${train_opt}_${init_path}_${keep_lr_iters}_${output_trace}
+log=$dir/data_nn.log_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${keep_lr_iters}
+model=$dir/data_nn.model_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${keep_lr_iters}
 
 echo "$0 $@" \
 2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
@@ -41,21 +38,18 @@ echo "$0 $@" \
    echo "SVM with NN training start..................................."\
       2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   [ -f $model ] || snnet/train.sh --GibbsIter $GibbsIter --error-function $error_function \
-      --dnn-depth $dnn_depth --dnn-width $dnn_width --early-stop $early_stop\
+   [ -f $model ] || snnet/train.sh --error-function $error_function --cpus $cpus\
+      --dnn-depth $dnn_depth --dnn-width $dnn_width --lattice-N $lattice_N\
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
-      ${init_path:+ --init-path "$init_path"} \
-      ${lat_rand:+ --lat-rand "$lat_rand"} \
-      ${output_trace:+ --output-trace "$output_trace"} \
       ark:$dir/train.ark ark:$dir/train.lab ark:$dir/train.lat \
       ark:$dir/dev.ark   ark:$dir/dev.lab   ark:$dir/dev.lat $model \
       2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-   
-   echo "SVM with NN testing start..................................."\
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   snnet-gibbs ark:$dir/test.ark $model ark,t:${model}.tag \
+   lattice-to-nbest-cpus.sh --cpus $cpus --n $((lattice_N * 2)) ark:$dir/test.lat ark:- | lattice-to-vec ark:- ark:$dir/test_best.lat \
+      2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   snnet-best ark:$dir/test.ark ark:$dir/test_best.lat $model ark,t:${model}.tag\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    echo "Calculating Error rate." \
@@ -74,12 +68,6 @@ echo "$0 $@" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    compute-wer "ark:trim-path ark:$dir/test.lab ark:- | trans.sh ark:- ark:- |" "ark:split-path-score ark:${model}.tag ark:/dev/null ark:- | trim-path ark:- ark:- | trans.sh ark:- ark:- |" \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   echo "SNN with best lattice start" \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   ./test_nn.sh $model $dir \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 exit 0;

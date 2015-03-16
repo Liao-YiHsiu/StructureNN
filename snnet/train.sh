@@ -36,17 +36,14 @@ momentum=0.9
 minibatch_size=256
 randomizer_size=32768
 negative_num=100
-GibbsIter=1000
 error_function="fer"
 train_tool="snnet-train-shuff"
-test_tool="snnet-gibbs"
+test_tool="snnet-best"
 dnn_depth=1
 dnn_width=200
-early_stop=1.0
+lattice_N=1000
 train_opt=
-init_path=
-lat_rand=
-output_trace=
+cpus=10
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
@@ -87,49 +84,31 @@ nnet-initialize $mlp_proto $mlp_init || exit 1;
 init-score-path "$feat_data" ark:$dir/test.ark
 init-score-path "$cv_feat_data" ark:$dir/cv.ark
 
+#CV data pre-compute
+lattice-to-nbest-cpus.sh --cpus $cpus --n $((lattice_N * 2 )) "$cv_lattice_data" ark:- | lattice-to-vec ark:- ark:$dir/cv.lat \
+   2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+lattice-to-nbest-cpus.sh --cpus $cpus --n $((lattice_N * 2 )) "$lattice_data" ark:- | lattice-to-vec ark:- ark:$dir/train.lat \
+   2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
 mlp_best=$mlp_init
 #TODO use lattice best path as init path to do gibbs
-lattice-to-nbest "$lattice_data" ark:- | lattice-to-vec ark:- ark:- |split-path-score ark:- ark:/dev/null ark:$dir/train.lat
-lattice-to-nbest "$cv_lattice_data" ark:- | lattice-to-vec ark:- ark:- |split-path-score ark:- ark:/dev/null ark:$dir/cv.lat
 
 loss=0
 halving=0
 # start training
 for iter in $(seq -w $max_iters); do
-   if [ "$lat_rand" == "true" ]; then
-      lattice-to-nbest --random=true --srand=$seed "$lattice_data" ark:- | lattice-to-vec ark:- ark:- |split-path-score ark:- ark:/dev/null ark:$dir/train.lat
-      lattice-to-nbest --random=true --srand=$seed "$cv_lattice_data" ark:- | lattice-to-vec ark:- ark:- |split-path-score ark:- ark:/dev/null ark:$dir/cv.lat
-   fi
 
    mlp_next=$dir/nnet/nnet.${iter}
 
    # find negitive example
    log=$dir/log/iter${iter}.ptr.log; hostname>$log
 
-   # with init path
-   if [ "$init_path" != "" ]; then
-      $test_tool --seed=$seed --GibbsIter=$GibbsIter --early-stop=$early_stop \
-         ${init_path:+ --init-path=ark:$dir/train.lat} \
-         ${output_trace:+ --output-trace=$output_trace} \
-         "$feat_data" $mlp_best ark:${mlp_best}.decode_init.ark \
-         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-      combine-score-path --neglect=false ark:$dir/test_tmp2.ark ark:${mlp_best}.decode_init.ark ark:$dir/test.ark \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-      cp -f $dir/test_tmp2.ark $dir/test.ark
-      seed=$((seed + 1))
-   fi
-   # without init path
-      $test_tool --seed=$seed --GibbsIter=$GibbsIter --early-stop=$early_stop \
-         ${output_trace:+ --output-trace=$output_trace} \
-         "$feat_data" $mlp_best ark:${mlp_best}.decode.ark \
-         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-   
-      combine-score-path --neglect=false ark:$dir/test_tmp2.ark ark:${mlp_best}.decode.ark ark:$dir/test.ark \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   cp -f $dir/test_tmp2.ark $dir/test.ark
+   lattice-to-nbest-cpus.sh --cpus $cpus --random true --srand $seed --n $lattice_N "$lattice_data" ark:- | lattice-to-vec ark:- ark:$dir/test_tmp.ark \
+      2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
    seed=$((seed + 1))
+
+   combine-score-path ark:$dir/test.ark ark:$dir/test_tmp.ark ark:$dir/train.lat
 
 
 # train
@@ -174,12 +153,8 @@ for iter in $(seq -w $max_iters); do
 #   loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
 #   echo -n "CROSSVAL AVG.LOSS $(printf "%.4f" $loss_new), "
 
-   $test_tool --seed=$seed --GibbsIter=$GibbsIter \
-      ${init_path:+ --init-path=ark:$dir/cv.lat} \
-      "$cv_feat_data" $mlp_next ark:$dir/cv.ark \
+   $test_tool "$cv_feat_data" ark:$dir/cv.lat $mlp_next ark:$dir/cv.ark\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   seed=$((seed + 1))
 
 #   path-fer $cv_label_data "ark:split-path-score ark:$dir/cv.ark ark:/dev/null ark:- |" \
 #      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
