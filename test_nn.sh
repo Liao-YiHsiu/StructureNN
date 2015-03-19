@@ -5,7 +5,7 @@ echo "$0 $@"  # Print the command line for logging
 . parse_options.sh || exit 1;
 
 if [ "$#" -ne 2 ]; then
-   echo "Do SNN Gibbs based on lattice data."
+   echo "Do SNN Gibbs based on 1-best lattice data."
    echo "Usage: $0 <model> <dir>" 
    echo "eg. $0 data/nn_post/data_nn.model data/nn_post"
    echo ""

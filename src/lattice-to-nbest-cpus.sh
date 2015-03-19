@@ -71,3 +71,4 @@ do
    cat $file_out_scp >> $file_out
 done
 lattice-copy scp:$file_out "$2" || exit 1;
+rm -rf $dir

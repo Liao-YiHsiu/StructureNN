@@ -6,8 +6,11 @@ lattice_N=1000
 train_opt=
 keep_lr_iters=
 cpus=10
+acwt=0.16
+lat_model=timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 
 echo "$0 $@"  # Print the command line for logging
+command_line="$0 $@"
 
 . parse_options.sh || exit 1;
 
@@ -23,10 +26,12 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-log=$dir/data_nn.log_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${keep_lr_iters}
-model=$dir/data_nn.model_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${keep_lr_iters}
+log=$dir/data_nn.log_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${keep_lr_iters}_${acwt}
+model=$dir/data_nn.model_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${keep_lr_iters}_${acwt}
 
-echo "$0 $@" \
+lattice_N_times=$((lattice_N * 2))
+
+echo $command_line \
 2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    #check file existence.
@@ -36,38 +41,23 @@ echo "$0 $@" \
    done
 
    echo "SVM with NN training start..................................."\
-      2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    [ -f $model ] || snnet/train.sh --error-function $error_function --cpus $cpus\
       --dnn-depth $dnn_depth --dnn-width $dnn_width --lattice-N $lattice_N\
+      --acwt $acwt\
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
-      ark:$dir/train.ark ark:$dir/train.lab ark:$dir/train.lat \
-      ark:$dir/dev.ark   ark:$dir/dev.lab   ark:$dir/dev.lat $model \
-      2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   lattice-to-nbest-cpus.sh --cpus $cpus --n $((lattice_N * 2)) ark:$dir/test.lat ark:- | lattice-to-vec ark:- ark:$dir/test_best.lat \
-      2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   snnet-best ark:$dir/test.ark ark:$dir/test_best.lat $model ark,t:${model}.tag\
+      $dir $lat_model $model \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   echo "Calculating Error rate." \
+   test_lattice_path=$dir/test.lat_${lattice_N_times}_${acwt}.gz
+   [ -f $test_lattice_path ] || lattice-to-nbest-cpus.sh --cpus $cpus --acoustic-scale $acwt  --n $lattice_N_times  ark:$dir/test.lat ark:- | lattice-to-vec.sh $model ark:- "ark:| gzip -c > $test_lattice_path" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   path-fer ark:$dir/test.lab "ark:split-path-score ark:${model}.tag ark:/dev/null ark:- |" \
+   snnet-best ark:$dir/test.ark "ark:gunzip -c $test_lattice_path |" $model ark,t:${model}.tag\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   compute-wer "ark:trim-path ark:$dir/test.lab ark:- |" "ark:split-path-score ark:${model}.tag ark:/dev/null ark:- | trim-path ark:- ark:- |" \
+   
+   calc.sh ark:$dir/test.lab ark:${model}.tag \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   echo "Calculating Error rate.(39)" \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   path-fer "ark:trans.sh ark:$dir/test.lab ark:- |" "ark:split-path-score ark:${model}.tag ark:/dev/null ark:- | trans.sh ark:- ark:- |" \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   compute-wer "ark:trim-path ark:$dir/test.lab ark:- | trans.sh ark:- ark:- |" "ark:split-path-score ark:${model}.tag ark:/dev/null ark:- | trim-path ark:- ark:- | trans.sh ark:- ark:- |" \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
 exit 0;
