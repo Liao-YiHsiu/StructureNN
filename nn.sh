@@ -52,12 +52,19 @@ echo $command_line \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    test_lattice_path=$dir/test.lat_${lattice_N_times}_${acwt}.gz
-   [ -f $test_lattice_path ] || lattice-to-nbest-cpus.sh --cpus $cpus --acoustic-scale $acwt  --n $lattice_N_times  ark:$dir/test.lat ark:- | lattice-to-vec.sh $model ark:- "ark:| gzip -c > $test_lattice_path" \
+   [ -f $test_lattice_path ] || lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt  --n $lattice_N_times $lat_model ark:$dir/test.lat "ark:| gzip -c > $test_lattice_path" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    snnet-best ark:$dir/test.ark "ark:gunzip -c $test_lattice_path |" $model ark,t:${model}.tag\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
    
    calc.sh ark:$dir/test.lab ark:${model}.tag \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   log=$dir/data_nn.log_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${keep_lr_iters}_${acwt}_sample
+   snnet-gibbs --init-path=ark:${model}.tag ark:$dir/test.ark $model ark,t:${model}.tag.sample\
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   calc.sh ark:$dir/test.lab ark:${model}.tag.sample \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 exit 0;

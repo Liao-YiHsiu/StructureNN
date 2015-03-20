@@ -96,11 +96,11 @@ nnet-initialize $mlp_proto $mlp_init || exit 1;
 
 # precompute lattice data
 train_lattice_path=$dir/train.lab_${lattice_N_times}_${acwt}.gz
-[ -f $train_lattice_path ] || lattice-to-nbest-cpus.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times "$train_lat" ark:- | lattice-to-vec.sh $lat_model ark:- "ark:| gzip -c > $train_lattice_path" \
+[ -f $train_lattice_path ] || lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times $lat_model "$train_lat" "ark:| gzip -c > $train_lattice_path" \
    2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 dev_lattice_path=$dir/dev.lab_${lattice_N_times}_${acwt}.gz
-[ -f $dev_lattice_path ] || lattice-to-nbest-cpus.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times "$cv_lat" ark:- | lattice-to-vec.sh $lat_model ark:- "ark:| gzip -c > $dev_lattice_path" \
+[ -f $dev_lattice_path ] || lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times $lat_model "$cv_lat" "ark:| gzip -c > $dev_lattice_path" \
    2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 
@@ -119,7 +119,7 @@ for iter in $(seq -w $max_iters); do
 
    train_lattice_path_rand=$dir/train.lab_${lattice_N}_${acwt}_${seed}.gz
    [ -f $train_lattice_path_rand ] || \
-      lattice-to-nbest-cpus.sh --cpus $cpus --acoustic-scale $acwt --random true --srand $seed --n $lattice_N "$train_lat" ark:- | lattice-to-vec.sh $lat_model ark:- "ark:| gzip -c > $train_lattice_path_rand " \
+      lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --random true --srand $seed --n $lattice_N $lat_model "$train_lat" "ark:| gzip -c > $train_lattice_path_rand" \
       2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    seed=$((seed + 1))

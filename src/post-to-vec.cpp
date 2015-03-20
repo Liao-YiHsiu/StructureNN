@@ -22,6 +22,9 @@
 #include "util/common-utils.h"
 #include "hmm/transition-model.h"
 #include "hmm/posterior.h"
+#include <fstream>
+
+#define MAX_MAP 10240
 
 using namespace std;
 
@@ -37,11 +40,28 @@ int main(int argc, char *argv[]) {
         " e.g.: post-to-vec ark:post.ark ark,t:-\n";
     
     ParseOptions po(usage);
+    
+    string map_file;
+    po.Register("map-file", &map_file, "map vector values according to map file");
+
     po.Read(argc, argv);
 
     if (po.NumArgs() != 2) {
       po.PrintUsage();
       exit(1);
+    }
+
+    int32 mapping[MAX_MAP];
+    for(int i = 0; i < MAX_MAP; ++i)
+       mapping[i] = i;
+
+    if( map_file != "" ){
+       ifstream fin(map_file.c_str());
+       int counter = 0;
+       int tmp;
+       while(fin >> tmp){
+          mapping[counter++] = tmp;
+       }
     }
       
     string post_rspecifier = po.GetArg(1),
@@ -56,7 +76,7 @@ int main(int argc, char *argv[]) {
       const Posterior &posterior = posterior_reader.Value();
       vector<int32> arr(posterior.size());
       for(int i = 0; i < posterior.size(); ++i)
-         arr[i] = posterior[i][0].first;
+         arr[i] = mapping[posterior[i][0].first];
 
       vector_writer.Write(posterior_reader.Key(), arr);
       num_done++;
