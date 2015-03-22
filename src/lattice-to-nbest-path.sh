@@ -30,7 +30,7 @@ fi
 
 model=$1
 lattice_r=$2
-path_score=$3
+score_path=$3
 
 if [ $cpus == 1 ]; then
    echo "Not for single cpu"
@@ -57,7 +57,10 @@ do
       ${random:+ --random=$random} \
       ${srand:+ --srand=$srand} \
       scp:$file_in ark:- |\
-   lattice-to-post ark:- ark,scp:$file_out_ark,$file_out_scp & 
+   tee >(nbest-to-linear ark:- ark:/dev/null ark:/dev/null ark:${file_out_ark}.lm ark:${file_out_ark}.am) |\
+   lattice-to-post ark:- ark:- |\
+   post-to-phone-post "$model" ark:- ark:- | \
+   post-to-vec --map-file=$map_file ark:- ark,scp:$file_out_ark,$file_out_scp & 
 
 done
 
@@ -71,12 +74,15 @@ file_out=$dir/out.scp
 for (( i=0 ; i<cpus ; i++ ))
 do
    file_out_scp=$dir/out_${i}.scp
+   file_out_ark=$dir/out_${i}.ark
    cat $file_out_scp >> $file_out
+   cat ${file_out_ark}.lm >> ${file_out}.lm
+   cat ${file_out_ark}.am >> ${file_out}.am
 done
+   
+   weight-basefloat 1.0 ark:${file_out}.lm $acoustic_scale ark:${file_out}.am ark:${file_out}.lm_am
 
-   post-to-phone-post "$model" scp:$file_out ark:- | \
-   post-to-vec --map-file=$map_file ark:- ark:- | \
-   vec-to-path-score ark:- "$path_score" || exit 1;
+   vec-to-score-path --score-rspecifier="ark:${file_out}.lm_am" scp:$file_out "$score_path" || exit 1;
 #   $timit/utils/int2sym.pl -f 2- $timit/data/lang/phones.txt - - | \
 #   $timit/utils/sym2int.pl -f 2- $timit/data/lang/words.txt - | \
 #   vec-to-path-score ark:- "$path_score" || exit 1;

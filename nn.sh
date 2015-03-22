@@ -51,7 +51,7 @@ echo $command_line \
       $dir $lat_model $model \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   test_lattice_path=$dir/test.lat_${lattice_N_times}_${acwt}.gz
+   test_lattice_path=$dir/test.lab_${lattice_N_times}_${acwt}.gz
    [ -f $test_lattice_path ] || lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt  --n $lattice_N_times $lat_model ark:$dir/test.lat "ark:| gzip -c > $test_lattice_path" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
@@ -61,10 +61,10 @@ echo $command_line \
    calc.sh ark:$dir/test.lab ark:${model}.tag \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   log=$dir/data_nn.log_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${keep_lr_iters}_${acwt}_sample
-   snnet-gibbs --init-path=ark:${model}.tag ark:$dir/test.ark $model ark,t:${model}.tag.sample\
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   calc.sh ark:$dir/test.lab ark:${model}.tag.sample \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+#   log=$dir/data_nn.log_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${keep_lr_iters}_${acwt}_sample
+#   snnet-gibbs --init-path="ark:split-path-score ark:${model}.tag ark:/dev/null ark:- |" ark:$dir/test.ark $model ark,t:${model}.tag.sample\
+#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+#
+#   calc.sh ark:$dir/test.lab ark:${model}.tag.sample \
+#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 exit 0;

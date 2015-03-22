@@ -147,7 +147,7 @@ for iter in $(seq -w $max_iters); do
    $test_tool "$cv_ark" "ark:gunzip -c $dev_lattice_path |" $mlp_next ark:$tmpdir/cv.ark\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   compute-wer "ark:trim-path $cv_lab ark:- |" "ark:split-path-score ark:$tmpdir/cv.ark ark:/dev/null ark:- | trim-path ark:- ark:- |" \
+   compute-wer "ark:trim-path $cv_lab ark:- |" "ark:split-score-path ark:$tmpdir/cv.ark ark:/dev/null ark:- | trim-path ark:- ark:- |" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    loss_new=$(cat $log | grep 'WER' | tail -n 1 | awk '{ print $2; }')
