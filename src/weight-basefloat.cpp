@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 
     string usage;
     usage.append("Apply y = ax1 + bx2 + ... \n")
-       .append("Usage: ").append(argv[0]).append(" [options] <base-float-wspecifier> <weight-a> <basefloat-rspecifier> [<weight-b> <basefloat-rspecifier>] ... \n")
+       .append("Usage: ").append(argv[0]).append(" [options] <basefloat-wspecifier> <weight-a> <basefloat-rspecifier> [<weight-b> <basefloat-rspecifier>] ... \n")
        .append("e.g.: \n")
        .append(" ").append(argv[0]).append(" ark:out.ark 0.1 ark:feat1.ark -.5 ark:feat2.ark\n");
 
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
        basefloat_rspecifiers.push_back(rspecifier);
     }
 
-    BaseFloatWriter                   basefloat_writer;
+    BaseFloatWriter                   basefloat_writer(basefloat_wspecifier);
     vector<SequentialBaseFloatReader> basefloat_readers(basefloat_rspecifiers.size());
 
     for(int i = 0 ; i < basefloat_rspecifiers.size(); ++i)
