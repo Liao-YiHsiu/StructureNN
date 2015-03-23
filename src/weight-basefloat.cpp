@@ -3,6 +3,7 @@
 #include "fstext/fstext-lib.h"
 #include "lat/kaldi-lattice.h"
 
+using namespace std;
 using namespace kaldi;
 
 int main(int argc, char *argv[]) {
@@ -10,57 +11,64 @@ int main(int argc, char *argv[]) {
 
     string usage;
     usage.append("Apply y = ax1 + bx2 + ... \n")
-       .append("Usage: ").append(argv[0]).append(" [options] <base-float-wspecifier> [<weight-a> <basefloat-rspecifier>] [<weight-b> <basefloat-rspecifier>] ... \n")
+       .append("Usage: ").append(argv[0]).append(" [options] <base-float-wspecifier> <weight-a> <basefloat-rspecifier> [<weight-b> <basefloat-rspecifier>] ... \n")
        .append("e.g.: \n")
-       .append(" ").append(argv[0]).append(" ark:out.ark ark:path1.ark ark:path2.ark\n");
+       .append(" ").append(argv[0]).append(" ark:out.ark 0.1 ark:feat1.ark -.5 ark:feat2.ark\n");
 
     ParseOptions po(usage.c_str());
 
     po.Read(argc, argv);
 
-    if (po.NumArgs() < 2 || po.NumArgs() > 5) {
+    if (po.NumArgs() < 3 || ( po.NumArgs()-3 ) % 2 != 0 ) {
       po.PrintUsage();
       exit(1);
     }
 
-    std::string lats_rspecifier = po.GetArg(1),
-        ali_wspecifier = po.GetArg(2),
-        trans_wspecifier = po.GetOptArg(3),
-        lm_cost_wspecifier = po.GetOptArg(4),
-        ac_cost_wspecifier = po.GetOptArg(5);
+    string basefloat_wspecifier = po.GetArg(1);
+    vector<double> weights;
+    vector<string> basefloat_rspecifiers;
 
-    SequentialLatticeReader lattice_reader(lats_rspecifier);
+    for(int i = 2; i <po.NumArgs(); i += 2){
+       double w = atof(po.GetArg(i).c_str());
+       const string& rspecifier = po.GetArg(i+1); 
 
-    Int32VectorWriter ali_writer(ali_wspecifier);
-    Int32VectorWriter trans_writer(trans_wspecifier);
-    BaseFloatWriter lm_cost_writer(lm_cost_wspecifier);
-    BaseFloatWriter ac_cost_writer(ac_cost_wspecifier);
-    
-    int32 n_done = 0, n_err = 0;
-    
-    for (; !lattice_reader.Done(); lattice_reader.Next()) {
-      std::string key = lattice_reader.Key();
-      Lattice lat = lattice_reader.Value();
-
-      vector<int32> ilabels;
-      vector<int32> olabels;
-      LatticeWeight weight;
-      
-      if (!GetLinearSymbolSequence(lat, &ilabels, &olabels, &weight)) {
-        KALDI_WARN << "Lattice/nbest for key " << key << " had wrong format: "
-            "note, this program expects input with one path, e.g. from "
-            "lattice-to-nbest.";
-        n_err++;
-      } else {
-        if (ali_wspecifier != "") ali_writer.Write(key, ilabels);
-        if (trans_wspecifier != "") trans_writer.Write(key, olabels);
-        if (lm_cost_wspecifier != "") lm_cost_writer.Write(key, weight.Value1());
-        if (ac_cost_wspecifier!= "") ac_cost_writer.Write(key, weight.Value2());
-        n_done++;
-      }
+       weights.push_back(w);
+       basefloat_rspecifiers.push_back(rspecifier);
     }
-    KALDI_LOG << "Done " << n_done << " n-best entries, "
-              << n_err  << " had errors.";
+
+    BaseFloatWriter                   basefloat_writer;
+    vector<SequentialBaseFloatReader> basefloat_readers(basefloat_rspecifiers.size());
+
+    for(int i = 0 ; i < basefloat_rspecifiers.size(); ++i)
+       basefloat_readers[i].Open(basefloat_rspecifiers[i]);
+
+    int32 n_done = 0;
+
+    bool finish = false;
+    while(!finish){
+
+       for(int i = 0; i < basefloat_readers.size(); ++i)
+          if(basefloat_readers[i].Done()){
+             finish = true;
+             break;
+          }
+
+       if(finish) break;
+
+       const string &key = basefloat_readers[0].Key();
+       for(int i = 1; i < basefloat_readers.size(); ++i)
+          assert(key == basefloat_readers[i].Key());
+
+       double sum = 0;
+       for(int i = 0; i < basefloat_readers.size(); ++i){
+          sum += weights[i] * basefloat_readers[i].Value();
+       }
+
+       basefloat_writer.Write(key, sum);
+       n_done ++;
+    }
+    
+    KALDI_LOG << "Done " << n_done << " features";
     return (n_done != 0 ? 0 : 1);
   } catch(const std::exception &e) {
     std::cerr << e.what();

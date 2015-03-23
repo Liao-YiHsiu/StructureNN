@@ -80,7 +80,7 @@ do
    cat ${file_out_ark}.am >> ${file_out}.am
 done
    
-   weight-basefloat 1.0 ark:${file_out}.lm $acoustic_scale ark:${file_out}.am ark:${file_out}.lm_am
+   weight-basefloat ark:${file_out}.lm_am 1.0 ark:${file_out}.lm $acoustic_scale ark:${file_out}.am  || exit 1;
 
    vec-to-score-path --score-rspecifier="ark:${file_out}.lm_am" scp:$file_out "$score_path" || exit 1;
 #   $timit/utils/int2sym.pl -f 2- $timit/data/lang/phones.txt - - | \
