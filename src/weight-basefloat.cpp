@@ -66,6 +66,9 @@ int main(int argc, char *argv[]) {
 
        basefloat_writer.Write(key, sum);
        n_done ++;
+
+       for(int i = 0; i < basefloat_readers.size(); ++i)
+          basefloat_readers[i].Next();
     }
     
     KALDI_LOG << "Done " << n_done << " features";
