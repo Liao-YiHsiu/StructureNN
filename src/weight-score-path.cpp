@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
        score_path_rspecifiers.push_back(rspecifier);
     }
 
-    ScorePathWriter                   score_path_writer;
+    ScorePathWriter                   score_path_writer(score_path_wspecifier);
     vector<SequentialScorePathReader> score_path_readers(score_path_rspecifiers.size());
 
     for(int i = 0 ; i < score_path_rspecifiers.size(); ++i)
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
           const ScorePath::Table& now_table = score_path_readers[i].Value().Value();
 
           for(int j = 0; j < now_table.size(); ++j){
-             out[j].first += weights[j] * now_table[j].first;
+             out[j].first += weights[i] * now_table[j].first;
           }
        }
 

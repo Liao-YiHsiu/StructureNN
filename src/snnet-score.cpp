@@ -1,7 +1,6 @@
 #include "nnet/nnet-trnopts.h"
 #include "nnet/nnet-nnet.h"
 #include "nnet/nnet-loss.h"
-#include "nnet/nnet-randomizer.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "base/timer.h"
@@ -17,14 +16,11 @@ using namespace std;
 using namespace kaldi;
 using namespace kaldi::nnet1;
 
-
-
-
 int main(int argc, char *argv[]) {
 
    try {
       string usage;
-      usage.append("Structure Neural Network choose the best score from all path\n")
+      usage.append("Structure Neural Network calculate scores for all path\n")
          .append("Usage: ").append(argv[0]).append(" [options] <feature-rspecifier> <score-path-rspecifier> <model-in> <score-path-wspecifier>\n")
          .append("e.g.: \n")
          .append(" ").append(argv[0]).append(" ark:feat.ark \"ark:lattice-to-nbest --n=1000 ark:test.lat ark:- | lattice-to-vec ark:- ark:- |\" nnet ark:path.ark \n");
@@ -34,15 +30,11 @@ int main(int argc, char *argv[]) {
       string use_gpu="yes";
       po.Register("use-gpu", &use_gpu, "yes|no|optional, only has effect if compiled with CUDA");
 
-      int seed=777;
-      po.Register("seed", &seed, "Random Seed Number.");
-
       int max_state = 48;
       po.Register("max-state", &max_state, "max state ID");
 
 
       po.Read(argc, argv);
-      srand(seed);
 
       if (po.NumArgs() != 4) {
          po.PrintUsage();
@@ -113,17 +105,12 @@ int main(int argc, char *argv[]) {
          nnet_out_host.CopyFromMat(nnet_out);
          val.CopyColFromMat(nnet_out_host, 0);
 
-         int maxIdx = rand()%val.Dim();
-         float max  = val(maxIdx);
-
-         for(int i = 0; i < val.Dim(); ++i)
-            if( val(i) > max){
-               maxIdx = i;
-               max    = val(i);
-            }
-
          ScorePath tmpscore;
-         tmpscore.Value().push_back(make_pair(max, table[maxIdx].second));
+         ScorePath::Table &tmptable = tmpscore.Value();
+         tmptable = table;
+         for(int i = 0; i < tmptable.size(); ++i)
+            tmptable[i].first = val(i);
+
          score_path_writer.Write(feature_reader.Key(), tmpscore);
       }
 
