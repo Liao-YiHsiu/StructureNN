@@ -29,7 +29,7 @@ dir=$1
 log=$dir/data_nn.log_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${keep_lr_iters}_${acwt}
 model=$dir/data_nn.model_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${keep_lr_iters}_${acwt}
 
-lattice_N_times=$((lattice_N * 2))
+lattice_N_times=$((lattice_N))
 
 echo $command_line \
 2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;

@@ -35,13 +35,13 @@ learn_rate=0.004
 momentum=0.9
 minibatch_size=256
 randomizer_size=32768
-negative_num=100
 error_function="fer"
 train_tool="snnet-train-shuff"
 test_tool="snnet-best"
 dnn_depth=1
 dnn_width=200
 lattice_N=1000
+negative_num=$((lattice_N*2))
 acwt=0.2
 train_opt=
 cpus=10
@@ -79,7 +79,7 @@ cv_ark="ark:$dir/dev.ark"
 cv_lab="ark:$dir/dev.lab"
 cv_lat="ark:$dir/dev.lat"
 
-lattice_N_times=$((lattice_N * 2))
+lattice_N_times=$((lattice_N))
 
 
 mkdir $tmpdir/nnet
