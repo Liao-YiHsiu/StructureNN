@@ -20,6 +20,7 @@ int main(int argc, char *argv[]) {
       po.PrintUsage();
       exit(1);
     }
+    srand(time(NULL));
 
     string score_path_rspecifier = po.GetArg(1);
     string score_path_wspecifier = po.GetArg(2);
