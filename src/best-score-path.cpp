@@ -29,10 +29,10 @@ int main(int argc, char *argv[]) {
 
     for (; !score_path_reader.Done(); score_path_reader.Next()){
        const ScorePath::Table &table = score_path_reader.Value().Value();
-       int index = 0;
+       int index = rand()%table.size();
        BaseFloat max = table[index].first;
 
-       for(int i = 1; i < table.size(); ++i)
+       for(int i = 0; i < table.size(); ++i)
           if(max < table[i].first){
              max = table[i].first;
              index = i;
