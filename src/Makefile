@@ -16,7 +16,7 @@ BINFILES = post-phn acc con-svm nnet-pop lab-lda gen-lab lattice-to-vec \
            trim-path svmout-to-vec combine-score-path snnet-gibbs3 init-score-path\
 	   snnet-best score-baseline lattice-baseline post-to-vec vec-to-score-path\
 	   score-path-copy weight-basefloat best-score-path snnet-score weight-score-path\
-	   normalize-score-path exp-score-path log-score-path
+	   normalize-score-path exp-score-path log-score-path cmvn-score-path
 
 OBJFILES = kernel.o svm.o
 
