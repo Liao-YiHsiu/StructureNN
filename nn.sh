@@ -26,8 +26,8 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-log=$dir/data_nn.log_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${learn_rate}_${acwt}
-model=$dir/data_nn.model_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${learn_rate}_${acwt}
+log=$dir/data_nn.log_${lattice_N}_${dnn_depth}_${dnn_width}__${learn_rate}_${acwt}
+model=$dir/data_nn.model_${lattice_N}_${dnn_depth}_${dnn_width}__${learn_rate}_${acwt}
 
 lattice_N_times=$((lattice_N))
 
@@ -45,7 +45,7 @@ echo $command_line \
 
    [ -f $model ] || snnet/train.sh --error-function $error_function --cpus $cpus\
       --dnn-depth $dnn_depth --dnn-width $dnn_width --lattice-N $lattice_N\
-      --learn-rate $learn_rate --acwt $acwt\
+      --learn-rate $learn_rate --acwt $acwt \
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
       $dir $lat_model $model \
