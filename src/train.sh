@@ -10,7 +10,8 @@ function tobyte {
    echo $num
 }
 
-timit_root=~/Research/timit
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source $DIR/../path
 
 # Begin configuration.
 config=
@@ -100,8 +101,8 @@ for iter in $(seq -w $max_iters); do
 
    # do training.
    # shuffle training list
-   cat $dir/feats_tr.scp | $timit_root/utils/shuffle_list.pl --srand $seed > $dir/train.scp || exit 1;
-   cat $dir/labels_tr.scp | $timit_root/utils/shuffle_list.pl --srand $seed > $dir/ans.scp || exit 1;
+   cat $dir/feats_tr.scp | $timit/utils/shuffle_list.pl --srand $seed > $dir/train.scp || exit 1;
+   cat $dir/labels_tr.scp | $timit/utils/shuffle_list.pl --srand $seed > $dir/ans.scp || exit 1;
    seed=$(( seed + 1 ))
 
    mlp_pre=$mlp_best
@@ -111,8 +112,8 @@ for iter in $(seq -w $max_iters); do
    do
       mlp_next=$dir/nnet/nnet.${iter}.${num}
 
-      $timit_root/utils/split_scp.pl -j $data_num $num $dir/train.scp $dir/tmp_train.scp || exit 1;
-      $timit_root/utils/split_scp.pl -j $data_num $num $dir/ans.scp $dir/tmp_ans.scp || exit 1;
+      $timit/utils/split_scp.pl -j $data_num $num $dir/train.scp $dir/tmp_train.scp || exit 1;
+      $timit/utils/split_scp.pl -j $data_num $num $dir/ans.scp $dir/tmp_ans.scp || exit 1;
       feats_tr="scp:$dir/tmp_train.scp"
       labels_tr="scp:$dir/tmp_ans.scp"
 

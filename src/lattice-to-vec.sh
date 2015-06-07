@@ -1,6 +1,7 @@
 #!/bin/bash
 
-timit=~/Research/timit
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source $DIR/../path
 cpus=4
 
 dir=$(mktemp -d)

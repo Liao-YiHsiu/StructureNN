@@ -1,7 +1,8 @@
 #!/bin/bash
 
-timit=~/Research/timit
-map_file=~/Research/src/mapping.txt
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source $DIR/../path
+map_file=$DIR/mapping.txt
 
 config=
 help=

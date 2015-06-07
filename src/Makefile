@@ -1,4 +1,5 @@
-KALDISRC=/home/loach/kaldi/kaldi-trunk/src
+#KALDISRC=/home/loach/kaldi/kaldi-trunk/src
+include ../path
 
 O3: CXXFLAGS += -O3
 O3: all
@@ -37,8 +38,7 @@ include $(KALDISRC)/makefiles/default_rules.mk
 
 ifeq ($(CUDA), true)
   #Default compute capability architectures we compile with
-  CUDA_ARCH=-gencode arch=compute_13,code=sm_13 \
-	    -gencode arch=compute_20,code=sm_20
+  CUDA_ARCH= -gencode arch=compute_20,code=sm_20
   #Get the CUDA Toolkit version (remove decimal point char)
   CUDA_VERSION=$(shell $(CUDATKDIR)/bin/nvcc -V | grep release | sed -e 's|.*release ||' -e 's|,.*||' -e 's|\.||')
   #For toolkit 4.2 or newer, add the compute capability 3.0 

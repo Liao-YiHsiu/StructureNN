@@ -1,6 +1,8 @@
 #!/bin/bash
 
-timit=/home/loach/Research/timit
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source $DIR/../path
+
 from=48
 to=39
 

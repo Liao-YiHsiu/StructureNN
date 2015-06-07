@@ -4,6 +4,7 @@ C=1000
 
 echo "$0 $@"  # Print the command line for logging
 
+source path
 . parse_options.sh || exit 1;
 
 files="train.lab dev.lab test.lab train.ark dev.ark test.ark"

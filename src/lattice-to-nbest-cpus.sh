@@ -1,6 +1,7 @@
 #!/bin/bash
 
-timit_root=~/Research/timit
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source $DIR/../path
 
 config=
 help=
@@ -44,7 +45,7 @@ do
    file_out_scp=$dir/out_${i}.scp
    file_out_ark=$dir/out_${i}.ark
 
-   $timit_root/utils/split_scp.pl -j $cpus $i $dir/tmp.scp $file_in || exit 1;
+   $timit/utils/split_scp.pl -j $cpus $i $dir/tmp.scp $file_in || exit 1;
    lattice-to-nbest \
       ${config:+ --config=$config} \
       ${help:+ --help=$help} \

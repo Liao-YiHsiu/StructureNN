@@ -1,0 +1,6 @@
+# defines local computer parameters notice this file is for makefile and bash
+KALDISRC=/home_local/speech/Cluster-client-script/kaldi-trunk/src
+timit=/home_local/loach/kaldi-trunk/egs/timit/s5/
+timit_corpus=/share/corpus/timit
+PATH+=:$timit/utils
+PATH+=:/home/loach/StructureNN/src

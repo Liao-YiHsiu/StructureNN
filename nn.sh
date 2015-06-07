@@ -12,6 +12,7 @@ lat_model=timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 echo "$0 $@"  # Print the command line for logging
 command_line="$0 $@"
 
+source path
 . parse_options.sh || exit 1;
 
 files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat"

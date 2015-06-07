@@ -1,5 +1,0 @@
-Reading training examples... 1227 examples, 378207 tokens, 48 features, 48 classes... done
-Iter 1: .........*(NumConst=1, SV=1, CEps=308.2372, QPEps=0.0000)
-Iter 2: .........*(NumConst=2, SV=2, CEps=399.5284, QPEps=0.0000)
-Iter 3: .........*(NumConst=3, SV=3, CEps=427.9357, QPEps=0.0000)
-Iter 4: .

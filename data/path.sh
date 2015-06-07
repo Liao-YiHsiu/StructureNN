@@ -1,6 +1,6 @@
 #!/bin/bash
-
-timit="/home/loach/Research/timit"
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source $DIR/../path
 
 source_tr="scp,s,cs:$timit/data-fmllr-tri3/train/feats.scp"
 source_dv="scp,s,cs:$timit/data-fmllr-tri3/dev/feats.scp"

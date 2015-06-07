@@ -9,8 +9,8 @@ function tobyte {
    esac
    echo $num
 }
-
-timit_root=~/Research/timit
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source $DIR/../path
 
 # Begin configuration.
 config=
@@ -91,7 +91,7 @@ feat_dim=$(feat-to-dim "$train_ark" -)
 SVM_dim=$(( (max_state + feat_dim) * max_state ))
 mlp_init=$tmpdir/nnet.init
 mlp_proto=$tmpdir/nnet.proto
-$timit_root/utils/nnet/make_nnet_proto.py $SVM_dim 2 $dnn_depth $dnn_width > $mlp_proto || exit 1
+$timit/utils/nnet/make_nnet_proto.py $SVM_dim 2 $dnn_depth $dnn_width > $mlp_proto || exit 1
 nnet-initialize $mlp_proto $mlp_init || exit 1; 
 
 # precompute lattice data

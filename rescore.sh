@@ -8,6 +8,7 @@ lattice_N=2000
 acwt=0.16
 N=10
 
+source path
 . parse_options.sh || exit 1;
 
 if [ "$#" -ne 2 ]; then

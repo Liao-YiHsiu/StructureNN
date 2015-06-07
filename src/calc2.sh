@@ -1,6 +1,9 @@
 #!/bin/bash
 echo "$0 $@"  # Print the command line for logging
 
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source $DIR/../path
+
 . parse_options.sh || exit 1;
 
 if [ "$#" -ne 2 ]; then
