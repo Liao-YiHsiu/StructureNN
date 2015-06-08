@@ -1,4 +1,0 @@
-snnet/train.sh data/raw_feature//data.out ark:data/raw_feature//train.lat data/raw_feature//data_nn_.model
-snnet/train.sh: line 64: svm-info: command not found
-snnet/train.sh: line 67: ../timit/utils/nnet/make_nnet_proto.py: No such file or directory
-./nn.sh: line 41: snnet/test.sh: No such file or directory
