@@ -22,6 +22,6 @@ fi
 
 nnet-concat $timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.nnet model.nnet final.nnet || exit 1;
 
-$nn_forward final.nnet $source_tr ark:train.ark || exit 1;
-$nn_forward final.nnet $source_dv ark:dev.ark  || exit 1;
-$nn_forward final.nnet $source_ts ark:test.ark || exit 1;
+$nn_forward final.nnet $source_tr ark:- | replace-feats ark:- ark:train.ark 0 1.0 || exit 1;
+$nn_forward final.nnet $source_dv ark:- | replace-feats ark:- ark:dev.ark   0 1.0 || exit 1;
+$nn_forward final.nnet $source_ts ark:- | replace-feats ark:- ark:test.ark  0 1.0 || exit 1;
