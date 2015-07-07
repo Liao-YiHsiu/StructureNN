@@ -56,10 +56,10 @@ echo $command_line \
    [ -f $test_lattice_path ] || lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt  --n $lattice_N_times $lat_model ark:$dir/test.lat "ark:| gzip -c > $test_lattice_path" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   snnet-score ark:$dir/test.ark "ark:gunzip -c $test_lattice_path |" $model ark:${model}.tag\
+   snnet-score ark:$dir/test.ark "ark:gunzip -c $test_lattice_path |" $model "ark:| gzip -c > ${model}.tag.gz"\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   best-score-path ark:${model}.tag ark:${model}.tag.1best
+   best-score-path "ark:gunzip -c ${model}.tag.gz |" ark:${model}.tag.1best
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    calc.sh ark:$dir/test.lab ark:${model}.tag.1best \
