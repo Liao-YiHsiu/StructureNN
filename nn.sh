@@ -1,18 +1,19 @@
 #!/bin/bash
+source path
+
 error_function="per"
 dnn_depth=1
 dnn_width=200
 lattice_N=1000
 train_opt=
 learn_rate=0.0005
-cpus=10
+cpus=$(nproc)
 acwt=0.16
-lat_model=timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
+lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 
 echo "$0 $@"  # Print the command line for logging
 command_line="$0 $@"
 
-source path
 . parse_options.sh || exit 1;
 
 files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat"
@@ -27,10 +28,12 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-log=$dir/data_nn.log_${lattice_N}_${dnn_depth}_${dnn_width}__${learn_rate}_${acwt}
+log=log/$dir/data_nn.log_${lattice_N}_${dnn_depth}_${dnn_width}__${learn_rate}_${acwt}
 model=$dir/data_nn.model_${lattice_N}_${dnn_depth}_${dnn_width}__${learn_rate}_${acwt}
 
 lattice_N_times=$((lattice_N))
+
+[ ! -d log/$dir ] && mkdir -p log/$dir
 
 echo $command_line \
 2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
@@ -53,8 +56,15 @@ echo $command_line \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    test_lattice_path=$dir/test.lab_${lattice_N_times}_${acwt}.gz
-   [ -f $test_lattice_path ] || lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt  --n $lattice_N_times $lat_model ark:$dir/test.lat "ark:| gzip -c > $test_lattice_path" \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   while [ ! -f $test_lattice_path ]; do
+       lockfile=/tmp/$(basename $test_lattice_path)
+       flock -n $lockfile \
+          lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times \
+          $lat_model ark:$dir/test.lat "ark:| gzip -c > $test_lattice_path" \
+          2>&1 | tee $log  || \
+          flock -w -1 $lockfile echo "finally get file lock"
+   done
 
    snnet-score ark:$dir/test.ark "ark:gunzip -c $test_lattice_path |" $model ark:${model}.tag\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;

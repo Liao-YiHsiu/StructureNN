@@ -12,7 +12,7 @@ acoustic_scale=
 n=
 random=
 srand=
-cpus=2
+cpus=$(nproc)
 
 dir=$(mktemp -d)
 

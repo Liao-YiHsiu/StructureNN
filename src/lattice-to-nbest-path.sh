@@ -13,7 +13,7 @@ acoustic_scale=
 n=
 random=
 srand=
-cpus=2
+cpus=$(nproc)
 
 dir=$(mktemp -d)
 
@@ -48,6 +48,7 @@ do
    file_out_ark=$dir/out_${i}.ark
 
    $timit/utils/split_scp.pl -j $cpus $i $dir/tmp.scp $file_in || exit 1;
+   cat >> $dir/parallel << EOF
    lattice-to-nbest \
       ${config:+ --config=$config} \
       ${help:+ --help=$help} \
@@ -61,14 +62,12 @@ do
    tee >(nbest-to-linear ark:- ark:/dev/null ark:/dev/null ark:${file_out_ark}.lm ark:${file_out_ark}.am) |\
    lattice-to-post ark:- ark:- |\
    post-to-phone-post "$model" ark:- ark:- | \
-   post-to-vec --map-file=$map_file ark:- ark,scp:$file_out_ark,$file_out_scp & 
+   post-to-vec --map-file=$map_file ark:- ark,scp:$file_out_ark,$file_out_scp 
+EOF
 
 done
 
-for job in `jobs -p`
-do
-   wait $job || exit 1; 
-done
+   cat $dir/parallel | xargs -I CMD --max-procs=$(nproc) bash -c CMD || exit 1
 
 file_out=$dir/out.scp
 #combine jobs

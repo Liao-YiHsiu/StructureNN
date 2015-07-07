@@ -44,7 +44,7 @@ lattice_N=1000
 negative_num=$((lattice_N*2))
 acwt=0.2
 train_opt=
-cpus=10
+cpus=$(nproc)
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
@@ -96,12 +96,26 @@ nnet-initialize $mlp_proto $mlp_init || exit 1;
 
 # precompute lattice data
 train_lattice_path=$dir/train.lab_${lattice_N_times}_${acwt}.gz
-[ -f $train_lattice_path ] || lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times $lat_model "$train_lat" "ark:| gzip -c > $train_lattice_path" \
-   2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+# lock file if others are using...
+while [ ! -f $train_lattice_path ]; do
+    lockfile=/tmp/$(basename $train_lattice_path)
+    flock -n $lockfile \
+       lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times \
+       $lat_model "$train_lat" "ark:| gzip -c > $train_lattice_path" \
+       2>&1 | tee $log  || \
+       flock -w -1 $lockfile echo "finally get file lock"
+done
 
 dev_lattice_path=$dir/dev.lab_${lattice_N_times}_${acwt}.gz
-[ -f $dev_lattice_path ] || lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times $lat_model "$cv_lat" "ark:| gzip -c > $dev_lattice_path" \
-   2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+while [ ! -f $dev_lattice_path ]; do
+    lockfile=/tmp/$(basename $dev_lattice_path)
+    flock -n $lockfile \
+       lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times \
+       $lat_model "$cv_lat" "ark:| gzip -c > $dev_lattice_path" \
+       2>&1 | tee $log  || \
+       flock -w -1 $lockfile echo "finally get file lock"
+done
 
 
 mlp_best=$mlp_init
@@ -118,9 +132,16 @@ for iter in $(seq -w $max_iters); do
    log=$tmpdir/log/iter${iter}.ptr.log; hostname>$log
 
    train_lattice_path_rand=$dir/train.lab_${lattice_N}_${acwt}_${seed}.gz
-   [ -f $train_lattice_path_rand ] || \
-      lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --random true --srand $seed --n $lattice_N $lat_model "$train_lat" "ark:| gzip -c > $train_lattice_path_rand" \
-      2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   while [ ! -f $train_lattice_path_rand ]; do
+       lockfile=/tmp/$(basename $train_lattice_path_rand)
+       flock -n $lockfile \
+          lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --random true --srand $seed \
+          --n $lattice_N $lat_model "$train_lat" "ark:| gzip -c > $train_lattice_path_rand" \
+          2>&1 | tee $log  || \
+          flock -w -1 $lockfile echo "finally get file lock"
+   done
+
 
    seed=$((seed + 1))
 
@@ -198,8 +219,9 @@ done
 echo "train success"
 
 cp $mlp_best $model_out
-rm -f $tmpdir/train_tmp.ark
-rm -f $tmpdir/train.lab
+#rm -f $tmpdir/train_tmp.ark
+#rm -f $tmpdir/train.lab
+rm -rf $tmpdir
 
 
 exit 0;

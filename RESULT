@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for file in data/nn_post/data_nn.log_2000_*_*00__0.0005_0.16 ;
+for file in log/data/nn_post/data_nn.log_2000_*_*00__0.0001_0.16 ;
 do
    grep -H WER $file | tail -n 1 
 done

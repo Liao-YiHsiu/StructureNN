@@ -2,7 +2,7 @@
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/../path
-cpus=4
+cpus=$(nproc)
 
 dir=$(mktemp -d)
 

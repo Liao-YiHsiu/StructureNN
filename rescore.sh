@@ -71,6 +71,7 @@ files="$model $dev_lattice_path_gz $test_lattice_gz $dir/test.ark $dir/dev.ark $
 
    pi=$(echo "scale=10; 4*a(1)" | bc -l)
 
+
    # use dev set to tune the weight.
    for ((n = 0; n <= $N; n++))
    do
@@ -78,13 +79,12 @@ files="$model $dev_lattice_path_gz $test_lattice_gz $dir/test.ark $dir/dev.ark $
       w=$(echo "s($theta)/c($theta)" | bc -l)
       tmp_log=$tmpdir/log.$n
 
-      compute-wer "ark:trim-path \"$dev_lab\" ark:- | trans.sh ark:- ark:- |" "ark:weight-score-path ark:- 1 ark:$tmpdir/lat $w ark:$tmpdir/lab | best-score-path ark:- ark:- |split-score-path ark:- ark:/dev/null ark:- | trim-path ark:- ark:- | trans.sh ark:- ark:- |" 2>&1 >$tmp_log &
+      cat >> $tmpdir/parallel << EOF
+compute-wer "ark:trim-path \"$dev_lab\" ark:- | trans.sh ark:- ark:- |" "ark:weight-score-path ark:- 1 ark:$tmpdir/lat $w ark:$tmpdir/lab | best-score-path ark:- ark:- |split-score-path ark:- ark:/dev/null ark:- | trim-path ark:- ark:- | trans.sh ark:- ark:- |" 2>&1 >$tmp_log 
+EOF
    done
 
-   for job in `jobs -p`
-   do
-      wait $job || exit 1; 
-   done
+   cat $tmpdir/parallel | xargs -I CMD --max-procs=$(nproc) bash -c CMD || exit 1
    
    min=100
    best_w=-1
