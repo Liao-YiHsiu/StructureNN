@@ -66,10 +66,10 @@ echo $command_line \
           flock -w -1 $lockfile echo "finally get file lock"
    done
 
-   snnet-score ark:$dir/test.ark "ark:gunzip -c $test_lattice_path |" $model ark:${model}.tag\
+   snnet-score ark:$dir/test.ark "ark:gunzip -c $test_lattice_path |" $model "ark:| gzip -c > ${model}.tag.gz"\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   best-score-path ark:${model}.tag ark:${model}.tag.1best
+   best-score-path "ark:gunzip -c ${model}.tag.gz |" ark:${model}.tag.1best
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    calc.sh ark:$dir/test.lab ark:${model}.tag.1best \
