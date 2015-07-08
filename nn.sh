@@ -35,7 +35,7 @@ lattice_N_times=$((lattice_N))
 
 [ ! -d log/$dir ] && mkdir -p log/$dir
 
-echo $command_line \
+echo "$HOSTNAME \n $command_line" \
 2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    #check file existence.
