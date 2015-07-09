@@ -2,9 +2,15 @@
 #define _NNET_CACHE_H_
 
 #include "nnet/nnet-nnet.h"
-
+#include "base/kaldi-common.h"
+#include "util/common-utils.h"
+#include "nnet-cache.h"
+#include <iostream>
+#include <string>
+#include <vector>
 
 using namespace std;
+using namespace kaldi;
 using namespace kaldi::nnet1;
 
 // an Nnet with buffer

@@ -60,3 +60,4 @@ for file in $DIR/gen_*.sh;
 do
    $file
 done
+

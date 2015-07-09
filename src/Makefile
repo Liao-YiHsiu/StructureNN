@@ -18,9 +18,9 @@ BINFILES = post-phn acc con-svm nnet-pop lab-lda gen-lab lattice-to-vec \
 	   snnet-best score-baseline lattice-baseline post-to-vec vec-to-score-path\
 	   score-path-copy weight-basefloat best-score-path snnet-score weight-score-path\
 	   normalize-score-path exp-score-path log-score-path cmvn-score-path replace-feats \
-	   score-oracle score-path-point snnet-train-fullshuff
+	   score-oracle score-path-point snnet-train-fullshuff snnet-score2
 
-OBJFILES = kernel.o svm.o
+OBJFILES = kernel.o svm.o snnet.o nnet-cache.o
 
 TESTFILES = 
 

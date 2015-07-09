@@ -69,7 +69,6 @@ template<class V, class T> class ValueVectorPair{
       Table val;
 };
 
-
 typedef ValueVectorPair<BaseFloat, int32> ScorePath;
 typedef SequentialTableReader<KaldiObjectHolder<ScorePath> > SequentialScorePathReader;
 typedef TableWriter<KaldiObjectHolder<ScorePath> > ScorePathWriter;

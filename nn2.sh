@@ -6,7 +6,7 @@ dnn_depth=1
 dnn_width=200
 lattice_N=1000
 train_opt=
-learn_rate=0.0005
+learn_rate=0.0001
 cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
@@ -16,7 +16,7 @@ command_line="$0 $@"
 
 . parse_options.sh || exit 1;
 
-files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat"
+files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat nnet1"
 
 if [ "$#" -ne 1 ]; then
    echo "Train Structure SVM with NN on a data set"
@@ -28,8 +28,12 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-log=log/$dir/data_nn.log_${lattice_N}_${dnn_depth}_${dnn_width}__${learn_rate}_${acwt}
-model=$dir/data_nn.model_${lattice_N}_${dnn_depth}_${dnn_width}__${learn_rate}_${acwt}
+paramId=${lattice_N}_${dnn_depth}_${dnn_width}__${learn_rate}_${acwt}
+
+log=log/$dir/${paramId}.log
+data=   $dir/${paramId}.data
+model1= $dir/${paramId}.nnet1
+model2= $dir/${paramId}.nnet2
 
 lattice_N_times=$((lattice_N))
 
@@ -41,6 +45,8 @@ echo "$HOSTNAME `date`" \
 echo "$command_line" \
 2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
+stateMax=$(copy-int-vector "$dir/train.lab" ark,t:-| cut -f 2- -d ' ' | tr " " "\n" | awk 'n < $0 {n=$0}END{print n}')
+
    #check file existence.
    for file in $files;
    do
@@ -50,12 +56,12 @@ echo "$command_line" \
    echo "SVM with NN training start..................................."\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   [ -f $model ] || snnet/train.sh --error-function $error_function --cpus $cpus\
+   [ -f $model1 -a -f $model2 ] || snnet/train2.sh --error-function $error_function --cpus $cpus\
       --dnn-depth $dnn_depth --dnn-width $dnn_width --lattice-N $lattice_N\
       --learn-rate $learn_rate --acwt $acwt \
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
-      $dir $lat_model $model \
+      $dir $lat_model $model1 $model2 $stateMax\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    test_lattice_path=$dir/test.lab_${lattice_N_times}_${acwt}.gz
@@ -69,21 +75,14 @@ echo "$command_line" \
           flock -w -1 $lockfile echo "finally get file lock"
    done
 
-   snnet-score ark:$dir/test.ark "ark:gunzip -c $test_lattice_path |" $model "ark:| gzip -c > ${model}.tag.gz"\
+   snnet-score2 ark:$dir/test.ark "ark:gunzip -c $test_lattice_path |" $model1 $model2 $stateMax "ark:| gzip -c > ${data}.tag.gz"\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   best-score-path "ark:gunzip -c ${model}.tag.gz |" ark:${model}.tag.1best
+   best-score-path "ark:gunzip -c ${data}.tag.gz |" ark:${data}.tag.1best
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   calc.sh ark:$dir/test.lab ark:${model}.tag.1best \
+   calc.sh ark:$dir/test.lab ark:${data}.tag.1best \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-#   log=$dir/data_nn.log_${lattice_N}_${dnn_depth}_${dnn_width}_${train_opt}_${keep_lr_iters}_${acwt}_sample
-#   snnet-gibbs --init-path="ark:split-path-score ark:${model}.tag ark:/dev/null ark:- |" ark:$dir/test.ark $model ark,t:${model}.tag.sample\
-#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-#
-#   calc.sh ark:$dir/test.lab ark:${model}.tag.sample \
-#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 echo "Finish Time: `date`" \
 2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;

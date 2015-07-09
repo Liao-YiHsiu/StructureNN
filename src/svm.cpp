@@ -1,8 +1,6 @@
 #include "svm.h"
 #include "kernel.h"
 
-
-
 double frame_acc(const vector<int32>& path1, const vector<int32>& path2, double param){
 
    assert(path1.size() == path2.size());

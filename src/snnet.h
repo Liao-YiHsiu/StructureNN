@@ -1,15 +1,18 @@
+#ifndef SNNET_H_
+#define SNNET_H_
+
 #include "nnet/nnet-nnet.h"
 #include "base/kaldi-common.h"
+#include "nnet/nnet-randomizer.h"
 #include "util/common-utils.h"
 #include "nnet-cache.h"
 #include <iostream>
 #include <string>
 #include <vector>
 
-#ifndef SNNET_H_
-#define SNNET_H_
 
 using namespace std;
+using namespace kaldi;
 using namespace kaldi::nnet1;
 
 class SNnet{
@@ -28,11 +31,11 @@ class SNnet{
    public:
       /// NOTE: labels are 1-based not 0-based
       /// Perform forward pass through the network
-      void Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr, const vector<vector<int32> > &labels, CuMatrix<BaseFloat> *out); 
+      void Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr, const vector<vector<int32>* > &labels, CuMatrix<BaseFloat> *out); 
       /// Perform backward pass through the network
       void Backpropagate(const CuMatrix<BaseFloat> &out_diff);
       /// Perform forward pass through the network, don't keep buffers (use it when not training)
-      void Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr, const vector<vector<int32> > &labels, CuMatrix<BaseFloat> *out);
+      void Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr, const vector<vector<int32>* > &labels, CuMatrix<BaseFloat> *out);
 
       /// Dimensionality on network input (input feature dim.)
       int32 InputDim() const; 
@@ -40,6 +43,9 @@ class SNnet{
       int32 OutputDim() const; 
 
       int32 NumParams() const;
+
+      /// Set the dropout rate 
+      void SetDropoutRetention(BaseFloat r);
 
       /// Initialize MLP from config
       void Init(const string &config_file1, const string &config_file2, int stateMax);
@@ -64,16 +70,16 @@ class SNnet{
       const NnetTrainOptions& GetTrainOptions() const;
 
    private:
-      void Psi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<int32> > &labels, CuMatrix<BaseFloat> *out);
-      void BackPsi(const CuMatrix<BaseFloat> &diff, const vector<vector<int32> > &labels, vector<CuMatrix<BaseFloat> > *feats_diff);
+      void Psi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<int32>* > &labels, CuMatrix<BaseFloat> *out);
+      void BackPsi(const CuMatrix<BaseFloat> &diff, const vector<vector<int32>* > &labels, vector<CuMatrix<BaseFloat> > &feats_diff);
 
-      void makeFeat(CuMatrix<BaseFloat> &feat, const vector<int32> &label, CuSubVector<BaseFloat> &vec);
+      void makeFeat(CuMatrix<BaseFloat> &feat, const vector<int32> &label, CuSubVector<BaseFloat> vec);
       void distErr(const CuSubVector<BaseFloat> &diff, const vector<int32>& label, CuMatrix<BaseFloat> &mat);
 
       vector<CuMatrix<BaseFloat> > propagate_buf_;
       vector<CuMatrix<BaseFloat> > backpropagate_buf_;
 
-      vector< vector<int32> > labels_;
+      vector< vector<int32>* > labels_;
 
       CuMatrix<BaseFloat> psi_buff_;
       CuMatrix<BaseFloat> psi_diff_;

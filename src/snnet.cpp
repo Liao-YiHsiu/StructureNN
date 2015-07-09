@@ -4,6 +4,7 @@ SNnet & SNnet::operator = (const SNnet &other){
    nnet1_ = other.nnet1_;
    nnet2_ = other.nnet2_;
    stateMax_ = other.stateMax_;
+   return *this;
 }
 
 SNnet::~SNnet(){
@@ -12,7 +13,7 @@ SNnet::~SNnet(){
 
 
 void SNnet::Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr, 
-      const vector<vector<int32> > &labels, CuMatrix<BaseFloat> *out){
+      const vector<vector<int32>* > &labels, CuMatrix<BaseFloat> *out){
 
    assert(in_arr.size() == labels.size());
    if( propagate_buf_.size() != in_arr.size() ){
@@ -36,7 +37,7 @@ void SNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff){
 
    nnet2_.Backpropagate(out_diff, &psi_diff_);
 
-   BackPsi(psi_diff_, labels_, &backpropaget_buf_);
+   BackPsi(psi_diff_, labels_, backpropagate_buf_);
 
    for(int i = 0; i < backpropagate_buf_.size(); ++i)
       nnet1_.Backpropagate(backpropagate_buf_[i], NULL, i);
@@ -44,7 +45,7 @@ void SNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff){
    nnet1_.Update();
 }
 
-void SNnet::Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr, const vector<vector<int32> > &labels, CuMatrix<BaseFloat> *out){
+void SNnet::Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr, const vector<vector<int32>* > &labels, CuMatrix<BaseFloat> *out){
 
    assert(in_arr.size() == labels.size());
 
@@ -73,6 +74,11 @@ int32 SNnet::OutputDim() const{
 
 int32 SNnet::NumParams() const{
    return nnet1_.NumParams() + nnet2_.NumParams();
+}
+
+void SNnet::SetDropoutRetention(BaseFloat r){
+   nnet1_.SetDropoutRetention(r);
+   nnet2_.SetDropoutRetention(r);
 }
 
 void SNnet::Init(const string &config_file1, const string &config_file2, int stateMax) {
@@ -126,12 +132,12 @@ void SNnet::SetTrainOptions(const NnetTrainOptions& opts) {
    nnet2_.SetTrainOptions(opts);
 }
 
-const SNnet::NnetTrainOptions& GetTrainOptions() const {
+const NnetTrainOptions& SNnet::GetTrainOptions() const {
    return nnet2_.GetTrainOptions();
 }
 
 
-void SNnet::Psi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<int32> > &labels, CuMatrix<BaseFloat> *out){
+void SNnet::Psi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<int32>* > &labels, CuMatrix<BaseFloat> *out){
    KALDI_ASSERT(out != NULL);
    KALDI_ASSERT(feats.size() == labels.size());
 
@@ -141,25 +147,24 @@ void SNnet::Psi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<int32> 
    out->Resize(N, (F + 1)*(stateMax_ + 1) + stateMax_ * stateMax_, kSetZero);
 
    for(int i = 0; i < N; ++i){
-      makeFeat(feats[i], labels[i], out->Row(i));
+      makeFeat(feats[i], *labels[i], out->Row(i));
    }
 }
 
-void SNnet::BackPsi(const CuMatrix<BaseFloat> &diff, const vector<vector<int32> > &labels, vector<CuMatrix<BaseFloat> > &feats_diff){
+void SNnet::BackPsi(const CuMatrix<BaseFloat> &diff, const vector<vector<int32>* > &labels, vector<CuMatrix<BaseFloat> > &feats_diff){
 
-   KALDI_ASSERT(feats_diff != NULL);
-   KALDI_ASSERT(feats_diff->size() == labels.size());
+   KALDI_ASSERT(feats_diff.size() == labels.size());
 
    for(int i = 0; i < labels.size(); ++i){
-      feats_diff[i].Resize(labels[i].size(), nnet1_.OutputDim(), kSetZero);
-      distErr(diff.Row(i), labels[i], feats_diff[i]);
+      feats_diff[i].Resize(labels[i]->size(), nnet1_.OutputDim(), kSetZero);
+      distErr(diff.Row(i), *labels[i], feats_diff[i]);
    }
 }
 
 
 // TODO: unnormalized
 // cut it into 2 parts. cpu parts(transitions) and gpu parts(observations)
-void SNnet::makeFeat(CuMatrix<BaseFloat> &feat, const vector<int32> &label, CuSubVector<BaseFloat> &vec) {
+void SNnet::makeFeat(CuMatrix<BaseFloat> &feat, const vector<int32> &label, CuSubVector<BaseFloat> vec) {
    KALDI_ASSERT(feat.NumRows() == label.size());
 
    int F = feat.NumCols();
@@ -200,7 +205,7 @@ void SNnet::distErr(const CuSubVector<BaseFloat> &diff, const vector<int32>& lab
    CuSubVector<BaseFloat> dummy(diff, 0, F);
 
    for(int i = 0; i < label.size(); ++i){
-      CuSubVector<BaseFloat> obs(diff, label[i]*F, f);
+      CuSubVector<BaseFloat> obs(diff, label[i]*F, F);
 
       mat.Row(i).AddVec(1, dummy);
       mat.Row(i).AddVec(1, obs);
