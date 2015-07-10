@@ -22,6 +22,7 @@
 #include "util/common-utils.h"
 #include "hmm/transition-model.h"
 #include "hmm/posterior.h"
+#include "svm.h"
 #include <fstream>
 
 #define MAX_MAP 10240
@@ -68,13 +69,13 @@ int main(int argc, char *argv[]) {
            vec_wspecifier  = po.GetArg(2);
 
     SequentialPosteriorReader posterior_reader(post_rspecifier);
-    Int32VectorWriter         vector_writer(vec_wspecifier);
+    UcharVectorWriter         vector_writer(vec_wspecifier);
 
     int num_done = 0;
 
     for (; !posterior_reader.Done(); posterior_reader.Next()) {
       const Posterior &posterior = posterior_reader.Value();
-      vector<int32> arr(posterior.size());
+      vector<uchar> arr(posterior.size());
       for(int i = 0; i < posterior.size(); ++i)
          arr[i] = mapping[posterior[i][0].first];
 

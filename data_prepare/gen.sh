@@ -18,11 +18,11 @@ files="train.lab dev.lab test.lab train32.lab dev32.lab test32.lab train.lat tes
 rm -f $files
 
 gen-lab $timit_corpus $timit/conf/phones.60-48-39.map $timit/data/lang/words.txt $source_tr ark:- | \
-      tee train32.lab | int32-to-uchar ark:- ark:train.lab || exit 1;
+      tee train.lab | uchar-to-int32 ark:- ark:train32.lab || exit 1;
 gen-lab $timit_corpus $timit/conf/phones.60-48-39.map $timit/data/lang/words.txt $source_dv ark:- | \
-      tee dev32.lab   | int32-to-uchar ark:- ark:dev.lab   || exit 1;
+      tee dev.lab   | uchar-to-int32 ark:- ark:dev32.lab   || exit 1;
 gen-lab $timit_corpus $timit/conf/phones.60-48-39.map $timit/data/lang/words.txt $source_ts ark:- | \
-      tee test32.lab  | int32-to-uchar ark:- ark:test.lab  || exit 1;
+      tee test.lab  | uchar-to-int32 ark:- ark:test32.lab  || exit 1;
 
 [ -e $timit/exp/dnn4_pretrain-dbn_dnn_smbr/decode_tr_it6 ] || (
 		dir=exp/dnn4_pretrain-dbn_dnn_smbr
@@ -46,7 +46,7 @@ for i in $(seq 1 20);do gunzip -c $timit/exp/dnn4_pretrain-dbn_dnn_smbr/decode_d
 for script in $DIR/gen_*.sh;
 do
    base=$(basename $script)
-   tmp=${base#gen_}
+   tmp=${base#gen_*_}
    dir=${tmp%.sh}
    mkdir $dir
 
@@ -59,9 +59,7 @@ do
 done
 
 # generate features.
-for file in $(ls $DIR/gen_*.sh | grep -v gen_nnet.sh);
+for file in $(ls $DIR/gen_*.sh)
 do
    $file
 done
-
-$DIR/gen_nnet.sh

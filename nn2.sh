@@ -47,7 +47,7 @@ echo "$HOSTNAME `date`" \
 echo "$command_line" \
 2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-stateMax=$(copy-int-vector "ark:$dir/train.lab" ark,t:-| cut -f 2- -d ' ' | tr " " "\n" | awk 'n < $0 {n=$0}END{print n}')
+stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr " " "\n" | awk 'n < $0 {n=$0}END{print n}')
 
    #check file existence.
    for file in $files;

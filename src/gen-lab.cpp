@@ -41,11 +41,11 @@ int main(int argc, char* argv[]){
          string wspecifier = po.GetArg(5);
 
          SequentialBaseFloatMatrixReader kaldi_reader(rspecifier);
-         Int32VectorWriter label_writer(wspecifier);
+         UcharVectorWriter label_writer(wspecifier);
 
          for (int index = 1; !kaldi_reader.Done(); kaldi_reader.Next(), index++){
             const Matrix<BaseFloat> &matrix = kaldi_reader.Value();
-            vector<int32> phIdx(matrix.NumRows());
+            vector<uchar> phIdx(matrix.NumRows());
             getPhone(kaldi_reader.Key(), timit_path, phMap, phIdx);
 
             label_writer.Write(kaldi_reader.Key(), phIdx);
