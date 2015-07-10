@@ -13,13 +13,16 @@ source_tr="scp,s,cs:$timit/data-fmllr-tri3/train/feats.scp"
 source_ts="scp,s,cs:$timit/data-fmllr-tri3/test/feats.scp"
 source_dv="scp,s,cs:$timit/data-fmllr-tri3/dev/feats.scp"
 
-files="train.lab dev.lab test.lab train.lat test.lat dev.lat"
+files="train.lab dev.lab test.lab train32.lab dev32.lab test32.lab train.lat test.lat dev.lat "
 
 rm -f $files
 
-gen-lab $timit_corpus $timit/conf/phones.60-48-39.map $timit/data/lang/words.txt $source_tr ark:train.lab || exit 1;
-gen-lab $timit_corpus $timit/conf/phones.60-48-39.map $timit/data/lang/words.txt $source_dv ark:dev.lab || exit 1;
-gen-lab $timit_corpus $timit/conf/phones.60-48-39.map $timit/data/lang/words.txt $source_ts ark:test.lab || exit 1;
+gen-lab $timit_corpus $timit/conf/phones.60-48-39.map $timit/data/lang/words.txt $source_tr ark:- | \
+      tee train32.lab | int32-to-uchar ark:- ark:train.lab || exit 1;
+gen-lab $timit_corpus $timit/conf/phones.60-48-39.map $timit/data/lang/words.txt $source_dv ark:- | \
+      tee dev32.lab   | int32-to-uchar ark:- ark:dev.lab   || exit 1;
+gen-lab $timit_corpus $timit/conf/phones.60-48-39.map $timit/data/lang/words.txt $source_ts ark:- | \
+      tee test32.lab  | int32-to-uchar ark:- ark:test.lab  || exit 1;
 
 [ -e $timit/exp/dnn4_pretrain-dbn_dnn_smbr/decode_tr_it6 ] || (
 		dir=exp/dnn4_pretrain-dbn_dnn_smbr
@@ -56,8 +59,9 @@ do
 done
 
 # generate features.
-for file in $DIR/gen_*.sh;
+for file in $(ls $DIR/gen_*.sh | grep -v gen_nnet.sh);
 do
    $file
 done
 
+$DIR/gen_nnet.sh

@@ -17,7 +17,7 @@ if [ ! -f model.nnet ]; then
    nnet-initialize $mlp_proto $mlp_init || exit 1; 
 
    # train NN label
-   train.sh $mlp_init "$feats_tr" "ark:ali-to-post ark:train.lab ark:- |" "$feats_dv" "ark:ali-to-post ark:dev.lab ark:- |" model.nnet || exit 1
+   train.sh $mlp_init "$feats_tr" "ark:ali-to-post ark:train32.lab ark:- |" "$feats_dv" "ark:ali-to-post ark:dev32.lab ark:- |" model.nnet || exit 1
 fi
 
 nnet-concat $timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.nnet model.nnet final.nnet || exit 1;
