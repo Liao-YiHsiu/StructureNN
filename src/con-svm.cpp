@@ -6,13 +6,13 @@
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "matrix/kaldi-matrix.h"
+#include "svm.h"
 #include "util.h"
 
 using namespace std;
 using namespace kaldi;
 
-void gen(ofstream &fout, int index,const Matrix<BaseFloat> &matrix,const vector<int32> &phIdx, const string& cmt);
-void getLabel(const string &path,  map<string, vector<int> > &labelMap);
+void gen(ofstream &fout, int index,const Matrix<BaseFloat> &matrix,const vector<uchar> &phIdx, const string& cmt);
 
 int main(int argc, char* argv[]){
    // parse arguement.
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]){
         // SequentialBaseFloatMatrixReader feats_reader(feats_rspecifier);
         // RandomAccessInt32VectorReader   label_reader(label_rspecifier);
          RandomAccessBaseFloatMatrixReader feats_reader(feats_rspecifier);
-         SequentialInt32VectorReader       label_reader(label_rspecifier);
+         SequentialUcharVectorReader       label_reader(label_rspecifier);
 
          for (int index = 1; !label_reader.Done(); label_reader.Next(), index++){
             //const Matrix<BaseFloat> &matrix = label_reader.Value();
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]){
    return 0;
 }
 
-void gen(ofstream &fout, int index, const Matrix<BaseFloat> &matrix, const vector<int32> &phIdx, const string& cmt){
+void gen(ofstream &fout, int index, const Matrix<BaseFloat> &matrix, const vector<uchar> &phIdx, const string& cmt){
    int F = matrix.NumCols(), T = matrix.NumRows();
    assert(T == phIdx.size());
 

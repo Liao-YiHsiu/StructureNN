@@ -33,8 +33,8 @@ mlp_proto=
 seed=777
 learn_rate=0.004
 momentum=0.9
-minibatch_size=256
-randomizer_size=20000000
+minibatch_size=16
+randomizer_size=32768
 error_function="fer"
 train_tool="snnet-train-fullshuff"
 dnn_depth=1
@@ -44,6 +44,8 @@ negative_num=$((lattice_N*2))
 acwt=0.2
 train_opt=
 cpus=$(nproc)
+feature_transform=
+objective_function=
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
@@ -52,7 +54,7 @@ echo "$0 $@"  # Print the command line for logging
 
 files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat nnet1"
 
-if [ "$#" -ne 4 ]; then
+if [ "$#" -ne 5 ]; then
    echo "Perform structure DNN training"
    echo "Usage: $0 <dir> <lattice_model> <nnet1-out> <nnet2-out> <stateMax>"
    echo "eg. $0 data/nn_post lat_model.in nnet1.out nnet2.out 48"
@@ -155,6 +157,8 @@ for iter in $(seq -w $max_iters); do
       --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
       --verbose=$verbose --binary=true --randomizer-seed=$seed \
       --negative-num=$negative_num --error-function=$error_function \
+      ${feature_transform:+ --feature-transform="$feature_transform"} \
+      ${objective_function:+ --objective-function="$objective_function"} \
       ${train_opt:+ "$train_opt"} \
       "$train_ark" "$train_lab" "ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path_rand |\" \"ark:gunzip -c $train_lattice_path |\" |" \
       $mlp1_best $mlp2_best $stateMax $mlp1_next $mlp2_next \

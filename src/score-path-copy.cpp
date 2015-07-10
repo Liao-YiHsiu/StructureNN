@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
        if(map_file != ""){
           ScorePath::Table& table = score_path.Value();
           for(int i = 0; i < table.size(); ++i){
-             vector<int32> &arr= table[i].second;
+             vector<uchar> &arr= table[i].second;
              for(int j = 0; j < arr.size(); ++j)
                 arr[j] = mapping[arr[j]];
           }

@@ -54,8 +54,8 @@ int main(int argc, char *argv[]) {
 
        for(int i = 0; i < table1.size(); ++i){
 
-          const vector<int32> &lab1 = table1[i].second;
-          const vector<int32> &lab2 = table2[i].second;
+          const vector<uchar> &lab1 = table1[i].second;
+          const vector<uchar> &lab2 = table2[i].second;
 
           // check if lab1 == lab2
           for(int j = 0; j < lab1.size(); ++j)

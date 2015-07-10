@@ -37,15 +37,15 @@ int main(int argc, char *argv[]) {
 
 
     ifstream  fin(svm_tags_file.c_str());
-    SequentialInt32VectorReader  label_reader(label_rspecifier);
-    Int32VectorWriter            path_writer(path_wspecifier);
+    SequentialUcharVectorReader  label_reader(label_rspecifier);
+    UcharVectorWriter            path_writer(path_wspecifier);
 
     int N = 0;
     for ( ; !label_reader.Done(); label_reader.Next(), N++) {
 
-       const vector<int32> &label = label_reader.Value(); 
+       const vector<uchar> &label = label_reader.Value(); 
 
-       vector<int32> tmp(label.size());
+       vector<uchar> tmp(label.size());
        for(int i = 0; i < label.size(); ++i)
           assert(fin >> tmp[i]);
 

@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     string  vector_rspecifier = po.GetArg(1),
         score_path_wspecifier = po.GetArg(2);
 
-    SequentialInt32VectorReader vector_reader(vector_rspecifier);
+    SequentialUcharVectorReader vector_reader(vector_rspecifier);
     ScorePathWriter             score_path_writer(score_path_wspecifier);
 
     SequentialBaseFloatReader   score_reader;
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 
        if(score_rspecifier != "") assert(score_reader.Key() == key);
 
-       const vector<int32> &path = vector_reader.Value();
+       const vector<uchar> &path = vector_reader.Value();
 
        if(pKey == "" || nkey.compare(pKey) != 0){
           if(pKey != ""){

@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
     string score_path_rspecifier = po.GetArg(2);
 
     SequentialScorePathReader   score_path_reader(score_path_rspecifier);
-    SequentialInt32VectorReader label_reader(label_rspecifier);
+    SequentialUcharVectorReader label_reader(label_rspecifier);
 
     int aveCnt = 0,
         aveN   = 0,
@@ -50,9 +50,9 @@ int main(int argc, char *argv[]) {
 
        assert(score_path_reader.Key() == label_reader.Key());
        const ScorePath::Table &table = score_path_reader.Value().Value();
-       const vector<int32>    &ref   = label_reader.Value();
+       const vector<uchar>    &ref   = label_reader.Value();
 
-       vector<int32> ref_trim;
+       vector<uchar> ref_trim;
        trim_path(ref, ref_trim);
 
        int max = 0;
@@ -60,14 +60,11 @@ int main(int argc, char *argv[]) {
 
        for(int i = 0; i < table.size(); ++i){
           // compare table[i].second with label
-          const vector<int32> &lab = table[i].second;
+          const vector<uchar> &lab = table[i].second;
           assert(lab.size() == ref.size());
 
-          vector<int32> lab_trim;
-          trim_path(lab, lab_trim);
+          int dist = (1 - phone_acc(ref, lab)) * ref_trim.size();
 
-          int32 dist = LevenshteinEditDistance(ref_trim, lab_trim);
-          
           aveCnt += dist;
           aveN += ref_trim.size();
 

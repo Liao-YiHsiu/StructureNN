@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
       target_model_filename;
 
     // function pointer used in calculating target.
-    double (*acc_function)(const vector<int32>& path1, const vector<int32>& path2, double param);
+    double (*acc_function)(const vector<uchar>& path1, const vector<uchar>& path2, double param);
 
     if(error_function == "fer")
        acc_function = frame_acc;
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
 
     SequentialScorePathReader        score_path_reader(score_path_rspecifier);
     SequentialBaseFloatMatrixReader  feature_reader(feat_rspecifier);
-    SequentialInt32VectorReader      label_reader(label_rspecifier);
+    SequentialUcharVectorReader      label_reader(label_rspecifier);
 
     //Select the GPU
 #if HAVE_CUDA==1
@@ -156,7 +156,7 @@ int main(int argc, char *argv[]) {
 
         const ScorePath::Table  &table = score_path_reader.Value().Value();
         const Matrix<BaseFloat> &feat  = feature_reader.Value();
-        const vector<int32>     &label = label_reader.Value();
+        const vector<uchar>     &label = label_reader.Value();
 
         if(featsN < 0)
            featsN = (feat.NumCols() + max_state) * max_state;
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
         }
 
         // random negitive example
-        vector<int32> neg_arr(label.size());
+        vector<uchar> neg_arr(label.size());
         for(int i = 0; i < negative_num; ++i){
            for(int j = 0; j < neg_arr.size(); ++j)
               neg_arr[j] = rand() % max_state + 1;

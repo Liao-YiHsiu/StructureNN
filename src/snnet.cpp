@@ -13,7 +13,7 @@ SNnet::~SNnet(){
 
 
 void SNnet::Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr, 
-      const vector<vector<int32>* > &labels, CuMatrix<BaseFloat> *out){
+      const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
 
    assert(in_arr.size() == labels.size());
    if( propagate_buf_.size() != in_arr.size() ){
@@ -21,14 +21,29 @@ void SNnet::Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr,
       backpropagate_buf_.resize(in_arr.size());
    }
 
+   CuMatrix<BaseFloat> transf_buf;
    for(int i = 0; i < in_arr.size(); ++i){
-      nnet1_.Propagate(*in_arr[i], &propagate_buf_[i], i);
+      nnet_transf_.Feedforward(*in_arr[i], &transf_buf);
+
+      if (!KALDI_ISFINITE(transf_buf.Sum())) { // check there's no nan/inf,
+        KALDI_ERR << "NaN or inf found in nn-output trans";
+      }
+
+      nnet1_.Propagate(transf_buf, &propagate_buf_[i], i);
    }
 
    // combine each buffer according to label
    Psi(propagate_buf_, labels, &psi_buff_);
 
+   if (!KALDI_ISFINITE(psi_buff_.Sum())) { // check there's no nan/inf,
+      KALDI_ERR << "NaN or inf found in nn-output psi";
+   }
+
    nnet2_.Propagate(psi_buff_, out);
+
+   if (!KALDI_ISFINITE(out->Sum())) { // check there's no nan/inf,
+      KALDI_ERR << "NaN or inf found in nn-output nnet2";
+   }
 
    labels_ = labels;
 }
@@ -45,7 +60,7 @@ void SNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff){
    nnet1_.Update();
 }
 
-void SNnet::Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr, const vector<vector<int32>* > &labels, CuMatrix<BaseFloat> *out){
+void SNnet::Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
 
    assert(in_arr.size() == labels.size());
 
@@ -54,8 +69,10 @@ void SNnet::Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr, const vecto
       backpropagate_buf_.resize(in_arr.size());
    }
 
+   CuMatrix<BaseFloat> transf_buf;
    for(int i = 0; i < in_arr.size(); ++i){
-      nnet1_.Feedforward(*in_arr[i], &propagate_buf_[i]);
+      nnet_transf_.Feedforward(*in_arr[i], &transf_buf);
+      nnet1_.Feedforward(transf_buf, &propagate_buf_[i]);
    }
 
    // combine each buffer according to label
@@ -81,7 +98,7 @@ void SNnet::SetDropoutRetention(BaseFloat r){
    nnet2_.SetDropoutRetention(r);
 }
 
-void SNnet::Init(const string &config_file1, const string &config_file2, int stateMax) {
+void SNnet::Init(const string &config_file1, const string &config_file2, uchar stateMax) {
    nnet1_.Init(config_file1);
    nnet2_.Init(config_file2);
    stateMax_ = stateMax;
@@ -89,7 +106,7 @@ void SNnet::Init(const string &config_file1, const string &config_file2, int sta
    Check();
 }
 
-void SNnet::Read(const string &file1, const string &file2, int stateMax) {
+void SNnet::Read(const string &file1, const string &file2, uchar stateMax) {
    nnet1_.Read(file1);
    nnet2_.Read(file2);
    stateMax_ = stateMax;
@@ -136,8 +153,12 @@ const NnetTrainOptions& SNnet::GetTrainOptions() const {
    return nnet2_.GetTrainOptions();
 }
 
+void SNnet::SetTransform(const Nnet &nnet){
+   nnet_transf_ = nnet;
+}
 
-void SNnet::Psi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<int32>* > &labels, CuMatrix<BaseFloat> *out){
+
+void SNnet::Psi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
    KALDI_ASSERT(out != NULL);
    KALDI_ASSERT(feats.size() == labels.size());
 
@@ -151,7 +172,7 @@ void SNnet::Psi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<int32>*
    }
 }
 
-void SNnet::BackPsi(const CuMatrix<BaseFloat> &diff, const vector<vector<int32>* > &labels, vector<CuMatrix<BaseFloat> > &feats_diff){
+void SNnet::BackPsi(const CuMatrix<BaseFloat> &diff, const vector<vector<uchar>* > &labels, vector<CuMatrix<BaseFloat> > &feats_diff){
 
    KALDI_ASSERT(feats_diff.size() == labels.size());
 
@@ -164,7 +185,7 @@ void SNnet::BackPsi(const CuMatrix<BaseFloat> &diff, const vector<vector<int32>*
 
 // TODO: unnormalized
 // cut it into 2 parts. cpu parts(transitions) and gpu parts(observations)
-void SNnet::makeFeat(CuMatrix<BaseFloat> &feat, const vector<int32> &label, CuSubVector<BaseFloat> vec) {
+void SNnet::makeFeat(CuMatrix<BaseFloat> &feat, const vector<uchar> &label, CuSubVector<BaseFloat> vec) {
    KALDI_ASSERT(feat.NumRows() == label.size());
 
    int F = feat.NumCols();
@@ -196,7 +217,7 @@ void SNnet::makeFeat(CuMatrix<BaseFloat> &feat, const vector<int32> &label, CuSu
    trans_gpu.CopyFromVec(trans);
 }
 
-void SNnet::distErr(const CuSubVector<BaseFloat> &diff, const vector<int32>& label, CuMatrix<BaseFloat> &mat){
+void SNnet::distErr(const CuSubVector<BaseFloat> &diff, const vector<uchar>& label, CuMatrix<BaseFloat> &mat){
    KALDI_ASSERT(mat.NumRows() == label.size());
    KALDI_ASSERT(mat.NumCols() == nnet1_.OutputDim());
 

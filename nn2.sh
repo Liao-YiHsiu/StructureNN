@@ -10,6 +10,8 @@ learn_rate=0.0001
 cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
+feature_transform=
+objective_function="mse"
 
 echo "$0 $@"  # Print the command line for logging
 command_line="$0 $@"
@@ -31,9 +33,9 @@ dir=$1
 paramId=${lattice_N}_${dnn_depth}_${dnn_width}__${learn_rate}_${acwt}
 
 log=log/$dir/${paramId}.log
-data=   $dir/${paramId}.data
-model1= $dir/${paramId}.nnet1
-model2= $dir/${paramId}.nnet2
+data=$dir/${paramId}.data
+model1=$dir/${paramId}.nnet1
+model2=$dir/${paramId}.nnet2
 
 lattice_N_times=$((lattice_N))
 
@@ -45,13 +47,15 @@ echo "$HOSTNAME `date`" \
 echo "$command_line" \
 2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-stateMax=$(copy-int-vector "$dir/train.lab" ark,t:-| cut -f 2- -d ' ' | tr " " "\n" | awk 'n < $0 {n=$0}END{print n}')
+stateMax=$(copy-int-vector "ark:$dir/train.lab" ark,t:-| cut -f 2- -d ' ' | tr " " "\n" | awk 'n < $0 {n=$0}END{print n}')
 
    #check file existence.
    for file in $files;
    do
       [ -f $dir/$file ] || ( echo "File '$dir/$file' not found." && exit 1 );
    done
+
+   [ -f $dir/transf.nnet ] && feature_transform=$dir/transf.nnet
 
    echo "SVM with NN training start..................................."\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
@@ -61,6 +65,8 @@ stateMax=$(copy-int-vector "$dir/train.lab" ark,t:-| cut -f 2- -d ' ' | tr " " "
       --learn-rate $learn_rate --acwt $acwt \
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
+      ${feature_transform:+ --feature-transform "$feature_transform"} \
+      ${objective_function:+ --objective-function "$objective_function"} \
       $dir $lat_model $model1 $model2 $stateMax\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 

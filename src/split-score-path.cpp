@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 
     SequentialScorePathReader  score_path_reader(score_path_rspecifier);
     BaseFloatWriter           score_writer(score_wspecifier);
-    Int32VectorWriter         path_writer(path_wspecifier);
+    UcharVectorWriter         path_writer(path_wspecifier);
 
     for(; !score_path_reader.Done(); score_path_reader.Next()){
        const string &key             = score_path_reader.Key();

@@ -13,12 +13,13 @@ LDFLAGS += $(CUDA_LDFLAGS)
 LDLIBS += $(CUDA_LDLIBS) -lpthread
 
 BINFILES = post-phn acc con-svm nnet-pop lab-lda gen-lab lattice-to-vec \
-           snnet-train-shuff snnet-test snnet-gibbs path-fer snnet-gibbs2 split-score-path\
-           trim-path svmout-to-vec combine-score-path snnet-gibbs3 init-score-path\
+           snnet-train-shuff snnet-test path-fer split-score-path\
+           trim-path svmout-to-vec combine-score-path init-score-path\
 	   snnet-best score-baseline lattice-baseline post-to-vec vec-to-score-path\
 	   score-path-copy weight-basefloat best-score-path snnet-score weight-score-path\
 	   normalize-score-path exp-score-path log-score-path cmvn-score-path replace-feats \
-	   score-oracle score-path-point snnet-train-fullshuff snnet-score2
+	   score-oracle score-path-point snnet-train-fullshuff snnet-score2 int32-to-uchar
+#snnet-gibbs snnet-gibbs2 snnet-gibbs3
 
 OBJFILES = kernel.o svm.o snnet.o nnet-cache.o
 

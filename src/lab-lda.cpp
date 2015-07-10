@@ -2,6 +2,7 @@
 #include "util/common-utils.h"
 #include "hmm/transition-model.h"
 #include "transform/lda-estimate.h"
+#include "svm.h"
 
 using namespace kaldi;
 using namespace std;
@@ -32,14 +33,14 @@ int main(int argc, char *argv[]) {
     LdaEstimate lda;
 
     SequentialBaseFloatMatrixReader feature_reader(features_rspecifier);
-    SequentialInt32VectorReader label_reader(label_rspecifier);
+    SequentialUcharVectorReader label_reader(label_rspecifier);
 
-    vector< vector<int32> > label_table;
+    vector< vector<uchar> > label_table;
     vector< string > label_key;
-    int32 max_label = 0;
+    uchar max_label = 0;
     // read in all label.
     for(; !label_reader.Done(); label_reader.Next()) {
-       const vector<int32> &labels = label_reader.Value();
+       const vector<uchar> &labels = label_reader.Value();
 
        for(int i = 0; i < labels.size(); ++i)
           if(max_label <= labels[i]) max_label = labels[i] + 1;
@@ -63,7 +64,7 @@ int main(int argc, char *argv[]) {
         continue;
       }
 
-      const vector<int32> &label = label_table[index];
+      const vector<uchar> &label = label_table[index];
       for (int32 i = 0; i < feats.NumRows(); i++) {
         SubVector<BaseFloat> feat(feats, i);
         lda.Accumulate(feat, label[i], 1.0);

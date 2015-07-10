@@ -61,14 +61,14 @@ int main(int argc, char *argv[]) {
        }
        KALDI_ASSERT(lat.Start() == 0);
 
-       vector<int32> path;
+       vector<uchar> path;
 
        // DFS
        StateId s = 0;
 
        Weight tot_weight = Weight::One();
 
-       int plabel;
+       int plabel = 0;
        while( true ){
           ArcIterator<Lattice> aiter(lat, s);
           if(aiter.Done()) break;

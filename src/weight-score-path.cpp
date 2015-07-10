@@ -63,8 +63,8 @@ int main(int argc, char *argv[]) {
           assert(table.size() == now_table.size());
           for(int j = 0; j < table.size(); ++j){
              // check table[i].second with now_table[i].second
-             const vector<int32> &arr = table[i].second;
-             const vector<int32> &now_arr = now_table[i].second;
+             const vector<uchar> &arr = table[i].second;
+             const vector<uchar> &now_arr = now_table[i].second;
              assert(arr.size() == now_arr.size());
              for(int k = 0; k < now_arr.size(); ++k)
                 assert(arr[k] == now_arr[k]);

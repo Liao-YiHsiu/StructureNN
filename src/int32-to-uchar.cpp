@@ -17,10 +17,10 @@ int main(int argc, char *argv[]) {
   
   try {
     string usage;
-    usage.append("Trim Path(Remove duplicate part of a vector)\n")
-       .append("Usage: ").append(argv[0]).append(" [options] <path-rspecifier> <path-wspecifier>\n")
+    usage.append("Transform int32 vector into uchar vector")
+       .append("Usage: ").append(argv[0]).append(" [options] <int32-rspecifier> <uchar-wspecifier>\n")
        .append("e.g.: \n")
-       .append(" ").append(argv[0]).append(" ark:path1.ark ark:path2.ark \n");
+       .append(" ").append(argv[0]).append(" ark:label32.ark ark:label.ark \n");
 
     ParseOptions po(usage.c_str());
 
@@ -31,19 +31,20 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
-    string path_rspecifier  = po.GetArg(1),
-      path_wspecifier       = po.GetArg(2);
+    string vector_rspecifier  = po.GetArg(1),
+      vector_wspecifier       = po.GetArg(2);
 
 
-    SequentialUcharVectorReader    path_reader(path_rspecifier);
-    UcharVectorWriter              path_writer(path_wspecifier);
+    SequentialInt32VectorReader vector_reader(vector_rspecifier);
+    UcharVectorWriter           vector_writer(vector_wspecifier);
 
     int N = 0;
-    for ( ; !path_reader.Done(); path_reader.Next(), N++) {
+    for ( ; !vector_reader.Done(); vector_reader.Next(), N++) {
        vector<uchar> tmp;
-       trim_path(path_reader.Value(), tmp);
 
-       path_writer.Write(path_reader.Key(), tmp);
+       Int32ToUchar(vector_reader.Value(), tmp);
+
+       vector_writer.Write(vector_reader.Key(), tmp);
     }
     KALDI_LOG << "Finish " << N << " utterance.";
 

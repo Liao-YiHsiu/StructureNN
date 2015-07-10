@@ -21,6 +21,8 @@ template<typename Real> class myCuMatrix;
 template<typename Real> class myCuVector;
 template<class VALUE, class T> class ValueVectorPair;
 
+typedef unsigned char uchar;
+
 template<class V, class T> class ValueVectorPair{
    public:
       friend class ValueVectorPair<float, int>;
@@ -69,20 +71,27 @@ template<class V, class T> class ValueVectorPair{
       Table val;
 };
 
-typedef ValueVectorPair<BaseFloat, int32> ScorePath;
-typedef SequentialTableReader<KaldiObjectHolder<ScorePath> > SequentialScorePathReader;
-typedef TableWriter<KaldiObjectHolder<ScorePath> > ScorePathWriter;
+typedef ValueVectorPair<BaseFloat, uchar> ScorePath;
 
-double frame_acc(const vector<int32>& path1, const vector<int32>& path2, double param = 1.0);
-double phone_acc(const vector<int32>& path1, const vector<int32>& path2, double param = 1.0);
+typedef SequentialTableReader<KaldiObjectHolder<ScorePath> > SequentialScorePathReader;
+typedef TableWriter<KaldiObjectHolder<ScorePath> >           ScorePathWriter;
+
+typedef SequentialTableReader<BasicVectorHolder<uchar> >     SequentialUcharVectorReader;
+typedef RandomAccessTableReader<BasicVectorHolder<uchar> >   RandomAccessUcharVectorReader;
+typedef TableWriter<BasicVectorHolder<uchar> >               UcharVectorWriter;
+
+double frame_acc(const vector<uchar>& path1, const vector<uchar>& path2, double param = 1.0);
+double phone_acc(const vector<uchar>& path1, const vector<uchar>& path2, double param = 1.0);
 int32 sample(const vector<BaseFloat> &arr);
 int32 best(const vector<BaseFloat> &arr);
-void trim_path(const vector<int32>& scr_path, vector<int32>& des_path);
+void trim_path(const vector<uchar>& scr_path, vector<uchar>& des_path);
+void UcharToInt32(const vector<uchar>& src_path, vector<int32>& des_path);
+void Int32ToUchar(const vector<int32>& src_path, vector<uchar>& des_path);
 
-void makeFeatureBatch(const Matrix<BaseFloat> &feat, const vector<int32> &path, int chgID, int32 maxState, SubMatrix<BaseFloat> mat);
+void makeFeatureBatch(const Matrix<BaseFloat> &feat, const vector<uchar> &path, int chgID, int32 maxState, SubMatrix<BaseFloat> mat);
 void* makeFeatureP(void *param);
-void makeFeature(const Matrix<BaseFloat> &feat, const vector<int32> &path, int32 maxState, SubVector<BaseFloat> vec);
-void makeFeature(const CuMatrix<BaseFloat> &feat, const vector<int32> &path, int32 maxState, CuSubVector<BaseFloat> vec);
+void makeFeature(const Matrix<BaseFloat> &feat, const vector<uchar> &path, int32 maxState, SubVector<BaseFloat> vec);
+void makeFeature(const CuMatrix<BaseFloat> &feat, const vector<uchar> &path, int32 maxState, CuSubVector<BaseFloat> vec);
 
 void makePost(double acc, Posterior &post);
 
@@ -93,7 +102,7 @@ void makeFeatureCuda(const myCuMatrix<BaseFloat> &feats, const CuIntVector &lab,
 
 typedef struct{
    const Matrix<BaseFloat> *feat;
-   vector<int32>           *path;
+   vector<uchar>           *path;
    int32                   maxState;
    SubMatrix<BaseFloat>    *mat;
    int32                   chgID;

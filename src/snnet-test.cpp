@@ -48,10 +48,10 @@ int main(int argc, char *argv[]) {
       path_wspecifier       = po.GetArg(5);
 
 
-    Int32VectorWriter                path_writer(path_wspecifier);
+    UcharVectorWriter                path_writer(path_wspecifier);
     SequentialScorePathReader        score_path_reader(score_path_rspecifier);
     SequentialBaseFloatMatrixReader  feature_reader(feat_rspecifier);
-    SequentialInt32VectorReader      label_reader(label_rspecifier);
+    SequentialUcharVectorReader      label_reader(label_rspecifier);
 
     //Select the GPU
 #if HAVE_CUDA==1
@@ -92,9 +92,9 @@ int main(int argc, char *argv[]) {
        assert( score_path_reader.Key() == feature_reader.Key() );
        assert( label_reader.Key() == feature_reader.Key() );
 
-       const ScorePath::Table  &table = score_path_reader.Value().Value();
-       const Matrix<BaseFloat> &feat  = feature_reader.Value();
-       const vector<int32>     &label = label_reader.Value();
+       const ScorePath::Table  &table   = score_path_reader.Value().Value();
+       const Matrix<BaseFloat> &feat    = feature_reader.Value();
+       const vector<uchar>     &label = label_reader.Value();
 
        if(featsN < 0)
           featsN = (feat.NumCols() + max_state) * max_state;

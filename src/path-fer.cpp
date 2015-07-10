@@ -35,16 +35,16 @@ int main(int argc, char *argv[]) {
       path2_rspecifier       = po.GetArg(2);
 
 
-    SequentialInt32VectorReader    path1_reader(path1_rspecifier);
-    RandomAccessInt32VectorReader  path2_reader(path2_rspecifier);
+    SequentialUcharVectorReader    path1_reader(path1_rspecifier);
+    RandomAccessUcharVectorReader  path2_reader(path2_rspecifier);
     int N = 0;
     int corrN = 0;
 
     for ( ; !path1_reader.Done(); path1_reader.Next()) {
        string utt = path1_reader.Key();
        assert(path2_reader.HasKey(utt));
-       const vector<int32> &arr1 = path1_reader.Value();
-       const vector<int32> &arr2 = path2_reader.Value(utt); 
+       const vector<uchar> &arr1 = path1_reader.Value();
+       const vector<uchar> &arr2 = path2_reader.Value(utt); 
        assert(arr1.size() == arr2.size());
 
        for(int i = 0; i < arr1.size(); ++i)

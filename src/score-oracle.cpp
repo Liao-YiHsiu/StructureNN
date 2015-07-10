@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
-    double (*acc_function)(const vector<int32>& path1, const vector<int32>& path2, double param);
+    double (*acc_function)(const vector<uchar>& path1, const vector<uchar>& path2, double param);
 
     if(error_function == "fer")
        acc_function = frame_acc;
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
     string score_path_rspecifier = po.GetArg(2);
     string score_path_wspecifier = po.GetArg(3);
 
-    SequentialInt32VectorReader label_reader(label_rspecifier);
+    SequentialUcharVectorReader label_reader(label_rspecifier);
     SequentialScorePathReader   score_path_reader(score_path_rspecifier);
     ScorePathWriter             score_path_writer(score_path_wspecifier);
 
@@ -62,10 +62,10 @@ int main(int argc, char *argv[]) {
        assert(score_path_reader.Key() == label_reader.Key());
 
        ScorePath::Table table = score_path_reader.Value().Value();
-       const vector<int32>    &ref   = label_reader.Value();
+       const vector<uchar>    &ref   = label_reader.Value();
 
        for(int i = 0; i < table.size(); ++i){
-          const vector<int32> &lab = table[i].second;
+          const vector<uchar> &lab = table[i].second;
           assert(lab.size() == ref.size());
 
           double score = acc_function(ref, lab, 1.0);

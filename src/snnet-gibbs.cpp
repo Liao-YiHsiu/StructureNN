@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
             KALDI_LOG << num_done ;
 
          for(int i = 0; i < index; ++i){
-            vector<int> arr;
+            vector<uchar> arr;
             pathArr[i].CopyToVec(arr);
             for(int j = 0; j < arr.size(); ++j)
                arr[j] += 1;

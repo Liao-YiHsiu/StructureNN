@@ -18,10 +18,7 @@ using namespace kaldi;
 using namespace kaldi::nnet1;
 
 typedef StdVectorRandomizer<CuMatrix<BaseFloat>* > MatrixPtRandomizer;
-typedef StdVectorRandomizer<vector<int32>* >       LabelPtRandomizer;
-
-template class StdVectorRandomizer<CuMatrix<BaseFloat>* >;
-template class StdVectorRandomizer<vector<int32>* >;
+typedef StdVectorRandomizer<vector<uchar>* >       LabelPtRandomizer;
 
 int main(int argc, char *argv[]) {
   
@@ -66,6 +63,9 @@ int main(int argc, char *argv[]) {
     bool reweight = false;
     po.Register("reweight", &reweight, "reweight training examles");
 
+    string feature_transform;
+    po.Register("feature-transform", &feature_transform, "Feature transform in front of main network (in nnet format)");
+
     po.Read(argc, argv);
 
     if (po.NumArgs() != 8-(crossvalidate?2:0)) {
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
     }
 
     // function pointer used in calculating target.
-    double (*acc_function)(const vector<int32>& path1, const vector<int32>& path2, double param);
+    double (*acc_function)(const vector<uchar>& path1, const vector<uchar>& path2, double param);
 
     if(error_function == "fer")
        acc_function = frame_acc;
@@ -109,11 +109,11 @@ int main(int argc, char *argv[]) {
     // read in all labels and save to CPU
     SequentialScorePathReader        score_path_reader(score_path_rspecifier);
     SequentialBaseFloatMatrixReader  feature_reader(feat_rspecifier);
-    SequentialInt32VectorReader      label_reader(label_rspecifier);
+    SequentialUcharVectorReader      label_reader(label_rspecifier);
 
     vector< CuMatrix<BaseFloat> >     features; // all features
-    vector< vector<int32> >           labels;   // reference labels
-    vector< vector< vector<int32> > > examples; // including positive & negative examples
+    vector< vector< uchar > >         labels;   // reference labels
+    vector< vector< vector<uchar> > > examples; // including positive & negative examples
     vector< vector< BaseFloat > >     weights;
 
     features.reserve(BUFSIZE);
@@ -129,14 +129,14 @@ int main(int argc, char *argv[]) {
 
        const ScorePath::Table  &table = score_path_reader.Value().Value();
        const Matrix<BaseFloat> &feat  = feature_reader.Value();
-       const vector<int32>     &label = label_reader.Value();
+       const vector<uchar>     &label = label_reader.Value();
 
        features.push_back(CuMatrix<BaseFloat>(feat));
        labels.push_back(label);
-       examples.push_back(vector< vector<int32> >());
+       examples.push_back(vector< vector<uchar> >());
        weights.push_back(vector<BaseFloat>());
 
-       vector< vector<int32> > &seqs = examples[examples.size() - 1];
+       vector< vector<uchar> > &seqs = examples[examples.size() - 1];
        vector< BaseFloat > &wght = weights[weights.size() - 1];
 
        seqs.reserve(1 + table.size() + negative_num);
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
 
        // TODO set random seed
        // random negitive examples
-       vector<int32> neg_arr(label.size());
+       vector<uchar> neg_arr(label.size());
        for(int i = 0; i < negative_num; ++i){
           for(int j = 0; j < neg_arr.size(); ++j)
              neg_arr[j] = rand() % stateMax + 1;
@@ -167,34 +167,42 @@ int main(int argc, char *argv[]) {
     RandomizerMask       randomizer_mask(rnd_opts);
     MatrixPtRandomizer   feature_randomizer(rnd_opts);
     LabelPtRandomizer    label_randomizer(rnd_opts);
-    MatrixRandomizer     target_randomizer(rnd_opts);
-    VectorRandomizer     weights_randomizer(rnd_opts);
-    //PosteriorRandomizer                        target_randomizer(rnd_opts);
-
+    VectorRandomizer      target_randomizer(rnd_opts);
+    VectorRandomizer      weights_randomizer(rnd_opts);
+    
+    KALDI_LOG << "Filling all randomizer.";
     // fill all data into randomizer
     for(int i = 0; i < features.size(); ++i){
        vector< CuMatrix<BaseFloat>* > feat(examples[i].size());
-       vector< vector<int32>* >       lab(examples[i].size());
-       Matrix< BaseFloat >            tgt(examples[i].size(), 1); 
+       vector< vector<uchar>* >       lab(examples[i].size());
+       Vector< BaseFloat >            tgt(examples[i].size(), kSetZero); 
        Vector< BaseFloat >            wgt(examples[i].size(), kSetZero);
 
        for(int j = 0; j < examples[i].size(); ++j){
           feat[j] = &features[i];
           lab[j]  = &examples[i][j];
-          tgt(j, 1)  = acc_function(labels[i], examples[i][j], 1.0);
+          tgt(j)  = acc_function(labels[i], examples[i][j], 1.0);
           wgt(j)  = weights[i][j];
        }
 
        feature_randomizer.AddData(feat);
        label_randomizer.AddData(lab);
-       target_randomizer.AddData(CuMatrix<BaseFloat>(tgt));
+       target_randomizer.AddData(tgt);
        weights_randomizer.AddData(wgt);
     }
+    KALDI_LOG << "Filled all data.";
 
     // prepare Nnet
     SNnet nnet;
     nnet.Read(nnet1_in_filename, nnet2_in_filename, stateMax);
     nnet.SetTrainOptions(trn_opts);
+
+    if (feature_transform != "") {
+       Nnet nnet_transf;
+       nnet_transf.Read(feature_transform);
+       nnet.SetTransform(nnet_transf);
+    }
+
 
     if (dropout_retention > 0.0) {
       nnet.SetDropoutRetention(dropout_retention);
@@ -219,8 +227,11 @@ int main(int argc, char *argv[]) {
        weights_randomizer.Randomize(mask);
     }
 
-    int num_done = 0;
-    CuMatrix<BaseFloat> nnet_out, obj_diff;
+    int64 num_done = 0;
+    CuMatrix<BaseFloat> nnet_out;
+    CuMatrix<BaseFloat> obj_diff;
+    CuMatrix<BaseFloat> nnet_tgt_device;
+    Matrix<BaseFloat>   nnet_tgt_host;
     // train with data from randomizers (using mini-batches)
     for ( ; !feature_randomizer.Done(); feature_randomizer.Next(),
           label_randomizer.Next(), target_randomizer.Next()){
@@ -232,21 +243,28 @@ int main(int argc, char *argv[]) {
 
        // get block of feature/target pairs
        const vector<CuMatrix<BaseFloat>* > &nnet_feat_in = feature_randomizer.Value();
-       const vector<vector<int32> * > &nnet_label_in = label_randomizer.Value();
-       const CuMatrixBase<BaseFloat> &nnet_tgt = target_randomizer.Value();
+       const vector<vector<uchar> * > &nnet_label_in = label_randomizer.Value();
+       const Vector<BaseFloat> &nnet_tgt = target_randomizer.Value();
        const Vector<BaseFloat> &frm_weights = weights_randomizer.Value();
 
+       nnet_tgt_host.Resize(nnet_tgt.Dim(), 1, kSetZero);
+       nnet_tgt_host.CopyColsFromVec(nnet_tgt);
 
-       // forward pass
+       nnet_tgt_device = nnet_tgt_host;
+
+       //nnet_tgt_device.Resize(nnet_tgt.Dim(), 1, kSetZero);
+       //nnet_tgt_device.CopyColsFromVec(nnet_tgt);
+       //CuSubVector<BaseFloat> tgt_row = nnet_tgt_device.Row(0);
+       //tgt_row.CopyFromVec(nnet_tgt);
+
+       // Forward pass
        nnet.Propagate(nnet_feat_in, nnet_label_in, &nnet_out);
 
        // evaluate objective function we've chosen
        if (objective_function == "xent") {
-          //xent.Eval(nnet_out, nnet_tgt, &obj_diff);
-          xent.Eval(frm_weights, nnet_out, nnet_tgt, &obj_diff); 
+          xent.Eval(frm_weights, nnet_out, nnet_tgt_device, &obj_diff); 
        } else if (objective_function == "mse") {
-          //mse.Eval(nnet_out, nnet_tgt, &obj_diff);
-          mse.Eval(frm_weights, nnet_out, nnet_tgt, &obj_diff);
+          mse.Eval(frm_weights, nnet_out, nnet_tgt_device, &obj_diff);
        } else {
           KALDI_ERR << "Unknown objective function code : " << objective_function;
        }

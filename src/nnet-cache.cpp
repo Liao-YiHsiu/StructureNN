@@ -16,7 +16,6 @@ void CNnet::Propagate(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *ou
    }
 
    vector<CuMatrix<BaseFloat> >& propagate_buf_ = propagate_buf_arr_[index];
-   vector<CuMatrix<BaseFloat> >& backpropagate_buf_ = backpropagate_buf_arr_[index];
    vector<Component*> components_;
    GetComponents(components_);
    // -----------------------------------------------
@@ -46,7 +45,7 @@ void CNnet::Propagate(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *ou
 void CNnet::Backpropagate(const CuMatrixBase<BaseFloat> &out_diff, CuMatrix<BaseFloat> *in_diff, int index){
    // -----------------------------------------------
    // setup buffers
-   KALDI_ASSERT(index >= propagate_buf_arr_.size());
+   KALDI_ASSERT(index < propagate_buf_arr_.size());
 
    vector<CuMatrix<BaseFloat> >& propagate_buf_ = propagate_buf_arr_[index];
    vector<CuMatrix<BaseFloat> >& backpropagate_buf_ = backpropagate_buf_arr_[index];

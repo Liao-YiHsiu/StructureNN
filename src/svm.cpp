@@ -1,7 +1,7 @@
 #include "svm.h"
 #include "kernel.h"
 
-double frame_acc(const vector<int32>& path1, const vector<int32>& path2, double param){
+double frame_acc(const vector<uchar>& path1, const vector<uchar>& path2, double param){
 
    assert(path1.size() == path2.size());
    int corr = 0;
@@ -13,17 +13,23 @@ double frame_acc(const vector<int32>& path1, const vector<int32>& path2, double 
 }
 
 // reference is path1.
-double phone_acc(const vector<int32>& path1, const vector<int32>& path2, double inst){
+double phone_acc(const vector<uchar>& path1, const vector<uchar>& path2, double inst){
    assert(path1.size() == path2.size());
 
-   vector<int32> path1_trim;
-   vector<int32> path2_trim;
+   vector<uchar> path1_trim;
+   vector<uchar> path2_trim;
    trim_path(path1, path1_trim);
    trim_path(path2, path2_trim);
 
+   vector<int32> path1_trim_32;
+   vector<int32> path2_trim_32;
+
+   UcharToInt32(path1_trim, path1_trim_32);
+   UcharToInt32(path2_trim, path2_trim_32);
+
    int in, de, su;
 
-   int32 dist = LevenshteinEditDistance(path1_trim, path2_trim, &in, &de, &su);
+   int32 dist = LevenshteinEditDistance(path1_trim_32, path2_trim_32, &in, &de, &su);
 
    double corr = path1_trim.size() - (in*inst + de + su); 
 
@@ -32,9 +38,22 @@ double phone_acc(const vector<int32>& path1, const vector<int32>& path2, double 
    return corr / (double)path1_trim.size();
 }
 
+void UcharToInt32(const vector<uchar>& src_path, vector<int32>& des_path){
+   des_path.resize(src_path.size());
+   for(int i = 0; i < src_path.size(); ++i)
+      des_path[i] = src_path[i];
+}
+
+void Int32ToUchar(const vector<int32>& src_path, vector<uchar>& des_path){
+   des_path.resize(src_path.size());
+   for(int i = 0; i < src_path.size(); ++i){
+      des_path[i] = src_path[i];
+      assert(src_path[i] == des_path[i]);
+   }
+}
 
 
-void makeFeature(const Matrix<BaseFloat> &feat, const vector<int32> &path, int32 maxState, SubVector<BaseFloat> vec){
+void makeFeature(const Matrix<BaseFloat> &feat, const vector<uchar> &path, int32 maxState, SubVector<BaseFloat> vec){
    assert(feat.NumRows() == path.size());
 
    int feat_dim = feat.NumCols();
@@ -60,7 +79,7 @@ void* makeFeatureP(void *param){
    FData* fData = (FData*) param;
 
    for(int i = 0; i < fData->maxState; ++i){
-      vector<int32> path = *(fData->path);
+      vector<uchar> path = *(fData->path);
       path[fData->chgID] = i+1;
       makeFeature(*(fData->feat), path, fData->maxState, fData->mat->Row(i));
    }
@@ -191,7 +210,7 @@ int32 best(const vector<BaseFloat> &arr){
    return index;
 }
 
-void trim_path(const vector<int32>& scr_path, vector<int32>& des_path){
+void trim_path(const vector<uchar>& scr_path, vector<uchar>& des_path){
    des_path.clear();
 
    int32 prev = scr_path[0];
