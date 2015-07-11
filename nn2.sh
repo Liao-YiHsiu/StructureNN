@@ -4,7 +4,8 @@ source path
 error_function="per"
 dnn_depth=1
 dnn_width=200
-lattice_N=1000
+lattice_N=1
+test_lattice_N=10
 train_opt=
 learn_rate=0.0001
 cpus=$(nproc)
@@ -30,14 +31,12 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-paramId=${lattice_N}_${dnn_depth}_${dnn_width}__${learn_rate}_${acwt}
+paramId=${lattice_N}_${test_lattice_N}_${dnn_depth}_${dnn_width}_${learn_rate}_${acwt}
 
 log=log/$dir/${paramId}.log
 data=$dir/${paramId}.data
 model1=$dir/${paramId}.nnet1
 model2=$dir/${paramId}.nnet2
-
-lattice_N_times=$((lattice_N))
 
 [ ! -d log/$dir ] && mkdir -p log/$dir
 
@@ -61,8 +60,8 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    [ -f $model1 -a -f $model2 ] || snnet/train2.sh --error-function $error_function --cpus $cpus\
-      --dnn-depth $dnn_depth --dnn-width $dnn_width --lattice-N $lattice_N\
-      --learn-rate $learn_rate --acwt $acwt \
+      --dnn-depth $dnn_depth --dnn-width $dnn_width --lattice-N $lattice_N \
+      --test-lattice-N $test_lattice_N --learn-rate $learn_rate --acwt $acwt \
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
       ${feature_transform:+ --feature-transform "$feature_transform"} \
@@ -70,18 +69,19 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
       $dir $lat_model $model1 $model2 $stateMax\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   test_lattice_path=$dir/test.lab_${lattice_N_times}_${acwt}.gz
+   test_lattice_path=$dir/test.lab_${test_lattice_N}_${acwt}.gz
 
    while [ ! -f $test_lattice_path ]; do
        lockfile=/tmp/$(basename $test_lattice_path)
        flock -n $lockfile \
-          lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times \
+          lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $test_lattice_N \
           $lat_model ark:$dir/test.lat "ark:| gzip -c > $test_lattice_path" \
           2>&1 | tee $log  || \
           flock -w -1 $lockfile echo "finally get file lock"
    done
 
-   snnet-score2 ark:$dir/test.ark "ark:gunzip -c $test_lattice_path |" $model1 $model2 $stateMax "ark:| gzip -c > ${data}.tag.gz"\
+   snnet-score2 ${feature_transform:+ --feature-transform="$feature_transform"} ark:$dir/test.ark \
+      "ark:gunzip -c $test_lattice_path |" $model1 $model2 $stateMax "ark:| gzip -c > ${data}.tag.gz"\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    best-score-path "ark:gunzip -c ${data}.tag.gz |" ark:${data}.tag.1best

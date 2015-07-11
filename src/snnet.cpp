@@ -81,6 +81,23 @@ void SNnet::Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr, const vecto
    nnet2_.Feedforward(psi_buff_, out);
 }
 
+void SNnet::Feedforward(const CuMatrix<BaseFloat> &in, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
+
+   if( propagate_buf_.size() != 1 ){
+      propagate_buf_.resize(1);
+      backpropagate_buf_.resize(1);
+   }
+
+   CuMatrix<BaseFloat> transf_buf;
+   nnet_transf_.Feedforward(in, &transf_buf);
+   nnet1_.Feedforward(transf_buf, &propagate_buf_[0]);
+
+   // combine each buffer according to label
+   Psi(propagate_buf_, labels, &psi_buff_);
+
+   nnet2_.Feedforward(psi_buff_, out);
+}
+
 int32 SNnet::InputDim() const{
    return nnet1_.InputDim();
 }
@@ -160,15 +177,18 @@ void SNnet::SetTransform(const Nnet &nnet){
 
 void SNnet::Psi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
    KALDI_ASSERT(out != NULL);
-   KALDI_ASSERT(feats.size() == labels.size());
+   KALDI_ASSERT(feats.size() == labels.size() || feats.size() == 1);
 
-   int N = feats.size();
+   int N = labels.size();
    int F = feats[0].NumCols();
 
    out->Resize(N, (F + 1)*(stateMax_ + 1) + stateMax_ * stateMax_, kSetZero);
 
    for(int i = 0; i < N; ++i){
-      makeFeat(feats[i], *labels[i], out->Row(i));
+      if(feats.size() == 1)
+         makeFeat(feats[0], *labels[i], out->Row(i));
+      else
+         makeFeat(feats[i], *labels[i], out->Row(i));
    }
 }
 

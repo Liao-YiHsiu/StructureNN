@@ -164,13 +164,15 @@ int main(int argc, char *argv[]) {
     } 
     // -------------------------------------------------------------
 
+    int numTotal = 0;
     RandomizerMask       randomizer_mask(rnd_opts);
     MatrixPtRandomizer   feature_randomizer(rnd_opts);
     LabelPtRandomizer    label_randomizer(rnd_opts);
     VectorRandomizer      target_randomizer(rnd_opts);
     VectorRandomizer      weights_randomizer(rnd_opts);
     
-    KALDI_LOG << "Filling all randomizer.";
+    KALDI_LOG << "Filling all randomizer. features # = " << features.size();
+    KALDI_LOG << " each features get " << examples[0].size() << " exs.";
     // fill all data into randomizer
     for(int i = 0; i < features.size(); ++i){
        vector< CuMatrix<BaseFloat>* > feat(examples[i].size());
@@ -184,6 +186,8 @@ int main(int argc, char *argv[]) {
           tgt(j)  = acc_function(labels[i], examples[i][j], 1.0);
           wgt(j)  = weights[i][j];
        }
+
+       numTotal += examples[i].size();
 
        feature_randomizer.AddData(feat);
        label_randomizer.AddData(lab);
@@ -276,6 +280,7 @@ int main(int argc, char *argv[]) {
        }
 
        num_done += nnet_feat_in.size();
+       KALDI_LOG << "Done: " << num_done << "/" << numTotal;
     }
 
 

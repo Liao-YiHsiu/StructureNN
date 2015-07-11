@@ -7,7 +7,7 @@ source $DIR/../path
 . parse_options.sh || exit 1;
 
 if [ "$#" -ne 2 ]; then
-   echo "Calculate the Error Rate on the model"
+   echo "Calculate the Error Rate on the model (uchar version)"
    echo "Usage: $0 <ref-rspecifier> <score-path-rspecifier>"
    echo "eg. $0 ark:test.lab ark:test.tag"
    echo ""
@@ -21,10 +21,13 @@ path=$2
 
    path-fer "$1" "ark:split-score-path \"$2\" ark:/dev/null ark:- |" 
 
-   compute-wer "ark:trim-path \"$1\" ark:- |" "ark:split-score-path \"$2\" ark:/dev/null ark:- | trim-path ark:- ark:- |" 
+   compute-wer "ark:trim-path \"$1\" ark:- | uchar-to-int32 ark:- ark:- |" \
+   "ark:split-score-path \"$2\" ark:/dev/null ark:- | trim-path ark:- ark:- | uchar-to-int32 ark:- ark:- |" 
 
    echo "Calculating Error rate.(39)" 
 
-   path-fer "ark:trans.sh \"$1\" ark:- |" "ark:split-score-path \"$2\" ark:/dev/null ark:- | trans.sh ark:- ark:- |" 
+   path-fer "ark:trans.sh \"$1\" ark:- |" \
+      "ark:split-score-path \"$2\" ark:/dev/null ark:- | trans.sh ark:- ark:- |" 
 
-   compute-wer "ark:trim-path \"$1\" ark:- | trans.sh ark:- ark:- |" "ark:split-score-path \"$2\" ark:/dev/null ark:- | trim-path ark:- ark:- | trans.sh ark:- ark:- |" 
+   compute-wer "ark:trans.sh \"$1\" ark:- | trim-path ark:- ark:- | uchar-to-int32 ark:- ark:- |" \
+      "ark:split-score-path \"$2\" ark:/dev/null ark:- | trans.sh ark:- ark:- | trim-path ark:- ark:- | uchar-to-int32 ark:- ark:- |" 

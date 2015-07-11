@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   
   try {
     string usage;
-    usage.append("convert two Score-path file into points.\n")
+    usage.append("convert two Score-path file into points (python file format).\n")
        .append("Usage: ").append(argv[0]).append(" [options] <score-path1-rspecifier> <score-path2-rspecifier>\n")
        .append("e.g.: \n")
        .append(" ").append(argv[0]).append(" ark:score-path1.ark ark:score-path2.ark \n");
@@ -40,6 +40,7 @@ int main(int argc, char *argv[]) {
     SequentialScorePathReader score_path_reader1(score_path_rspecifier1);  
     SequentialScorePathReader score_path_reader2(score_path_rspecifier2);  
 
+    cout << "{ \\" << endl;
     int num_done = 0;
     for(; !score_path_reader1.Done() && !score_path_reader2.Done();
           score_path_reader1.Next(), score_path_reader2.Next()){
@@ -48,10 +49,8 @@ int main(int argc, char *argv[]) {
        const ScorePath::Table &table1 = score_path_reader1.Value().Value();
        const ScorePath::Table &table2 = score_path_reader2.Value().Value();
 
+       // check
        assert(table1.size() == table2.size());
-
-       cout << score_path_reader1.Key() << endl;
-
        for(int i = 0; i < table1.size(); ++i){
 
           const vector<uchar> &lab1 = table1[i].second;
@@ -60,12 +59,29 @@ int main(int argc, char *argv[]) {
           // check if lab1 == lab2
           for(int j = 0; j < lab1.size(); ++j)
              assert(lab1[j] == lab2[j]);
-
-          cout << table1[i].first << "\t" << table2[i].first << endl;
        }
+
+       if(num_done != 0)
+          cout << ", ";
+       cout << "'" << score_path_reader1.Key() << "': ( [";
+
+       for(int i = 0; i < table1.size(); ++i){
+          if( i != 0)
+             cout << ", ";
+          cout << table1[i].first;
+       }
+       cout << "], [";
+
+       for(int i = 0; i < table2.size(); ++i){
+          if( i != 0)
+             cout << ", ";
+          cout << table2[i].first;
+       }
+       cout << "] ) \\" << endl;
 
        num_done++;
     }
+    cout << "}" << endl;
 
     KALDI_LOG << "Finished " << num_done;
     

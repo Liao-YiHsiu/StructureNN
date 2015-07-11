@@ -8,23 +8,23 @@ source $DIR/../path
 
 if [ "$#" -ne 2 ]; then
    echo "Calculate the Error Rate on the model"
-   echo "Usage: $0 <ref-rspecifier> <lab-rspecifier>"
-   echo "eg. $0 ark:test.lab ark:decode.lab"
+   echo "Usage: $0 <ref-rspecifier> <score-path-rspecifier>"
+   echo "eg. $0 ark:test.lab ark:test.tag"
    echo ""
    echo "dir-> $files"
    exit 1;
 fi
-ref=$1
-lab=$2
+lab=$1
+path=$2
 
    echo "Calculating Error rate."
 
-   path-fer "$ref" "$lab"
+   path-fer "$1" "ark:split-score-path \"$2\" ark:/dev/null ark:- |" 
 
-   compute-wer "ark:trim-path \"$ref\" ark:- |" "ark:trim-path \"$lab\" ark:- |" 
+   compute-wer "ark:trim-path \"$1\" ark:- |" "ark:split-score-path \"$2\" ark:/dev/null ark:- | trim-path ark:- ark:- |" 
 
    echo "Calculating Error rate.(39)" 
 
-   path-fer "ark:trans.sh \"$ref\" ark:- |" "ark:trans.sh \"$lab\" ark:- |" 
+   path-fer "ark:trans.sh \"$1\" ark:- |" "ark:split-score-path \"$2\" ark:/dev/null ark:- | trans.sh ark:- ark:- |" 
 
-   compute-wer "ark:trim-path \"$ref\" ark:- | trans.sh ark:- ark:- |" "ark:trim-path \"$lab\" ark:- | trans.sh ark:- ark:- |" 
+   compute-wer "ark:trim-path \"$1\" ark:- | trans.sh ark:- ark:- |" "ark:split-score-path \"$2\" ark:/dev/null ark:- | trim-path ark:- ark:- | trans.sh ark:- ark:- |" 

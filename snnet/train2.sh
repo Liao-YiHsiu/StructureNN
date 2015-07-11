@@ -33,14 +33,14 @@ mlp_proto=
 seed=777
 learn_rate=0.004
 momentum=0.9
-minibatch_size=16
+minibatch_size=32
 randomizer_size=32768
 error_function="fer"
 train_tool="snnet-train-fullshuff"
 dnn_depth=1
 dnn_width=200
 lattice_N=1000
-negative_num=$((lattice_N*2))
+test_lattice_N=1000
 acwt=0.2
 train_opt=
 cpus=$(nproc)
@@ -51,6 +51,8 @@ objective_function=
 echo "$0 $@"  # Print the command line for logging
 
 . parse_options.sh || exit 1;
+
+negative_num=$((lattice_N))
 
 files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat nnet1"
 
@@ -82,8 +84,6 @@ cv_ark="ark:$dir/dev.ark"
 cv_lab="ark:$dir/dev.lab"
 cv_lat="ark:$dir/dev.lat"
 
-lattice_N_times=$((lattice_N))
-
 mkdir $tmpdir/nnet
 mkdir $tmpdir/log
 
@@ -96,23 +96,23 @@ $timit/utils/nnet/make_nnet_proto.py --no-softmax $SVM_dim 1 $dnn_depth $dnn_wid
 nnet-initialize $mlp_proto $mlp2_init || exit 1; 
 
 # precompute lattice data
-train_lattice_path=$dir/train.lab_${lattice_N_times}_${acwt}.gz
+train_lattice_path=$dir/train.lab_${lattice_N}_${acwt}.gz
 
 # lock file if others are using...
 while [ ! -f $train_lattice_path ]; do
     lockfile=/tmp/$(basename $train_lattice_path)
     flock -n $lockfile \
-       lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times \
+       lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N \
        $lat_model "$train_lat" "ark:| gzip -c > $train_lattice_path" \
        2>&1 | tee $log  || \
        flock -w -1 $lockfile echo "finally get file lock"
 done
 
-dev_lattice_path=$dir/dev.lab_${lattice_N_times}_${acwt}.gz
+dev_lattice_path=$dir/dev.lab_${test_lattice_N}_${acwt}.gz
 while [ ! -f $dev_lattice_path ]; do
     lockfile=/tmp/$(basename $dev_lattice_path)
     flock -n $lockfile \
-       lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times \
+       lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $test_lattice_N \
        $lat_model "$cv_lat" "ark:| gzip -c > $dev_lattice_path" \
        2>&1 | tee $log  || \
        flock -w -1 $lockfile echo "finally get file lock"
@@ -151,18 +151,26 @@ for iter in $(seq -w $max_iters); do
 
 # train
    log=$tmpdir/log/iter${iter}.tr.log; hostname>$log
-
-   $train_tool \
-      --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
-      --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
-      --verbose=$verbose --binary=true --randomizer-seed=$seed \
-      --negative-num=$negative_num --error-function=$error_function \
-      ${feature_transform:+ --feature-transform="$feature_transform"} \
-      ${objective_function:+ --objective-function="$objective_function"} \
-      ${train_opt:+ "$train_opt"} \
-      "$train_ark" "$train_lab" "ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path_rand |\" \"ark:gunzip -c $train_lattice_path |\" |" \
-      $mlp1_best $mlp2_best $stateMax $mlp1_next $mlp2_next \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+   
+# retry on fail
+   retry=10
+   while [ $retry -gt 0 ]; do
+      flock -n /tmp/train_tool sleep 5
+      $train_tool \
+         --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
+         --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
+         --verbose=$verbose --binary=true --randomizer-seed=$seed \
+         --negative-num=$negative_num --error-function=$error_function \
+         ${feature_transform:+ --feature-transform="$feature_transform"} \
+         ${objective_function:+ --objective-function="$objective_function"} \
+         ${train_opt:+ "$train_opt"} \
+         "$train_ark" "$train_lab" "ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path_rand |\" \"ark:gunzip -c $train_lattice_path |\" |" \
+         $mlp1_best $mlp2_best $stateMax $mlp1_next $mlp2_next \
+         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
+      retry=$((retry - 1))
+      sleep 3
+   done
+   [ $retry -eq 0 ] && echo "retry over 10 times" && exit -1;
 
       seed=$((seed + 1))
    loss_tr=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
@@ -170,13 +178,14 @@ for iter in $(seq -w $max_iters); do
 
    log=$tmpdir/log/iter${iter}.cv.log; hostname>$log
 
-   snnet-score2 "$cv_ark" "ark:gunzip -c $dev_lattice_path |" $mlp1_next $mlp2_next $stateMax "ark:| gzip -c > $tmpdir/cv.ark.gz"\
+   snnet-score2 ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
+      "ark:gunzip -c $dev_lattice_path |" $mlp1_next $mlp2_next $stateMax "ark:| gzip -c > $tmpdir/cv.ark.gz"\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    best-score-path "ark:gunzip -c $tmpdir/cv.ark.gz |" ark:$tmpdir/cv.tag.1best
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   calc.sh $cv_lab ark:$tmpdir/cv.tag.1best \
+   calc.sh "$cv_lab" ark:$tmpdir/cv.tag.1best \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    loss_new=$(cat $log | grep 'WER' | tail -n 1 | awk '{ print $2; }')

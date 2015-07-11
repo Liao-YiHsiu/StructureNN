@@ -38,6 +38,10 @@ class SNnet{
       /// Perform forward pass through the network, don't keep buffers (use it when not training)
       void Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out);
 
+      /// speedup version for those in_arr are the same.
+      void Feedforward(const CuMatrix<BaseFloat> &in, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out);
+
+
       /// Dimensionality on network input (input feature dim.)
       int32 InputDim() const; 
       /// Dimensionality of network outputs (posteriors | bn-features | etc.)
