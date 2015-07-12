@@ -37,6 +37,7 @@ minibatch_size=32
 randomizer_size=32768
 error_function="fer"
 train_tool="snnet-train-fullshuff"
+cross_tool="snnet-train-cross"
 dnn_depth=1
 dnn_width=200
 lattice_N=1000
@@ -155,7 +156,7 @@ for iter in $(seq -w $max_iters); do
 # retry on fail
    retry=10
    while [ $retry -gt 0 ]; do
-      flock -n /tmp/train_tool sleep 5
+      flock -n /tmp/gpu sleep 5
       $train_tool \
          --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
          --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
@@ -172,24 +173,31 @@ for iter in $(seq -w $max_iters); do
    done
    [ $retry -eq 0 ] && echo "retry over 10 times" && exit -1;
 
-      seed=$((seed + 1))
+   seed=$((seed + 1))
    loss_tr=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
    echo -n "TRAIN AVG.LOSS $(printf "%.4f" $loss_tr), "
 
    log=$tmpdir/log/iter${iter}.cv.log; hostname>$log
+   
+# CROSS VALIDATION
+# retry on fail
+   retry=10
+   while [ $retry -gt 0 ]; do
+      flock -n /tmp/gpu sleep 5
+      $cross_tool \
+         --verbose=$verbose --binary=true --error-function=$error_function \
+         ${feature_transform:+ --feature-transform="$feature_transform"} \
+         ${objective_function:+ --objective-function="$objective_function"} \
+         "$cv_ark" "$cv_lab" "ark:gunzip -c $dev_lattice_path |" \
+         $mlp1_next $mlp2_next $stateMax \
+         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
+      retry=$((retry - 1))
+      sleep 3
+   done
+   [ $retry -eq 0 ] && echo "retry over 10 times" && exit -1;
 
-   snnet-score2 ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
-      "ark:gunzip -c $dev_lattice_path |" $mlp1_next $mlp2_next $stateMax "ark:| gzip -c > $tmpdir/cv.ark.gz"\
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   best-score-path "ark:gunzip -c $tmpdir/cv.ark.gz |" ark:$tmpdir/cv.tag.1best
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   calc.sh "$cv_lab" ark:$tmpdir/cv.tag.1best \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   loss_new=$(cat $log | grep 'WER' | tail -n 1 | awk '{ print $2; }')
-   echo -n "CROSSVAL WER= $(printf "%.4f" $loss_new), "
+   loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
+   echo -n "CROSSVAL AVG.LOSS $(printf "%.4f" $loss_new), "
 
    # accept or reject new parameters (based on objective function)
    loss_prev=$loss

@@ -76,7 +76,7 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
        flock -n $lockfile \
           lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $test_lattice_N \
           $lat_model ark:$dir/test.lat "ark:| gzip -c > $test_lattice_path" \
-          2>&1 | tee $log  || \
+          2>&1 | tee -a $log  || \
           flock -w -1 $lockfile echo "finally get file lock"
    done
 

@@ -13,7 +13,6 @@ fi
 
 zipfile=$1
 outfile=$2
-zipfile=data/nnet/test.lab_10_0.16.gz
 
 dir=$(dirname $zipfile)
 

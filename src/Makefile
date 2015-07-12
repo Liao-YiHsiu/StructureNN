@@ -19,7 +19,7 @@ BINFILES = post-phn acc con-svm nnet-pop lab-lda gen-lab lattice-to-vec \
 	   score-path-copy weight-basefloat best-score-path snnet-score weight-score-path\
 	   normalize-score-path exp-score-path log-score-path cmvn-score-path replace-feats \
 	   score-oracle score-path-point snnet-train-fullshuff snnet-score2 int32-to-uchar \
-	   uchar-to-int32
+	   uchar-to-int32 snnet-train-cross
 #snnet-gibbs snnet-gibbs2 snnet-gibbs3
 
 OBJFILES = kernel.o svm.o snnet.o nnet-cache.o
