@@ -162,7 +162,9 @@ void SNnet::Destroy() {
 }
 
 void SNnet::SetTrainOptions(const NnetTrainOptions& opts) {
-   nnet1_.SetTrainOptions(opts);
+   NnetTrainOptions opts_tmp = opts;
+   opts_tmp.learn_rate /= 10;
+   nnet1_.SetTrainOptions(opts_tmp);
    nnet2_.SetTrainOptions(opts);
 }
 
