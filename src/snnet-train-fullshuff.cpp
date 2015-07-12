@@ -168,8 +168,9 @@ int main(int argc, char *argv[]) {
     RandomizerMask       randomizer_mask(rnd_opts);
     MatrixPtRandomizer   feature_randomizer(rnd_opts);
     LabelPtRandomizer    label_randomizer(rnd_opts);
-    VectorRandomizer      target_randomizer(rnd_opts);
-    VectorRandomizer      weights_randomizer(rnd_opts);
+    LabelPtRandomizer    ref_label_randomizer(rnd_opts);
+    VectorRandomizer     target_randomizer(rnd_opts);
+    VectorRandomizer     weights_randomizer(rnd_opts);
     
     KALDI_LOG << "Filling all randomizer. features # = " << features.size();
     KALDI_LOG << " each features get " << examples[0].size() << " exs.";
@@ -177,14 +178,16 @@ int main(int argc, char *argv[]) {
     for(int i = 0; i < features.size(); ++i){
        vector< CuMatrix<BaseFloat>* > feat(examples[i].size());
        vector< vector<uchar>* >       lab(examples[i].size());
+       vector< vector<uchar>* >       ref_lab(examples[i].size());
        Vector< BaseFloat >            tgt(examples[i].size(), kSetZero); 
        Vector< BaseFloat >            wgt(examples[i].size(), kSetZero);
 
        for(int j = 0; j < examples[i].size(); ++j){
-          feat[j] = &features[i];
-          lab[j]  = &examples[i][j];
-          tgt(j)  = acc_function(labels[i], examples[i][j], 1.0);
-          wgt(j)  = weights[i][j];
+          feat[j]    = &features[i];
+          lab[j]     = &examples[i][j];
+          ref_lab[j] = &labels[i];
+          tgt(j)     = (1 - acc_function(labels[i], examples[i][j], 1.0)); // error rate
+          wgt(j)     = weights[i][j];
        }
 
        numTotal += examples[i].size();
@@ -276,7 +279,7 @@ int main(int argc, char *argv[]) {
        // backward pass
        if (!crossvalidate) {
           // backpropagate
-          nnet.Backpropagate(obj_diff);
+          nnet.Backpropagate(obj_diff, nnet_label_in);
        }
 
        num_done += nnet_feat_in.size();

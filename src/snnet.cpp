@@ -15,87 +15,75 @@ SNnet::~SNnet(){
 void SNnet::Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr, 
       const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
 
-   assert(in_arr.size() == labels.size());
-   if( propagate_buf_.size() != in_arr.size() ){
-      propagate_buf_.resize(in_arr.size());
-      backpropagate_buf_.resize(in_arr.size());
-   }
+   // feedforward the first pass
+   vector<CuMatrix<BaseFloat> > transf_arr(in_arr.size());
+   vector<CuMatrix<BaseFloat> > propagate_buf(in_arr.size());
 
-   CuMatrix<BaseFloat> transf_buf;
-   for(int i = 0; i < in_arr.size(); ++i){
-      nnet_transf_.Feedforward(*in_arr[i], &transf_buf);
+   for(int i = 0; i < in_arr.size(); ++i)
+      nnet_transf_.Feedforward(*in_arr[i], &transf_arr[i]);
 
-      if (!KALDI_ISFINITE(transf_buf.Sum())) { // check there's no nan/inf,
-        KALDI_ERR << "NaN or inf found in nn-output trans";
-      }
-
-      nnet1_.Propagate(transf_buf, &propagate_buf_[i], i);
-   }
+   nnet1_.Propagate(transf_arr, propagate_buf);
 
    // combine each buffer according to label
-   Psi(propagate_buf_, labels, &psi_buff_);
-
-   if (!KALDI_ISFINITE(psi_buff_.Sum())) { // check there's no nan/inf,
-      KALDI_ERR << "NaN or inf found in nn-output psi";
-   }
+   Psi(propagate_buf, labels, &psi_buff_);
 
    nnet2_.Propagate(psi_buff_, out);
 
    if (!KALDI_ISFINITE(out->Sum())) { // check there's no nan/inf,
       KALDI_ERR << "NaN or inf found in nn-output nnet2";
    }
-
-   labels_ = labels;
 }
 
-void SNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff){
+void SNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff,
+      const vector<vector<uchar>* > &labels){
+
+   vector<CuMatrix<BaseFloat> > backpropagate_buf(labels.size());
 
    nnet2_.Backpropagate(out_diff, &psi_diff_);
 
-   BackPsi(psi_diff_, labels_, backpropagate_buf_);
+   BackPsi(psi_diff_, labels, backpropagate_buf);
 
-   for(int i = 0; i < backpropagate_buf_.size(); ++i)
-      nnet1_.Backpropagate(backpropagate_buf_[i], NULL, i);
-
-   nnet1_.Update();
+   nnet1_.Backpropagate(backpropagate_buf);
 }
 
-void SNnet::Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
+void SNnet::Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr,
+      const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
+   // feedforward the first pass
+   vector<CuMatrix<BaseFloat> > transf_arr(in_arr.size());
+   vector<CuMatrix<BaseFloat> > propagate_buf(in_arr.size());
 
-   assert(in_arr.size() == labels.size());
+   for(int i = 0; i < in_arr.size(); ++i)
+      nnet_transf_.Feedforward(*in_arr[i], &transf_arr[i]);
 
-   if( propagate_buf_.size() != in_arr.size() ){
-      propagate_buf_.resize(in_arr.size());
-      backpropagate_buf_.resize(in_arr.size());
-   }
-
-   CuMatrix<BaseFloat> transf_buf;
-   for(int i = 0; i < in_arr.size(); ++i){
-      nnet_transf_.Feedforward(*in_arr[i], &transf_buf);
-      nnet1_.Feedforward(transf_buf, &propagate_buf_[i]);
-   }
+   nnet1_.Feedforward(transf_arr, propagate_buf);
 
    // combine each buffer according to label
-   Psi(propagate_buf_, labels, &psi_buff_);
+   Psi(propagate_buf, labels, &psi_buff_);
 
    nnet2_.Feedforward(psi_buff_, out);
+
+   if (!KALDI_ISFINITE(out->Sum())) { // check there's no nan/inf,
+      KALDI_ERR << "NaN or inf found in nn-output nnet2";
+   }
 }
 
 void SNnet::Feedforward(const CuMatrix<BaseFloat> &in, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
+   // feedforward the first pass
+   CuMatrix<BaseFloat>          transf_buf;
+   vector<CuMatrix<BaseFloat> > propagate_buf(1);
 
-   if( propagate_buf_.size() != 1 ){
-      propagate_buf_.resize(1);
-      backpropagate_buf_.resize(1);
-   }
-
-   CuMatrix<BaseFloat> transf_buf;
    nnet_transf_.Feedforward(in, &transf_buf);
-   nnet1_.Feedforward(transf_buf, &propagate_buf_[0]);
+
+   nnet1_.Feedforward(transf_buf, &propagate_buf[0]);
 
    // combine each buffer according to label
-   Psi(propagate_buf_, labels, &psi_buff_);
+   Psi(propagate_buf, labels, &psi_buff_);
 
    nnet2_.Feedforward(psi_buff_, out);
+
+   if (!KALDI_ISFINITE(out->Sum())) { // check there's no nan/inf,
+      KALDI_ERR << "NaN or inf found in nn-output nnet2";
+   }
 }
 
 int32 SNnet::InputDim() const{
@@ -144,26 +132,26 @@ string SNnet::InfoGradient() const {
    return "Nnet1\n" + nnet1_.InfoGradient() + "Nnet2\n" + nnet2_.InfoGradient();
 }
 
-void SNnet::Check() const {
-   KALDI_ASSERT(propagate_buf_.size() == backpropagate_buf_.size());
-   KALDI_ASSERT(labels_.size() == propagate_buf_.size());
+string SNnet::InfoPropagate() const {
+   return "Nnet1\n" + nnet1_.InfoPropagate() + "Nnet2\n" + nnet2_.InfoPropagate();
+}
+string SNnet::InfoBackPropagate() const {
+   return "Nnet1\n" + nnet1_.InfoBackPropagate() + "Nnet2\n" + nnet2_.InfoBackPropagate();
+}
 
+void SNnet::Check() const {
    KALDI_ASSERT(((nnet1_.OutputDim() + 1) * (stateMax_ + 1) + stateMax_ * stateMax_) == nnet2_.InputDim());
 }
 
 void SNnet::Destroy() {
-   propagate_buf_.resize(0);
-   backpropagate_buf_.resize(0);
-
-   labels_.resize(0);
 
    psi_buff_.Resize(0, 0);
    psi_diff_.Resize(0, 0);
 }
 
-void SNnet::SetTrainOptions(const NnetTrainOptions& opts) {
+void SNnet::SetTrainOptions(const NnetTrainOptions& opts, double ratio) {
    NnetTrainOptions opts_tmp = opts;
-   opts_tmp.learn_rate /= 10;
+   opts_tmp.learn_rate *= ratio;
    nnet1_.SetTrainOptions(opts_tmp);
    nnet2_.SetTrainOptions(opts);
 }
@@ -239,6 +227,7 @@ void SNnet::makeFeat(CuMatrix<BaseFloat> &feat, const vector<uchar> &label, CuSu
    trans_gpu.CopyFromVec(trans);
 }
 
+// distribute Error into some matrix
 void SNnet::distErr(const CuSubVector<BaseFloat> &diff, const vector<uchar>& label, CuMatrix<BaseFloat> &mat){
    KALDI_ASSERT(mat.NumRows() == label.size());
    KALDI_ASSERT(mat.NumCols() == nnet1_.OutputDim());

@@ -5,7 +5,7 @@
 #include "base/kaldi-common.h"
 #include "nnet/nnet-randomizer.h"
 #include "util/common-utils.h"
-#include "nnet-cache.h"
+#include "nnet-batch.h"
 #include "svm.h"
 #include <iostream>
 #include <string>
@@ -19,7 +19,7 @@ using namespace kaldi::nnet1;
 class SNnet{
    public:
       SNnet() {}
-      SNnet(const CNnet &nnet1, const Nnet &nnet2, uchar stateMax):
+      SNnet(const BNnet &nnet1, const Nnet &nnet2, uchar stateMax):
          nnet1_(nnet1), nnet2_(nnet2), stateMax_(stateMax) {}
 
       SNnet(const SNnet& other):
@@ -32,14 +32,25 @@ class SNnet{
    public:
       /// NOTE: labels are 1-based not 0-based
       /// Perform forward pass through the network
-      void Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out); 
+      void Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr,
+            const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out); 
+
+      // compute f(x, lables) - f(ref_labels)
+      //void Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr,
+      //      const vector<vector<uchar>* > &labels,
+      //      const vector<vector<uchar>* > &ref_labels, CuMatrix<BaseFloat> *out); 
+
       /// Perform backward pass through the network
-      void Backpropagate(const CuMatrix<BaseFloat> &out_diff);
-      /// Perform forward pass through the network, don't keep buffers (use it when not training)
-      void Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out);
+      void Backpropagate(const CuMatrix<BaseFloat> &out_diff, 
+            const vector<vector<uchar>* >&labels);
+      
+      /// Perform forward pass through the network, don't keep buffers 
+      void Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr,
+            const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out);
 
       /// speedup version for those in_arr are the same.
-      void Feedforward(const CuMatrix<BaseFloat> &in, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out);
+      void Feedforward(const CuMatrix<BaseFloat> &in,
+            const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out);
 
 
       /// Dimensionality on network input (input feature dim.)
@@ -63,6 +74,11 @@ class SNnet{
       string Info() const;
       /// Create string with per-component gradient statistics
       string InfoGradient() const;
+      /// Create string with propagation-buffer statistics
+      string InfoPropagate() const;
+      /// Create string with back-propagation-buffer statistics
+      string InfoBackPropagate() const;
+
       /// Consistency check.
       void Check() const;
       /// Relese the memory
@@ -70,7 +86,7 @@ class SNnet{
 
       /// Set training hyper-parameters to the network and its UpdatableComponent(s)
       /// TODO the learn rate of 2 nnets should be diff
-      void SetTrainOptions(const NnetTrainOptions& opts);
+      void SetTrainOptions(const NnetTrainOptions& opts, double ratio = 1);
       /// Get training hyper-parameters from the network
       const NnetTrainOptions& GetTrainOptions() const;
 
@@ -83,16 +99,12 @@ class SNnet{
       void makeFeat(CuMatrix<BaseFloat> &feat, const vector<uchar> &label, CuSubVector<BaseFloat> vec);
       void distErr(const CuSubVector<BaseFloat> &diff, const vector<uchar>& label, CuMatrix<BaseFloat> &mat);
 
-      vector<CuMatrix<BaseFloat> > propagate_buf_;
-      vector<CuMatrix<BaseFloat> > backpropagate_buf_;
-
-      vector< vector<uchar>* > labels_;
-
+      // size won't change. keep buff
       CuMatrix<BaseFloat> psi_buff_;
       CuMatrix<BaseFloat> psi_diff_;
 
       Nnet nnet_transf_;
-      CNnet nnet1_;
+      BNnet nnet1_;
       Nnet nnet2_;
 
       uchar stateMax_;

@@ -22,7 +22,7 @@ BINFILES = post-phn acc con-svm nnet-pop lab-lda gen-lab lattice-to-vec \
 	   uchar-to-int32 snnet-train-cross
 #snnet-gibbs snnet-gibbs2 snnet-gibbs3
 
-OBJFILES = kernel.o svm.o snnet.o nnet-cache.o
+OBJFILES = kernel.o svm.o snnet.o nnet-cache.o nnet-batch.o
 
 TESTFILES = 
 
