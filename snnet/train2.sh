@@ -168,7 +168,7 @@ for iter in $(seq -w $max_iters); do
          ${train_opt:+ "$train_opt"} \
          "$train_ark" "$train_lab" "ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path_rand |\" \"ark:gunzip -c $train_lattice_path |\" |" \
          $mlp1_best $mlp2_best $stateMax $mlp1_next $mlp2_next \
-         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
+         2>&1 | grep -v "releasing cached memory and retrying" | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
       retry=$((retry - 1))
       sleep 3
    done
