@@ -19,7 +19,7 @@ using namespace kaldi::nnet1;
 class SNnet{
    public:
       SNnet() {}
-      SNnet(const BNnet &nnet1, const Nnet &nnet2, uchar stateMax):
+      SNnet(const BNnet &nnet1, const BNnet &nnet2, uchar stateMax):
          nnet1_(nnet1), nnet2_(nnet2), stateMax_(stateMax) {}
 
       SNnet(const SNnet& other):
@@ -35,14 +35,19 @@ class SNnet{
       void Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr,
             const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out); 
 
-      // compute f(x, lables) - f(ref_labels)
-      //void Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr,
-      //      const vector<vector<uchar>* > &labels,
-      //      const vector<vector<uchar>* > &ref_labels, CuMatrix<BaseFloat> *out); 
-
       /// Perform backward pass through the network
       void Backpropagate(const CuMatrix<BaseFloat> &out_diff, 
             const vector<vector<uchar>* >&labels);
+
+      // compute f(x, lables) - f(ref_labels)
+      void Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr,
+            const vector<vector<uchar>* > &labels,
+            const vector<vector<uchar>* > &ref_labels, CuMatrix<BaseFloat> *out); 
+
+      // backpropagate f(x, lables) - f(ref_labels)
+      void Backpropagate(const vector<CuMatrix<BaseFloat> > &out_diff, 
+            const vector<vector<uchar>* > &labels,
+            const vector<vector<uchar>* > &ref_labels);
       
       /// Perform forward pass through the network, don't keep buffers 
       void Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr,
@@ -103,9 +108,22 @@ class SNnet{
       CuMatrix<BaseFloat> psi_buff_;
       CuMatrix<BaseFloat> psi_diff_;
 
+      // size won't change. keep buff
+      vector< CuMatrix<BaseFloat> > psi_arr_;
+      vector< CuMatrix<BaseFloat> > out_arr_;
+
+      vector< CuMatrix<BaseFloat> > psi_diff_arr_;
+
+      vector<CuMatrix<BaseFloat> > transf_arr_;
+      vector<CuMatrix<BaseFloat> > propagate_buf_;
+      
+      vector<CuMatrix<BaseFloat> > backpropagate_buf_;
+
+      vector< vector<CuMatrix<BaseFloat> > > backpropagate_arr_;
+
       Nnet nnet_transf_;
       BNnet nnet1_;
-      Nnet nnet2_;
+      BNnet nnet2_;
 
       uchar stateMax_;
 };

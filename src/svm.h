@@ -11,6 +11,7 @@
 #include "util/edit-distance.h"
 #include "kernel.h"
 #include <sstream>
+#include <iterator>
 
 using namespace std;
 using namespace kaldi;
@@ -151,5 +152,32 @@ class CuIntVector{
    private:
       int* data_; 
       int  dim_;
+};
+
+// Structure learning loss
+class Strt {
+   public:
+      Strt(): frames_(0), loss_(0), frames_progress_(0), loss_progress_(0), diff_host_(2) {}
+
+      ~Strt() { }
+
+      /// Evaluate cross entropy using target-matrix (supports soft labels),
+      void Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat> &nnet_out, 
+            vector<CuMatrix<BaseFloat> > *diff);
+
+      string Report();
+
+   private: 
+      double frames_;
+      double correct_;
+      double loss_;
+
+      // partial results during training
+      double frames_progress_;
+      double loss_progress_;
+      vector<float> loss_vec_;
+
+      Matrix<BaseFloat>      nnet_out_host_;
+      vector<Matrix<BaseFloat> > diff_host_;
 };
 #endif

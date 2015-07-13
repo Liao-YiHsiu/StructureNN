@@ -13,12 +13,19 @@ void BNnet::Propagate(const vector< CuMatrix<BaseFloat> > &in_arr,
    MatToVec(out, in_arr, out_arr);
 }
 
-void BNnet::Backpropagate(const vector< CuMatrix<BaseFloat> > &out_diff){
+void BNnet::Backpropagate(const vector< CuMatrix<BaseFloat> > &out_diff,
+      vector< CuMatrix<BaseFloat> > *in_diff){
 
    CuMatrix<BaseFloat> backward;
    VecToMat(out_diff, backward);
 
-   Nnet::Backpropagate(backward, NULL);
+   if( in_diff == NULL){
+      Nnet::Backpropagate(backward, NULL);
+   } else {
+      CuMatrix<BaseFloat> backward_in_diff;
+      Nnet::Backpropagate(backward, &backward_in_diff);
+      MatToVec(backward_in_diff, out_diff, *in_diff);
+   }
 }
 
 void BNnet::Feedforward(const vector< CuMatrix<BaseFloat> > &in_arr,
@@ -34,7 +41,15 @@ void BNnet::Feedforward(const vector< CuMatrix<BaseFloat> > &in_arr,
    MatToVec(out, in_arr, out_arr);
 }
 
-void BNnet::Feedforward(const CuMatrix<BaseFloat> &in, CuMatrix<BaseFloat> *out){
+void BNnet::Propagate(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *out) {
+   Nnet::Propagate(in, out);
+}
+
+void BNnet::Backpropagate(const CuMatrixBase<BaseFloat> &out_diff, CuMatrix<BaseFloat> *in_diff){
+   Nnet::Backpropagate(out_diff, in_diff);
+}
+
+void BNnet::Feedforward(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *out){
    Nnet::Feedforward(in, out);
 }
 

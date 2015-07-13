@@ -25,12 +25,16 @@ class BNnet : public Nnet{
       void Propagate(const vector< CuMatrix<BaseFloat> > &in_arr,
             vector< CuMatrix<BaseFloat> > &out_arr);
 
-      void Backpropagate(const vector< CuMatrix<BaseFloat> > &out_diff);
+      void Backpropagate(const vector< CuMatrix<BaseFloat> > &out_diff, 
+            vector< CuMatrix<BaseFloat> > *in_diff = NULL);
 
       void Feedforward(const vector< CuMatrix<BaseFloat> > &in_arr,
             vector< CuMatrix<BaseFloat> > &out_arr); 
 
-      void Feedforward(const CuMatrix<BaseFloat> &in, CuMatrix<BaseFloat> *out); 
+      // original
+      void Propagate(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *out); 
+      void Backpropagate(const CuMatrixBase<BaseFloat> &out_diff, CuMatrix<BaseFloat> *in_diff);
+      void Feedforward(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *out); 
 
    private:
       void VecToMat(const vector< CuMatrix<BaseFloat> > &arr, CuMatrix<BaseFloat> &mat);

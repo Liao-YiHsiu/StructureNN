@@ -33,7 +33,7 @@ mlp_proto=
 seed=777
 learn_rate=0.004
 momentum=0.9
-minibatch_size=32
+minibatch_size=8
 randomizer_size=32768
 error_function="fer"
 train_tool="snnet-train-fullshuff"
@@ -46,7 +46,7 @@ acwt=0.2
 train_opt=
 cpus=$(nproc)
 feature_transform=
-objective_function=
+nnet_ratio=
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
@@ -163,7 +163,7 @@ for iter in $(seq -w $max_iters); do
          --verbose=$verbose --binary=true --randomizer-seed=$seed \
          --negative-num=$negative_num --error-function=$error_function \
          ${feature_transform:+ --feature-transform="$feature_transform"} \
-         ${objective_function:+ --objective-function="$objective_function"} \
+         ${nnet_ratio:+ --nnet-ratio="$nnet_ratio"} \
          ${train_opt:+ "$train_opt"} \
          "$train_ark" "$train_lab" "ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path_rand |\" \"ark:gunzip -c $train_lattice_path |\" |" \
          $mlp1_best $mlp2_best $stateMax $mlp1_next $mlp2_next \
@@ -187,7 +187,6 @@ for iter in $(seq -w $max_iters); do
       $cross_tool \
          --verbose=$verbose --binary=true --error-function=$error_function \
          ${feature_transform:+ --feature-transform="$feature_transform"} \
-         ${objective_function:+ --objective-function="$objective_function"} \
          "$cv_ark" "$cv_lab" "ark:gunzip -c $dev_lattice_path |" \
          $mlp1_next $mlp2_next $stateMax \
          2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;

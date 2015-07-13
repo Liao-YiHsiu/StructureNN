@@ -16,16 +16,16 @@ void SNnet::Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr,
       const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
 
    // feedforward the first pass
-   vector<CuMatrix<BaseFloat> > transf_arr(in_arr.size());
-   vector<CuMatrix<BaseFloat> > propagate_buf(in_arr.size());
+   if(transf_arr_.size() != in_arr.size()) transf_arr_.resize(in_arr.size());
+   if(propagate_buf_.size() != in_arr.size()) propagate_buf_.resize(in_arr.size());
 
    for(int i = 0; i < in_arr.size(); ++i)
-      nnet_transf_.Feedforward(*in_arr[i], &transf_arr[i]);
+      nnet_transf_.Feedforward(*in_arr[i], &transf_arr_[i]);
 
-   nnet1_.Propagate(transf_arr, propagate_buf);
+   nnet1_.Propagate(transf_arr_, propagate_buf_);
 
    // combine each buffer according to label
-   Psi(propagate_buf, labels, &psi_buff_);
+   Psi(propagate_buf_, labels, &psi_buff_);
 
    nnet2_.Propagate(psi_buff_, out);
 
@@ -37,28 +37,87 @@ void SNnet::Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr,
 void SNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff,
       const vector<vector<uchar>* > &labels){
 
-   vector<CuMatrix<BaseFloat> > backpropagate_buf(labels.size());
+   if(backpropagate_buf_.size() != labels.size()) backpropagate_buf_.resize(labels.size());
 
    nnet2_.Backpropagate(out_diff, &psi_diff_);
 
-   BackPsi(psi_diff_, labels, backpropagate_buf);
+   BackPsi(psi_diff_, labels, backpropagate_buf_);
 
-   nnet1_.Backpropagate(backpropagate_buf);
+   nnet1_.Backpropagate(backpropagate_buf_);
+}
+
+void SNnet::Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr,
+      const vector<vector<uchar>* > &labels,
+      const vector<vector<uchar>* > &ref_labels, CuMatrix<BaseFloat> *out) {
+
+   int N = in_arr.size();
+
+   // feedforward the first pass
+   if(transf_arr_.size() != N) transf_arr_.resize(N);
+   if(propagate_buf_.size() != N) propagate_buf_.resize(N);
+
+   for(int i = 0; i < N; ++i)
+      nnet_transf_.Feedforward(*in_arr[i], &transf_arr_[i]);
+
+   nnet1_.Propagate(transf_arr_, propagate_buf_);
+
+   if(psi_arr_.size() != 2) psi_arr_.resize(2);
+   if(out_arr_.size() != 2) out_arr_.resize(2);
+
+   // combine each buffer according to label
+   Psi(propagate_buf_, labels, &psi_arr_[0]);
+   Psi(propagate_buf_, ref_labels, &psi_arr_[1]);
+
+   nnet2_.Propagate(psi_arr_, out_arr_);
+   
+   *out = out_arr_[0];
+   out -> AddMat(-1, out_arr_[1]);
+
+   if (!KALDI_ISFINITE(out->Sum())) { // check there's no nan/inf,
+      KALDI_ERR << "NaN or inf found in nn-output nnet2";
+   }
+}
+
+void SNnet::Backpropagate(const vector<CuMatrix<BaseFloat> > &out_diff, 
+      const vector<vector<uchar>* > &labels,
+      const vector<vector<uchar>* > &ref_labels){
+
+   KALDI_ASSERT( out_diff.size() == 2);
+
+   if(psi_diff_arr_.size() != 2) psi_diff_arr_.resize(2);
+
+   nnet2_.Backpropagate(out_diff, &psi_diff_arr_);
+
+   if(backpropagate_arr_.size() != 2) backpropagate_arr_.resize(2);
+
+   if(backpropagate_arr_[0].size() != labels.size()) backpropagate_arr_[0].resize(labels.size());
+   if(backpropagate_arr_[1].size() != labels.size()) backpropagate_arr_[1].resize(labels.size());
+
+
+   BackPsi(psi_diff_arr_[0], labels,     backpropagate_arr_[0]);
+   BackPsi(psi_diff_arr_[1], ref_labels, backpropagate_arr_[1]);
+
+   // merge backpropagate_arr[0, 1] into one matrix
+   for(int i = 0; i < backpropagate_arr_[0].size(); ++i){
+      backpropagate_arr_[0][i].AddMat(1, backpropagate_arr_[1][i]);
+   }
+
+   nnet1_.Backpropagate(backpropagate_arr_[0]);
 }
 
 void SNnet::Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr,
       const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
    // feedforward the first pass
-   vector<CuMatrix<BaseFloat> > transf_arr(in_arr.size());
-   vector<CuMatrix<BaseFloat> > propagate_buf(in_arr.size());
+   if(transf_arr_.size() != in_arr.size()) transf_arr_.resize(in_arr.size());
+   if(propagate_buf_.size() != in_arr.size()) propagate_buf_.resize(in_arr.size());
 
    for(int i = 0; i < in_arr.size(); ++i)
-      nnet_transf_.Feedforward(*in_arr[i], &transf_arr[i]);
+      nnet_transf_.Feedforward(*in_arr[i], &transf_arr_[i]);
 
-   nnet1_.Feedforward(transf_arr, propagate_buf);
+   nnet1_.Feedforward(transf_arr_, propagate_buf_);
 
    // combine each buffer according to label
-   Psi(propagate_buf, labels, &psi_buff_);
+   Psi(propagate_buf_, labels, &psi_buff_);
 
    nnet2_.Feedforward(psi_buff_, out);
 
@@ -69,15 +128,15 @@ void SNnet::Feedforward(const vector<CuMatrix<BaseFloat>* > &in_arr,
 
 void SNnet::Feedforward(const CuMatrix<BaseFloat> &in, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
    // feedforward the first pass
-   CuMatrix<BaseFloat>          transf_buf;
-   vector<CuMatrix<BaseFloat> > propagate_buf(1);
+   if(transf_arr_.size() != 1)     transf_arr_.resize(1);
+   if(propagate_buf_.size() != 1)  propagate_buf_.resize(1);
 
-   nnet_transf_.Feedforward(in, &transf_buf);
+   nnet_transf_.Feedforward(in, &transf_arr_[0]);
 
-   nnet1_.Feedforward(transf_buf, &propagate_buf[0]);
+   nnet1_.Feedforward(transf_arr_[0], &propagate_buf_[0]);
 
    // combine each buffer according to label
-   Psi(propagate_buf, labels, &psi_buff_);
+   Psi(propagate_buf_, labels, &psi_buff_);
 
    nnet2_.Feedforward(psi_buff_, out);
 
@@ -165,7 +224,9 @@ void SNnet::SetTransform(const Nnet &nnet){
 }
 
 
-void SNnet::Psi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
+void SNnet::Psi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<uchar>* > &labels,
+      CuMatrix<BaseFloat> *out){
+
    KALDI_ASSERT(out != NULL);
    KALDI_ASSERT(feats.size() == labels.size() || feats.size() == 1);
 

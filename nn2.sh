@@ -7,12 +7,12 @@ dnn_width=200
 lattice_N=1
 test_lattice_N=10
 train_opt=
-learn_rate=0.0001
+learn_rate=0.000001
 cpus=$(nproc)
 acwt=0.16
+nnet_ratio=0.1
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
-objective_function="mse"
 
 echo "$0 $@"  # Print the command line for logging
 command_line="$0 $@"
@@ -65,7 +65,7 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
       ${feature_transform:+ --feature-transform "$feature_transform"} \
-      ${objective_function:+ --objective-function "$objective_function"} \
+      ${nnet_ratio:+ --nnet-ratio "$nnet_ratio"} \
       $dir $lat_model $model1 $model2 $stateMax\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 

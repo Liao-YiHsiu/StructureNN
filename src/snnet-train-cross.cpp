@@ -34,9 +34,6 @@ int main(int argc, char *argv[]) {
 
     po.Register("binary", &binary, "Write model in binary mode");
 
-    string objective_function = "xent";
-    po.Register("objective-function", &objective_function, "Objective function : xent|mse");
-
     string error_function = "fer";
     po.Register("error-function", &error_function, "Error function : fer|per");
 
@@ -100,8 +97,7 @@ int main(int argc, char *argv[]) {
     SequentialBaseFloatMatrixReader  feature_reader(feat_rspecifier);
     SequentialUcharVectorReader      label_reader(label_rspecifier);
 
-    Xent xent;
-    Mse mse;
+    Strt strt;
 
     CuMatrix<BaseFloat> obj_diff;
     CuMatrix<BaseFloat> nnet_out;
@@ -118,43 +114,30 @@ int main(int argc, char *argv[]) {
 #endif
        CuMatrix<BaseFloat>       feat(feature_reader.Value());
        ScorePath::Table          table = score_path_reader.Value().Value();
-       const vector<uchar>&      label = label_reader.Value();
+       vector<uchar>             label = label_reader.Value();
 
-       Vector<BaseFloat>         frm_weights(table.size(), kSetZero);
-       Matrix<BaseFloat>         nnet_tgt_host(table.size(), 1, kSetZero);
-       vector<vector<uchar> * >  nnet_label_in(table.size());
+       vector<vector<uchar> * >  nnet_label_in(table.size() + 1);
+       Vector< BaseFloat >       delta(table.size() + 1);
 
-       frm_weights.Set(1.0);
        for(int i = 0; i < table.size(); ++i){
           nnet_label_in[i]    = &table[i].second;
-          nnet_tgt_host(i, 0) = acc_function(label, table[i].second, 1.0);
+          delta(i)            = (1 - acc_function(label, table[i].second, 1.0)); // error rate
        }
+       nnet_label_in[table.size()] = &label;
 
-       nnet_tgt_device = nnet_tgt_host;
-       
        nnet.Feedforward(feat, nnet_label_in, &nnet_out);
 
-       // evaluate objective function we've chosen
-       if (objective_function == "xent") {
-          xent.Eval(frm_weights, nnet_out, nnet_tgt_device, &obj_diff); 
-       } else if (objective_function == "mse") {
-          mse.Eval(frm_weights, nnet_out, nnet_tgt_device, &obj_diff);
-       } else {
-          KALDI_ERR << "Unknown objective function code : " << objective_function;
-       }
+       // f(x, y) - f(x, y_hat)
+       nnet_out.Add(-nnet_out(table.size(), 0));
+
+       strt.Eval(delta, nnet_out, NULL);
     } 
 
     KALDI_LOG << "Done " << num_done << " examples, " 
               << " with other errors. "
               << " " << time.Elapsed()/60 << " min";
 
-    if (objective_function == "xent") {
-      KALDI_LOG << xent.Report();
-    } else if (objective_function == "mse") {
-      KALDI_LOG << mse.Report();
-    } else {
-      KALDI_ERR << "Unknown objective function code : " << objective_function;
-    }
+    KALDI_LOG << strt.Report();
 
 #if HAVE_CUDA==1
     CuDevice::Instantiate().PrintProfile();

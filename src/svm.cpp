@@ -520,3 +520,81 @@ void CuIntVector::Resize(int dim){
 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());    
 }
+
+void Strt::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat> &nnet_out, 
+      vector<CuMatrix<BaseFloat> > *diff){
+
+   int N = delta.Dim();
+
+   KALDI_ASSERT(nnet_out.NumCols() == 1);
+   KALDI_ASSERT(N ==  nnet_out.NumRows());
+
+   // copy data from gpu to cpu
+   nnet_out_host_.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kUndefined);
+   nnet_out_host_.CopyFromMat(nnet_out);
+
+   if(diff != NULL){
+      diff_host_[0].Resize(N, 1, kSetZero);
+      diff_host_[1].Resize(N, 1, kSetZero);
+   }
+
+   double total_error = 0, total_correct = 0;
+   for(int i = 0; i < N; ++i){
+      double error = nnet_out_host_(i, 0) + delta(i);
+      if( error > 0 ){
+         if(diff != NULL){
+            diff_host_[0](i, 0) = 1;
+            diff_host_[1](i, 0) = -1;
+         }
+
+         total_error += error;
+      }else{
+         total_correct += 1;
+      }
+   }
+   KALDI_ASSERT(KALDI_ISFINITE(total_error));
+
+   if(diff != NULL){
+      KALDI_ASSERT(diff -> size() == 2);
+      (*diff)[0] = diff_host_[0];
+      (*diff)[1] = diff_host_[1];
+   }
+
+   frames_  += N;
+   loss_    += total_error;
+   correct_ += total_correct;
+
+   // progress losss reporting
+   {
+      static const int32 progress_step = 1024; 
+      frames_progress_ += N;
+      loss_progress_   += total_error; 
+
+      if (frames_progress_ > progress_step) {
+         KALDI_VLOG(1) << "ProgressLoss[last " 
+            << static_cast<int>(frames_progress_/progress_step) << "k of " 
+            << static_cast<int>(frames_/progress_step) << "k]: " 
+            << loss_progress_/frames_progress_ << " (Strt)";
+         // store
+         loss_vec_.push_back(loss_progress_/frames_progress_);
+         // reset
+         frames_progress_ = 0;
+         loss_progress_ = 0.0;
+      }
+   }
+
+}
+
+string Strt::Report() {
+   ostringstream oss;
+   oss << "AvgLoss: " << loss_/frames_ << " (Strt) " << endl;
+   if (loss_vec_.size() > 0) {
+      oss << "progress: [";
+      copy(loss_vec_.begin(),loss_vec_.end(),ostream_iterator<float>(oss," "));
+      oss << "]" << endl;
+   }
+   if (correct_ >= 0.0) {
+      oss << "\nFRAME_ACCURACY >> " << 100.0*correct_/frames_ << "% <<";
+   }
+   return oss.str(); 
+}
