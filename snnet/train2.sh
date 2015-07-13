@@ -94,7 +94,7 @@ SVM_dim=$(( (stateMax + 1) * (feat_dim + 1) + stateMax*stateMax ))
 mlp2_init=$tmpdir/nnet2.init
 mlp_proto=$tmpdir/nnet.proto
 $timit/utils/nnet/make_nnet_proto.py --no-softmax $SVM_dim 1 $dnn_depth $dnn_width | \
-   | sed -e "s@</NnetProto>@<Sigmoid> <InputDim> 1 <OutputDim> 1 \n</NnetProto>@g" > $mlp_proto || exit 1
+   sed -e "s@</NnetProto>@<Sigmoid> <InputDim> 1 <OutputDim> 1 \n</NnetProto>@g" > $mlp_proto || exit 1
 nnet-initialize $mlp_proto $mlp2_init || exit 1; 
 
 # precompute lattice data
