@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
     // fill all data into randomizer
     for(int i = 0; i < features.size(); ++i){
 
-       KALDI_ASSERT (!feature_randomizer.IsFull())
+       KALDI_ASSERT (!feature_randomizer.IsFull());
 
        vector< CuMatrix<BaseFloat>* > feat(examples[i].size());
        vector< vector<uchar>* >       lab(examples[i].size());
