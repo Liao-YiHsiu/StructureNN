@@ -268,6 +268,7 @@ void SNnet::makeFeat(CuMatrix<BaseFloat> &feat, const vector<uchar> &label, CuSu
 
    for(int i = 0; i < label.size(); ++i){
       KALDI_ASSERT(label[i] <= stateMax_);
+      if(label[i] == 0) continue;
 
       CuSubVector<BaseFloat> obs(vec, label[i]*F, F);
       CuSubVector<BaseFloat> dummy(vec, 0, F);
@@ -298,6 +299,9 @@ void SNnet::distErr(const CuSubVector<BaseFloat> &diff, const vector<uchar>& lab
    CuSubVector<BaseFloat> dummy(diff, 0, F);
 
    for(int i = 0; i < label.size(); ++i){
+      KALDI_ASSERT(label[i] <= stateMax_);
+      if(label[i] == 0) continue;
+
       CuSubVector<BaseFloat> obs(diff, label[i]*F, F);
 
       mat.Row(i).AddVec(1, dummy);
