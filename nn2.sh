@@ -7,7 +7,7 @@ dnn_width=200
 lattice_N=1
 test_lattice_N=10
 train_opt=
-learn_rate=0.00001
+learn_rate=0.0000004
 cpus=$(nproc)
 acwt=0.16
 nnet_ratio=0.1
@@ -31,7 +31,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-paramId=${lattice_N}_${test_lattice_N}_${dnn_depth}_${dnn_width}_${learn_rate}_${acwt}
+paramId=${lattice_N}_${test_lattice_N}_${dnn_depth}_${dnn_width}_${learn_rate}_${acwt}_${nnet_ratio}
 
 log=log/$dir/${paramId}.log
 data=$dir/${paramId}.data

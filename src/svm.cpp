@@ -522,7 +522,7 @@ void CuIntVector::Resize(int dim){
 }
 
 void Strt::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat> &nnet_out, 
-      vector<CuMatrix<BaseFloat> > *diff){
+      vector<CuMatrix<BaseFloat> > *diff, int* counter){
 
    int N = delta.Dim();
 
@@ -553,6 +553,7 @@ void Strt::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat
       }
    }
    KALDI_ASSERT(KALDI_ISFINITE(total_error));
+   if(counter != NULL) *counter = N - total_correct;
 
    if(diff != NULL){
       KALDI_ASSERT(diff -> size() == 2);

@@ -162,8 +162,10 @@ class Strt {
       ~Strt() { }
 
       /// Evaluate cross entropy using target-matrix (supports soft labels),
+      /// nnet_out = f(x, y) - f(x, y_hat)
+      /// counter  = # of errors
       void Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat> &nnet_out, 
-            vector<CuMatrix<BaseFloat> > *diff);
+            vector<CuMatrix<BaseFloat> > *diff, int* counter = NULL);
 
       string Report();
 

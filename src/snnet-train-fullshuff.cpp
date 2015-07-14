@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
     ParseOptions po(usage.c_str());
 
-    NnetTrainOptions trn_opts;
+    NnetTrainOptions trn_opts, trn_opts_tmp;
     trn_opts.Register(&po);
     NnetDataRandomizerOptions rnd_opts;
     rnd_opts.Register(&po);
@@ -247,10 +247,16 @@ int main(int argc, char *argv[]) {
        // nnet_out = f(x, y) - f(x, y_hat)
        nnet.Propagate(nnet_feat_in, nnet_label_in, nnet_ref_label, &nnet_out);
 
-       strt.Eval(delta, nnet_out, &obj_diff);
+       int counter = 0;
+       strt.Eval(delta, nnet_out, &obj_diff, &counter);
+
+       trn_opts_tmp = trn_opts;
+       trn_opts_tmp.learn_rate *= counter;
+       nnet.SetTrainOptions(trn_opts_tmp, nnet_ratio);
+
 
        // backward pass
-       if (!crossvalidate) {
+       if (!crossvalidate && counter != 0) {
           // backpropagate
           nnet.Backpropagate(obj_diff, nnet_label_in, nnet_ref_label);
        }
