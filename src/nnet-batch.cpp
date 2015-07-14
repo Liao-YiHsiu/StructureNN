@@ -16,6 +16,16 @@ void BNnet::Propagate(const vector< CuMatrix<BaseFloat> > &in_arr,
 void BNnet::Backpropagate(const vector< CuMatrix<BaseFloat> > &out_diff,
       vector< CuMatrix<BaseFloat> > *in_diff){
 
+   if(NumComponents() == 1 && GetComponent(0).GetType() == Component::kSplice){
+      if(in_diff != NULL){
+         if(in_diff->size() != out_diff.size())
+            in_diff->resize(out_diff.size());
+         for(int i = 0; i < out_diff.size(); ++i)
+            (*in_diff)[i] = out_diff[i];
+      }
+      return;
+   }
+
    CuMatrix<BaseFloat> backward;
    VecToMat(out_diff, backward);
 
@@ -46,6 +56,11 @@ void BNnet::Propagate(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *ou
 }
 
 void BNnet::Backpropagate(const CuMatrixBase<BaseFloat> &out_diff, CuMatrix<BaseFloat> *in_diff){
+   if(NumComponents() == 1 && GetComponent(0).GetType() == Component::kSplice){
+      if(in_diff != NULL)
+         *in_diff = out_diff;
+      return;
+   }
    Nnet::Backpropagate(out_diff, in_diff);
 }
 
