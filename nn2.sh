@@ -31,10 +31,10 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-paramId=${lattice_N}_${test_lattice_N}_${dnn_depth}_${dnn_width}_${learn_rate}_${acwt}_${nnet_ratio}
+paramId=${lattice_N}_$((10*lattice_N))_${dnn_depth}_${dnn_width}_${learn_rate}_${acwt}
 
-log=log/$dir/${paramId}.log
-data=$dir/${paramId}.data
+log=log/$dir/${paramId}_${test_lattice_N}.log
+data=$dir/${paramId}_${test_lattice_N}.data
 model1=$dir/${paramId}.nnet1
 model2=$dir/${paramId}.nnet2
 
@@ -61,7 +61,7 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
 
    [ -f $model1 -a -f $model2 ] || snnet/train2.sh --error-function $error_function --cpus $cpus\
       --dnn-depth $dnn_depth --dnn-width $dnn_width --lattice-N $lattice_N \
-      --test-lattice-N $test_lattice_N --learn-rate $learn_rate --acwt $acwt \
+      --test-lattice-N $((lattice_N*10)) --learn-rate $learn_rate --acwt $acwt \
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
       ${feature_transform:+ --feature-transform "$feature_transform"} \
