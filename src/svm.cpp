@@ -568,19 +568,22 @@ void Strt::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat
    // progress losss reporting
    {
       static const int32 progress_step = 1024; 
-      frames_progress_ += N;
-      loss_progress_   += total_error; 
+      frames_progress_  += N;
+      loss_progress_    += total_error; 
+      correct_progress_ += total_correct;
 
       if (frames_progress_ > progress_step) {
          KALDI_VLOG(1) << "ProgressLoss[last " 
             << static_cast<int>(frames_progress_/progress_step) << "k of " 
             << static_cast<int>(frames_/progress_step) << "k]: " 
-            << loss_progress_/frames_progress_ << " (Strt)";
+            << loss_progress_/frames_progress_ << " (Strt) " 
+            << "FRAME ACC >> " << 100*correct_progress_/frames_progress_ << "% <<";
          // store
          loss_vec_.push_back(loss_progress_/frames_progress_);
          // reset
-         frames_progress_ = 0;
-         loss_progress_ = 0.0;
+         frames_progress_  = 0;
+         loss_progress_    = 0;
+         correct_progress_ = 0;
       }
    }
 

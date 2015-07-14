@@ -157,7 +157,8 @@ class CuIntVector{
 // Structure learning loss
 class Strt {
    public:
-      Strt(): frames_(0), loss_(0), frames_progress_(0), loss_progress_(0), diff_host_(2) {}
+      Strt(): frames_(0), loss_(0), frames_progress_(0),
+      loss_progress_(0), correct_progress_(0), diff_host_(2) {}
 
       ~Strt() { }
 
@@ -177,6 +178,7 @@ class Strt {
       // partial results during training
       double frames_progress_;
       double loss_progress_;
+      double correct_progress_;
       vector<float> loss_vec_;
 
       Matrix<BaseFloat>      nnet_out_host_;
