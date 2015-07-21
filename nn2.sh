@@ -31,7 +31,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-paramId=${lattice_N}_$((10*lattice_N))_${dnn_depth}_${dnn_width}_${learn_rate}_${nnet_ratio}_${acwt}
+paramId=${lattice_N}_$((10*lattice_N))_${dnn_depth}_${dnn_width}_${learn_rate}_${nnet_ratio}_${acwt}_${error_function}
 
 log=log/$dir/${paramId}_${test_lattice_N}.log
 data=$dir/${paramId}_${test_lattice_N}.data

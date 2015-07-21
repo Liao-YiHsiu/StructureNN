@@ -1,3 +1,3 @@
 #!/bin/bash -ex
 make -C src;
-(cd data_prepare; ./gen.sh && ./gen_raw_feature.sh && ./gen_nn_post.sh )
+(cd data_prepare; ./gen.sh )
