@@ -2,7 +2,7 @@
 #include "util/common-utils.h"
 #include <math.h>
 #include <cfloat>
-#include "svm.h"
+#include "util.h"
 
 using namespace std;
 using namespace kaldi;

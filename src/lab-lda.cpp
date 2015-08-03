@@ -2,7 +2,7 @@
 #include "util/common-utils.h"
 #include "hmm/transition-model.h"
 #include "transform/lda-estimate.h"
-#include "svm.h"
+#include "util.h"
 
 using namespace kaldi;
 using namespace std;

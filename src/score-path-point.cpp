@@ -6,7 +6,7 @@
 #include "util/common-utils.h"
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
-#include "svm.h"
+#include "util.h"
 #include <sstream>
 
 #include <fstream>

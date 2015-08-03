@@ -6,7 +6,7 @@
 #include "nnet/nnet-randomizer.h"
 #include "util/common-utils.h"
 #include "nnet-batch.h"
-#include "svm.h"
+#include "util.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -18,12 +18,12 @@ using namespace kaldi::nnet1;
 
 class SNnet{
    public:
-      SNnet() {}
+      SNnet():labelbuf_cols_(0) {}
       SNnet(const BNnet &nnet1, const BNnet &nnet2, uchar stateMax):
-         nnet1_(nnet1), nnet2_(nnet2), stateMax_(stateMax) {}
+         nnet1_(nnet1), nnet2_(nnet2), stateMax_(stateMax), labelbuf_cols_(0) {}
 
       SNnet(const SNnet& other):
-         nnet1_(other.nnet1_), nnet2_(other.nnet2_), stateMax_(other.stateMax_) {}
+         nnet1_(other.nnet1_), nnet2_(other.nnet2_), stateMax_(other.stateMax_), labelbuf_cols_(0) {}
 
       SNnet &operator = (const SNnet& other); // Assignment operator.
 
@@ -99,11 +99,14 @@ class SNnet{
 
    private:
       void Psi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out);
-      void BackPsi(const CuMatrix<BaseFloat> &diff, const vector<vector<uchar>* > &labels, vector<CuMatrix<BaseFloat> > &feats_diff);
+      void PsiKernel(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out);
+      int packPsi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> &psi_feats, CuVectorG<PsiPack> &packs_dev);
+      void BackPsi(CuMatrix<BaseFloat> &diff, const vector<vector<uchar>* > &labels, vector<CuMatrix<BaseFloat> > &feats_diff);
+      void BackPsiKernel(CuMatrix<BaseFloat> &diff, const vector<vector<uchar>* > &labels, vector<CuMatrix<BaseFloat> > &feats_diff);
 
       void makeFeat(CuMatrix<BaseFloat> &feat, const vector<uchar> &label, CuSubVector<BaseFloat> vec);
       void distErr(const CuSubVector<BaseFloat> &diff, const vector<uchar>& label, CuMatrix<BaseFloat> &mat);
-
+      
       // size won't change. keep buff
       CuMatrix<BaseFloat> psi_buff_;
       CuMatrix<BaseFloat> psi_diff_;
@@ -126,6 +129,14 @@ class SNnet{
       BNnet nnet2_;
 
       uchar stateMax_;
+
+      // for kernel buffer
+      vector<PsiPack>         packs_;
+      CuVectorG<PsiPack>      packs_device_;
+      vector<uchar>           labelbuf_; // 2-d array encode in 1-d
+      int                     labelbuf_cols_;
+      CuMatrixG<uchar>        labelbuf_device_;
+
 };
 
 #endif // _SNNET_H_

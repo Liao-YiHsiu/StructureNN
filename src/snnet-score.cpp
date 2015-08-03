@@ -5,7 +5,8 @@
 #include "util/common-utils.h"
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
-#include "svm.h"
+#include "util.h"
+#include "snnet.h"
 #include "kernel.h"
 #include <sstream>
 #include <pthread.h>
@@ -21,30 +22,32 @@ int main(int argc, char *argv[]) {
    try {
       string usage;
       usage.append("Structure Neural Network calculate scores for all path\n")
-         .append("Usage: ").append(argv[0]).append(" [options] <feature-rspecifier> <score-path-rspecifier> <model-in> <score-path-wspecifier>\n")
+         .append("Usage: ").append(argv[0]).append(" [options] <feature-rspecifier> <score-path-rspecifier> <nnet1-in> <nnet2-in> <stateMax> <score-path-wspecifier>\n")
          .append("e.g.: \n")
-         .append(" ").append(argv[0]).append(" ark:feat.ark \"ark:lattice-to-nbest --n=1000 ark:test.lat ark:- | lattice-to-vec ark:- ark:- |\" nnet ark:path.ark \n");
+         .append(" ").append(argv[0]).append(" ark:feat.ark \"ark:lattice-to-nbest --n=1000 ark:test.lat ark:- | lattice-to-vec ark:- ark:- |\" nnet1 nnet2 48 ark:path.ark \n");
 
       ParseOptions po(usage.c_str());
 
       string use_gpu="yes";
       po.Register("use-gpu", &use_gpu, "yes|no|optional, only has effect if compiled with CUDA");
 
-      int max_state = 48;
-      po.Register("max-state", &max_state, "max state ID");
+      string feature_transform;
+      po.Register("feature-transform", &feature_transform, "Feature transform in front of main network (in nnet format)");
 
 
       po.Read(argc, argv);
 
-      if (po.NumArgs() != 4) {
+      if (po.NumArgs() != 6) {
          po.PrintUsage();
          exit(1);
       }
 
       string feat_rspecifier       = po.GetArg(1),
              score_path_rspecifier = po.GetArg(2),
-             model_filename        = po.GetArg(3),
-             score_path_wspecifier = po.GetArg(4);
+             nnet1_in_filename     = po.GetArg(3),
+             nnet2_in_filename     = po.GetArg(4);
+      int    stateMax              = atoi(po.GetArg(5).c_str());
+      string score_path_wspecifier = po.GetArg(6);
 
 
       ScorePathWriter                  score_path_writer(score_path_wspecifier);
@@ -56,26 +59,24 @@ int main(int argc, char *argv[]) {
       CuDevice::Instantiate().SelectGpuId(use_gpu);
 #endif
 
-      Nnet nnet;
-      nnet.Read(model_filename);
+      SNnet nnet;
+      nnet.Read(nnet1_in_filename, nnet2_in_filename, stateMax);
 
       nnet.SetDropoutRetention(1.0);
 
-      Posterior targets;
-
+      if (feature_transform != "") {
+         Nnet nnet_transf;
+         nnet_transf.Read(feature_transform);
+         nnet.SetTransform(nnet_transf);
+      }
 
       KALDI_LOG << "SNNet pick best started.";
 
       Timer time;
       int32 num_done = 0;
 
-      int32 featsN = nnet.InputDim();
-
-      CuMatrix<BaseFloat> nnet_in;
       CuMatrix<BaseFloat> nnet_out;
-      Matrix<BaseFloat> nnet_in_host;
       Matrix<BaseFloat> nnet_out_host;
-      Vector<BaseFloat> val;
 
       for ( ; !feature_reader.Done() && !score_path_reader.Done(); 
             feature_reader.Next(), score_path_reader.Next(), num_done++) {
@@ -86,31 +87,28 @@ int main(int argc, char *argv[]) {
          // check the GPU is not overheated
          CuDevice::Instantiate().CheckGpuHealth();
 #endif
-         const Matrix<BaseFloat> &mat  = feature_reader.Value();
-         const ScorePath::Table &table = score_path_reader.Value().Value();
+         CuMatrix<BaseFloat>      feat(feature_reader.Value());
+         ScorePath::Table table = score_path_reader.Value().Value();
 
-         nnet_in.Resize(table.size(), featsN, kUndefined);
-         nnet_in_host.Resize(table.size(), featsN, kSetZero);
-         val.Resize(table.size(), kUndefined);
-
+         vector<vector<uchar> * >      nnet_label_in;
 
          for(int i = 0; i < table.size(); ++i){
-            makeFeature(mat, table[i].second, max_state, nnet_in_host.Row(i));
+            nnet_label_in.push_back(&table[i].second);
          }
 
-         nnet_in.CopyFromMat(nnet_in_host);
-         nnet.Feedforward(nnet_in, &nnet_out);
+         nnet.Feedforward(feat, nnet_label_in, &nnet_out);
+
          nnet_out_host.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kUndefined);
          nnet_out_host.CopyFromMat(nnet_out);
-         val.CopyColFromMat(nnet_out_host, 0);
 
-         ScorePath tmpscore;
-         ScorePath::Table &tmptable = tmpscore.Value();
-         tmptable = table;
-         for(int i = 0; i < tmptable.size(); ++i)
-            tmptable[i].first = val(i);
+         for(int i = 0; i < table.size(); ++i)
+            table[i].first = nnet_out_host(i, 0);
 
-         score_path_writer.Write(feature_reader.Key(), tmpscore);
+         score_path_writer.Write(feature_reader.Key(), table);
+
+         if(num_done % 10 == 0){
+            KALDI_LOG << "Done " << num_done;
+         }
       }
 
       // final message

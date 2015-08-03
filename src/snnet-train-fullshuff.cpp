@@ -7,11 +7,9 @@
 #include "util/common-utils.h"
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
-#include "svm.h"
+#include "util.h"
 #include "snnet.h"
 #include <sstream>
-
-#define BUFSIZE 4096
 
 using namespace std;
 using namespace kaldi;
@@ -19,6 +17,10 @@ using namespace kaldi::nnet1;
 
 typedef StdVectorRandomizer<CuMatrix<BaseFloat>* > MatrixPtRandomizer;
 typedef StdVectorRandomizer<vector<uchar>* >       LabelPtRandomizer;
+
+const uchar LABEL = 1;
+const uchar LATEX = 1;
+const uchar RANEX = 1;
 
 int main(int argc, char *argv[]) {
   
@@ -111,10 +113,12 @@ int main(int argc, char *argv[]) {
     vector< CuMatrix<BaseFloat> >     features; // all features
     vector< vector< uchar > >         labels;   // reference labels
     vector< vector< vector<uchar> > > examples; // including positive & negative examples
+    vector< vector< uchar > >         types;
 
     features.reserve(BUFSIZE);
     labels.reserve(BUFSIZE);
     examples.reserve(BUFSIZE);
+    types.reserve(BUFSIZE);
 
     srand(rnd_opts.randomizer_seed);
 
@@ -131,17 +135,22 @@ int main(int argc, char *argv[]) {
        features.push_back(CuMatrix<BaseFloat>(feat));
        labels.push_back(label);
        examples.push_back(vector< vector<uchar> >());
+       types.push_back(vector< uchar > ());
 
        vector< vector<uchar> > &seqs = examples[examples.size() - 1];
+       vector< uchar >         &tps  = types[types.size() - 1];
 
        seqs.reserve(1 + table.size() + negative_num);
+       tps.reserve(1 + table.size() + negative_num);
 
        // positive examples
        seqs.push_back(label);
+       tps.push_back(LABEL);
 
        // negative examples
        for(int i = 0; i < table.size(); ++i){
           seqs.push_back(table[i].second);
+          tps.push_back(LATEX);
        }
 
        // TODO set random seed
@@ -151,6 +160,7 @@ int main(int argc, char *argv[]) {
           for(int j = 0; j < neg_arr.size(); ++j)
              neg_arr[j] = rand() % stateMax + 1;
           seqs.push_back(neg_arr);
+          tps.push_back(RANEX);
        }
     } 
     // -------------------------------------------------------------

@@ -22,7 +22,7 @@
 #include "util/common-utils.h"
 #include "hmm/transition-model.h"
 #include "hmm/posterior.h"
-#include "svm.h"
+#include "util.h"
 #include <fstream>
 
 #define MAX_MAP 10240

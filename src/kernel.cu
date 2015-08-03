@@ -15,7 +15,9 @@ __global__ static void _cuda_make_tran(int rows, int cols, const int* lab, int l
 
 __global__ static void _cuda_find_max(const float* arr, int len, float *val, int* index);
 
+__global__ static void _cuda_prop_psi(int N, int F, int S, PsiPack *packs_ptr);
 
+__global__ static void _cuda_back_psi(int N, int F, int S, PsiPack *packs_ptr);
 
 
 void cuda_make_obs(dim3 grid, dim3 block, const float* feats, int rows, int cols, int stride, const int* lab, float *data, int d_stride, int S){
@@ -45,6 +47,14 @@ void cuda_make_tran(dim3 grid, dim3 block, int rows, int cols, const int* lab, i
    assert( rows < MAX_L);
    assert( S < MAX_S);
    _cuda_make_tran<<<grid, block>>>(rows, cols, lab, l, data, d_stride, S);
+}
+
+void cuda_prop_psi(dim3 grid, dim3 block, size_t shared_mem, int N, int F, int S, PsiPack *packs_ptr){
+   _cuda_prop_psi<<<grid, block, shared_mem>>>(N, F, S, packs_ptr);
+}
+
+void cuda_back_psi(dim3 grid, dim3 block, size_t shared_mem, int N, int F, int S, PsiPack *packs_ptr){
+   _cuda_back_psi<<<grid, block, shared_mem*sizeof(float)>>>(N, F, S, packs_ptr);
 }
 
 
@@ -237,4 +247,59 @@ static void _cuda_find_max(const float* arr, int len, float *val, int* index){
 
 }
 
+__global__ static void _cuda_prop_psi(int N, int F, int S, PsiPack *packs_ptr){
 
+   extern __shared__ unsigned char label[];
+
+   int n    = blockIdx.x;  // N            ( 0 <= n    < N)
+   int cols = threadIdx.x; // columns of F ( 0 <= cols < F)
+
+   PsiPack &pack   = packs_ptr[n];
+
+   int L           = pack.L;
+   int feat_stride = pack.feat_stride;
+   float *feat     = pack.feat;
+   float *psi_feat = pack.psi_feat;
+
+   // move lables into shared memory.
+   for(int i = cols; i < L; i += F)
+      label[i] = pack.lab[i];
+   __syncthreads();
+
+   for(int i = 0; i < L; ++i){
+      float value = feat[i * feat_stride + cols];
+      psi_feat[cols] += value;
+      psi_feat[F * label[i] + cols] += value;
+   }
+}
+
+// TODO change threads from feat[idx] to fully workable units
+__global__ static void _cuda_back_psi(int N, int F, int S, PsiPack *packs_ptr){
+
+   extern __shared__ float psi_feat[];
+
+   int n   = blockIdx.x;  // N            ( 0 <= n    < N)
+   int idx = threadIdx.x; // feat[idx]    ( 0 <= idx  < maxL)
+
+   PsiPack &pack   = packs_ptr[n];
+
+   int L           = pack.L;
+   int feat_stride = pack.feat_stride;
+   float *feat     = pack.feat;
+   int psi_dim     = F + F * S;
+
+   // move lables into shared memory.
+   for(int i = idx; i < psi_dim; i += blockDim.x)
+      psi_feat[i] = pack.psi_feat[i];
+   __syncthreads();
+
+   if( idx >= L ) return;
+
+   unsigned char lab = pack.lab[idx];
+   
+   if(lab == 0) return;
+
+   for(int i = 0; i < F; ++i){
+      feat[idx*feat_stride + i] = psi_feat[i] + psi_feat[F*lab + i];
+   }
+}

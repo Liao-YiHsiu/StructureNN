@@ -3,7 +3,7 @@
 #include "fstext/fstext-lib.h"
 #include "lat/kaldi-lattice.h"
 #include "lat/lattice-functions.h"
-#include "svm.h"
+#include "util.h"
 
 using namespace std;
 using namespace fst;

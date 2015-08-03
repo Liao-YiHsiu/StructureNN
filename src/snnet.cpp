@@ -227,30 +227,126 @@ void SNnet::SetTransform(const Nnet &nnet){
 void SNnet::Psi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<uchar>* > &labels,
       CuMatrix<BaseFloat> *out){
 
+   PsiKernel(propagate_buf_, labels, out);
+
+   //KALDI_ASSERT(out != NULL);
+   //KALDI_ASSERT(feats.size() == labels.size() || feats.size() == 1);
+
+   //int N = labels.size();
+   //int F = feats[0].NumCols();
+
+   //out->Resize(N, (F + 1)*(stateMax_ + 1) + stateMax_ * stateMax_, kSetZero);
+
+   //for(int i = 0; i < N; ++i){
+   //   if(feats.size() == 1)
+   //      makeFeat(feats[0], *labels[i], out->Row(i));
+   //   else
+   //      makeFeat(feats[i], *labels[i], out->Row(i));
+   //}
+
+   //// check
+   //CuMatrix<BaseFloat> tmp;
+   //PsiKernel(propagate_buf_, labels, &tmp);
+   //tmp.AddMat(-1, *out);
+   //tmp.MulElements(tmp);
+   //assert(tmp.Sum() < 1e-10);
+}
+
+void SNnet::PsiKernel(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<uchar>* > &labels,
+      CuMatrix<BaseFloat> *out){
+
    KALDI_ASSERT(out != NULL);
    KALDI_ASSERT(feats.size() == labels.size() || feats.size() == 1);
+   KALDI_ASSERT(feats[0].NumCols() == nnet1_.OutputDim());
 
    int N = labels.size();
    int F = feats[0].NumCols();
 
-   out->Resize(N, (F + 1)*(stateMax_ + 1) + stateMax_ * stateMax_, kSetZero);
+   int obs_len   = F + stateMax_ * F;
+   int trans_len = 1 + stateMax_ + stateMax_ * stateMax_;
 
+   out->Resize(N, obs_len + trans_len, kSetZero);
+
+   // prepare packs_device
+   int maxL = packPsi(feats, labels, *out, packs_device_);
+
+   // use kernel to propagate psi
+   propPsi(N, F, stateMax_, maxL, packs_device_.Data());
+
+   // build transition using cpu
+   Matrix<BaseFloat> trans(N, trans_len, kSetZero);
+   // TODO openmp for parallel compute
    for(int i = 0; i < N; ++i){
-      if(feats.size() == 1)
-         makeFeat(feats[0], *labels[i], out->Row(i));
-      else
-         makeFeat(feats[i], *labels[i], out->Row(i));
+      const vector<uchar>& lab = *labels[i];
+      for(int j = 0; j < lab.size(); ++j){
+         trans(i, 0) += 1;
+         trans(i, lab[j]) += 1;
+         if(j != 0) trans(i, lab[j-1] * stateMax_ + lab[j] ) += 1;
+      }
    }
+
+   CuSubMatrix<BaseFloat> sub = out->Range(0, N, obs_len, trans_len);
+   sub.CopyFromMat(trans);
 }
 
-void SNnet::BackPsi(const CuMatrix<BaseFloat> &diff, const vector<vector<uchar>* > &labels, vector<CuMatrix<BaseFloat> > &feats_diff){
+int SNnet::packPsi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> &psi_feats, CuVectorG<PsiPack> &packs_dev){
+   KALDI_ASSERT(feats.size() == labels.size() || feats.size() == 1);
+   KALDI_ASSERT(feats[0].NumCols() == nnet1_.OutputDim());
 
-   KALDI_ASSERT(feats_diff.size() == labels.size());
+   int N = labels.size();
 
-   for(int i = 0; i < labels.size(); ++i){
-      feats_diff[i].Resize(labels[i]->size(), nnet1_.OutputDim(), kSetZero);
-      distErr(diff.Row(i), *labels[i], feats_diff[i]);
+   // find max L from previous L
+   int maxL = labelbuf_cols_;
+   for(int i = 0; i < labels.size(); ++i)
+      maxL = labels[i]->size() > maxL ? labels[i]->size() : maxL;
+   labelbuf_cols_ = maxL;
+   
+   if(labelbuf_.size() != N * labelbuf_cols_) 
+      labelbuf_.resize(N * labelbuf_cols_);
+
+   for(int i = 0; i < N; ++i)
+      for(int j = 0; j < labels[i]->size(); ++j)
+         labelbuf_[i*labelbuf_cols_ + j] = (*labels[i])[j];
+
+   labelbuf_device_.Resize(N, maxL);
+   labelbuf_device_.CopyFromVec(labelbuf_);
+
+   // copy labels into labelbuf.
+   if(packs_.size() != N) packs_.resize(N);
+   for(int i = 0; i < N; ++i){
+      PsiPack &p = packs_[i];
+      p.L           = labels[i]->size();
+      p.lab         = labelbuf_device_.Data() + i * labelbuf_cols_;
+      p.feat        = feats.size() == 1 ? getCuPointer(&feats[0]): getCuPointer(&feats[i]);
+      p.feat_stride = feats.size() == 1 ? feats[0].Stride(): feats[i].Stride();
+      p.psi_feat    = getCuPointer(&psi_feats) + i * psi_feats.Stride();
    }
+
+   packs_dev.CopyFromVec(packs_);
+
+   return maxL;
+}
+
+
+void SNnet::BackPsi(CuMatrix<BaseFloat> &diff, const vector<vector<uchar>* > &labels, vector<CuMatrix<BaseFloat> > &feats_diff){
+
+   BackPsiKernel(diff, labels, feats_diff);
+
+   //KALDI_ASSERT(feats_diff.size() == labels.size());
+
+   //for(int i = 0; i < labels.size(); ++i){
+   //   feats_diff[i].Resize(labels[i]->size(), nnet1_.OutputDim(), kSetZero);
+   //   distErr(diff.Row(i), *labels[i], feats_diff[i]);
+   //}
+
+   //vector< CuMatrix<BaseFloat> > tmp(feats_diff.size());
+   //BackPsiKernel(diff, labels, tmp);
+
+   //for(int i = 0; i < feats_diff.size(); ++i){
+   //   tmp[i].AddMat(-1, feats_diff[i]);
+   //   tmp[i].MulElements(tmp[i]);
+   //   assert(tmp[i].Sum() < 1e-10);
+   //}
 }
 
 
@@ -307,4 +403,23 @@ void SNnet::distErr(const CuSubVector<BaseFloat> &diff, const vector<uchar>& lab
       mat.Row(i).AddVec(1, dummy);
       mat.Row(i).AddVec(1, obs);
    }
+}
+
+void SNnet::BackPsiKernel(CuMatrix<BaseFloat> &diff, const vector<vector<uchar>* > &labels, vector<CuMatrix<BaseFloat> > &feats_diff){
+
+   KALDI_ASSERT(feats_diff.size() == labels.size());
+
+   // reserve space for backpropagation
+   for(int i = 0; i < labels.size(); ++i){
+      feats_diff[i].Resize(labels[i]->size(), nnet1_.OutputDim(), kSetZero);
+   }
+
+   int N = labels.size();
+   int F = nnet1_.OutputDim();
+
+   // prepare packs_device
+   int maxL = packPsi(feats_diff, labels, diff, packs_device_);
+
+   // use kernel to build psi
+   backPsi(N, F, stateMax_, maxL, packs_device_.Data());
 }

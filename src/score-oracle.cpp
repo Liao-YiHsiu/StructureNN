@@ -7,7 +7,7 @@
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
 #include "util/edit-distance.h"
-#include "svm.h"
+#include "util.h"
 #include <sstream>
 
 using namespace std;

@@ -6,7 +6,6 @@
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "matrix/kaldi-matrix.h"
-#include "svm.h"
 #include "util.h"
 
 using namespace std;

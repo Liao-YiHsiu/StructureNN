@@ -33,37 +33,45 @@ mlp_proto=
 seed=777
 learn_rate=0.004
 momentum=0.9
-minibatch_size=256
-randomizer_size=32768
+minibatch_size=8
+randomizer_size=4194304
 error_function="fer"
-train_tool="snnet-train-shuff"
-test_tool="snnet-best"
+train_tool="snnet-train-fullshuff"
+cross_tool="snnet-train-cross"
+#train_tool="snnet-train-shuff"
+#cross_tool="snnet-train-shuff --cross-validate=true"
 dnn_depth=1
 dnn_width=200
 lattice_N=1000
-negative_num=$((lattice_N*2))
+test_lattice_N=1000
 acwt=0.2
 train_opt=
 cpus=$(nproc)
+feature_transform=
+nnet_ratio=
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
 
 . parse_options.sh || exit 1;
 
-files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat"
+negative_num=$((lattice_N))
 
-if [ "$#" -ne 3 ]; then
+files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat nnet1"
+
+if [ "$#" -ne 5 ]; then
    echo "Perform structure DNN training"
-   echo "Usage: $0 <dir> <lattice_model> <model_out>"
-   echo "eg. $0 data/nn_post model.in model.out"
+   echo "Usage: $0 <dir> <lattice_model> <nnet1-out> <nnet2-out> <stateMax>"
+   echo "eg. $0 data/nn_post lat_model.in nnet1.out nnet2.out 48"
    echo ""
    exit 1;
 fi
 
 dir=$1
 lat_model=$2
-model_out=$3
+nnet1_out=$3
+nnet2_out=$4
+stateMax=$5
 
 #check file existence.
 for file in $files;
@@ -79,46 +87,56 @@ cv_ark="ark:$dir/dev.ark"
 cv_lab="ark:$dir/dev.lab"
 cv_lat="ark:$dir/dev.lat"
 
-lattice_N_times=$((lattice_N))
-
-
 mkdir $tmpdir/nnet
 mkdir $tmpdir/log
 
-#initialize model
-max_state=$(copy-int-vector "$train_lab" ark,t:-| cut -f 2- -d ' ' | tr " " "\n" | awk 'n < $0 {n=$0}END{print n}')
-feat_dim=$(feat-to-dim "$train_ark" -)
-SVM_dim=$(( (max_state + feat_dim) * max_state ))
-mlp_init=$tmpdir/nnet.init
+#initialize nnet2 model
+feat_dim=$(nnet-info $dir/nnet1 2>/dev/null | grep output-dim | head -n 1 | cut -d ' ' -f2)
+SVM_dim=$(( (stateMax + 1) * (feat_dim + 1) + stateMax*stateMax ))
+mlp2_init=$tmpdir/nnet2.init
 mlp_proto=$tmpdir/nnet.proto
-$timit/utils/nnet/make_nnet_proto.py $SVM_dim 2 $dnn_depth $dnn_width > $mlp_proto || exit 1
-nnet-initialize $mlp_proto $mlp_init || exit 1; 
+$timit/utils/nnet/make_nnet_proto.py --no-softmax $SVM_dim 1 $dnn_depth $dnn_width | \
+   sed -e "s@</NnetProto>@<Sigmoid> <InputDim> 1 <OutputDim> 1 \n</NnetProto>@g" > $mlp_proto || exit 1
+nnet-initialize $mlp_proto $mlp2_init || exit 1; 
 
 # precompute lattice data
-train_lattice_path=$dir/train.lab_${lattice_N_times}_${acwt}.gz
+train_lattice_path=$dir/train.lab_${lattice_N}_${acwt}.gz
 
 # lock file if others are using...
 while [ ! -f $train_lattice_path ]; do
     lockfile=/tmp/$(basename $train_lattice_path)
     flock -n $lockfile \
-       lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times \
+       lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N \
        $lat_model "$train_lat" "ark:| gzip -c > $train_lattice_path" \
        2>&1 | tee $log  || \
        flock -w -1 $lockfile echo "finally get file lock"
 done
 
-dev_lattice_path=$dir/dev.lab_${lattice_N_times}_${acwt}.gz
+dev_lattice_path=$dir/dev.lab_${test_lattice_N}_${acwt}.gz
 while [ ! -f $dev_lattice_path ]; do
     lockfile=/tmp/$(basename $dev_lattice_path)
     flock -n $lockfile \
-       lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N_times \
+       lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $test_lattice_N \
        $lat_model "$cv_lat" "ark:| gzip -c > $dev_lattice_path" \
        2>&1 | tee $log  || \
        flock -w -1 $lockfile echo "finally get file lock"
 done
 
+mlp1_best=$dir/nnet1
+mlp2_best=$mlp2_init
 
-mlp_best=$mlp_init
+   snnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
+      "ark:gunzip -c $dev_lattice_path |" $mlp1_best $mlp2_best $stateMax \
+      "ark:| gzip -c > $tmpdir/dev_${iter}.tag.gz"\
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   best-score-path "ark:gunzip -c $tmpdir/dev_${iter}.tag.gz |" ark:$tmpdir/dev_${iter}.tag.1best
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   calc.sh "$cv_lab" ark:$tmpdir/dev_${iter}.tag.1best \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+
 #TODO use lattice best path as init path to do gibbs
 
 loss=0
@@ -126,7 +144,8 @@ halving=0
 # start training
 for iter in $(seq -w $max_iters); do
 
-   mlp_next=$tmpdir/nnet/nnet.${iter}
+   mlp1_next=$tmpdir/nnet/nnet1.${iter}
+   mlp2_next=$tmpdir/nnet/nnet2.${iter}
 
    # find negitive example
    log=$tmpdir/log/iter${iter}.ptr.log; hostname>$log
@@ -148,44 +167,85 @@ for iter in $(seq -w $max_iters); do
 
 # train
    log=$tmpdir/log/iter${iter}.tr.log; hostname>$log
+   
+# retry on fail
+   retry=10
+   while [ $retry -gt 0 ]; do
+      flock -n /tmp/gpu sleep 5
+      $train_tool \
+         --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
+         --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
+         --verbose=$verbose --binary=true --randomizer-seed=$seed \
+         --negative-num=$negative_num --error-function=$error_function \
+         ${feature_transform:+ --feature-transform="$feature_transform"} \
+         ${nnet_ratio:+ --nnet-ratio="$nnet_ratio"} \
+         ${train_opt:+ "$train_opt"} \
+         "$train_ark" "$train_lab" "ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path_rand |\" \"ark:gunzip -c $train_lattice_path |\" |" \
+         $mlp1_best $mlp2_best $stateMax $mlp1_next $mlp2_next \
+         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
+         #2>&1 | grep  --line-buffered -v "releasing cached memory and retrying" | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
+      retry=$((retry - 1))
+      sleep 3
+   done
+   [ $retry -eq 0 ] && echo "retry over 10 times" && exit -1;
 
-   $train_tool \
-      --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
-      --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
-      --verbose=$verbose --binary=true --randomizer-seed=$seed \
-      --negative-num=$negative_num --error-function=$error_function \
-      ${train_opt:+ "$train_opt"} \
-      "$train_ark" "$train_lab" "ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path_rand |\" \"ark:gunzip -c $train_lattice_path |\" |" \
-      $mlp_best $mlp_next \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-      seed=$((seed + 1))
+   seed=$((seed + 1))
    loss_tr=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
    echo -n "TRAIN AVG.LOSS $(printf "%.4f" $loss_tr), "
 
    log=$tmpdir/log/iter${iter}.cv.log; hostname>$log
+   
+# CROSS VALIDATION
+# retry on fail
+   retry=10
+   while [ $retry -gt 0 ]; do
+      flock -n /tmp/gpu sleep 5
+      $cross_tool \
+         --verbose=$verbose --binary=true --error-function=$error_function \
+         ${feature_transform:+ --feature-transform="$feature_transform"} \
+         "$cv_ark" "$cv_lab" "ark:gunzip -c $dev_lattice_path |" \
+         $mlp1_next $mlp2_next $stateMax \
+         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
+      retry=$((retry - 1))
+      sleep 3
+   done
+   [ $retry -eq 0 ] && echo "retry over 10 times" && exit -1;
 
-   $test_tool "$cv_ark" "ark:gunzip -c $dev_lattice_path |" $mlp_next ark:$tmpdir/cv.ark\
+   loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
+   echo -n "CROSSVAL AVG.LOSS $(printf "%.4f" $loss_new), "
+
+# evaluate dev set wer.
+# ------------------------------------------------------------------------------------------------
+   snnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
+      "ark:gunzip -c $dev_lattice_path |" $mlp1_next $mlp2_next $stateMax \
+      "ark:| gzip -c > $tmpdir/dev_${iter}.tag.gz"\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   compute-wer "ark:trim-path $cv_lab ark:- |" "ark:split-score-path ark:$tmpdir/cv.ark ark:/dev/null ark:- | trim-path ark:- ark:- |" \
+   best-score-path "ark:gunzip -c $tmpdir/dev_${iter}.tag.gz |" ark:$tmpdir/dev_${iter}.tag.1best
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   loss_new=$(cat $log | grep 'WER' | tail -n 1 | awk '{ print $2; }')
-   echo -n "CROSSVAL WER= $(printf "%.4f" $loss_new), "
+   calc.sh "$cv_lab" ark:$tmpdir/dev_${iter}.tag.1best \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+# ------------------------------------------------------------------------------------------------
 
    # accept or reject new parameters (based on objective function)
    loss_prev=$loss
    if [ 1 == $(bc <<< "$loss_new < $loss") -o $iter -le $keep_lr_iters ]; then
       loss=$loss_new
-      mlp_best=$tmpdir/nnet/nnet.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $tr_loss)_cv$(printf "%.4f" $loss_new)
-      [ $iter -le $keep_lr_iters ] && mlp_best=${mlp_best}_keep-lr-iters-$keep_lr_iters
-      mv $mlp_next $mlp_best
-      echo "nnet accepted ($(basename $mlp_best))"
+      mlp1_best=$tmpdir/nnet/nnet1.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $tr_loss)_cv$(printf "%.4f" $loss_new)
+      mlp2_best=$tmpdir/nnet/nnet2.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $tr_loss)_cv$(printf "%.4f" $loss_new)
+      [ $iter -le $keep_lr_iters ] && mlp1_best=${mlp1_best}_keep-lr-iters-$keep_lr_iters 
+      [ $iter -le $keep_lr_iters ] && mlp2_best=${mlp2_best}_keep-lr-iters-$keep_lr_iters
+
+      mv $mlp1_next $mlp1_best
+      mv $mlp2_next $mlp2_best
+      echo "nnet accepted ($(basename $mlp1_best) $(basename $mlp2_best))"
    else
-     mlp_reject=$tmpdir/nnet/nnet.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $tr_loss)_cv$(printf "%.4f" $loss_new)_rejected
-     mv $mlp_next $mlp_reject
-     echo "nnet rejected ($(basename $mlp_reject))"
+     mlp1_reject=$tmpdir/nnet/nnet1.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $tr_loss)_cv$(printf "%.4f" $loss_new)_rejected
+     mlp2_reject=$tmpdir/nnet/nnet2.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $tr_loss)_cv$(printf "%.4f" $loss_new)_rejected
+     mv $mlp1_next $mlp1_reject
+     mv $mlp2_next $mlp2_reject
+     echo "nnet rejected ($(basename $mlp1_reject) $(basename $mlp2_reject))"
    fi
 
    # no learn-rate halving yet, if keep_lr_iters set accordingly
@@ -218,7 +278,8 @@ done
 
 echo "train success"
 
-cp $mlp_best $model_out
+cp $mlp1_best $nnet1_out
+cp $mlp2_best $nnet2_out
 #rm -f $tmpdir/train_tmp.ark
 #rm -f $tmpdir/train.lab
 rm -rf $tmpdir
