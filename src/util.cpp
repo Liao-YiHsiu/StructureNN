@@ -470,7 +470,7 @@ void CuIntVector::Resize(int dim){
 }
 
 int Strt::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat> &nnet_out, 
-      vector<CuMatrix<BaseFloat> > *diff, int* counter, int raw){
+      vector<CuMatrix<BaseFloat> > *diff, int* counter, int raw, const vector<int> *example_type){
 
    int N = delta.Dim();
    int retIdx = -1;
@@ -497,17 +497,27 @@ int Strt::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat>
             diff_host_[0](i, 0) = 1;
             diff_host_[1](i, 0) = -1;
          }
-         total_error += error;
 
          if(error > maxError){
             retIdx = i;
             maxError = error;
          }
+         
+         if(example_type != NULL)
+            loss_arr_[(*example_type)[i]] += error;
 
+         total_error += error;
       }else{
+         if(example_type != NULL)
+            correct_arr_[(*example_type)[i]] += 1;
+
          total_correct += 1;
       }
+
+      if(example_type != NULL)
+         frames_arr_[(*example_type)[i]] += 1;
    }
+
    KALDI_ASSERT(KALDI_ISFINITE(total_error));
    if(counter != NULL) *counter = N - total_correct;
 
@@ -517,9 +527,9 @@ int Strt::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat>
       (*diff)[1] = diff_host_[1];
    }
 
-   frames_  += N;
-   loss_    += total_error;
-   correct_ += total_correct;
+   frames_arr_[ALL_TYPE]  += N;
+   loss_arr_[ALL_TYPE]    += total_error;
+   correct_arr_[ALL_TYPE] += total_correct;
 
    // progress losss reporting
    {
@@ -531,7 +541,7 @@ int Strt::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat>
       if (frames_progress_ > progress_step) {
          KALDI_VLOG(1) << "ProgressLoss[last " 
             << static_cast<int>(frames_progress_/progress_step) << "k of " 
-            << static_cast<int>(frames_/progress_step) << "k]: " 
+            << static_cast<int>(frames_arr_[ALL_TYPE]/progress_step) << "k]: " 
             << loss_progress_/frames_progress_ << " (Strt) " 
             << "FRAME ACC >> " << 100*correct_progress_/frames_progress_ << "% <<";
          // store
@@ -549,14 +559,24 @@ int Strt::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat>
 
 string Strt::Report() {
    ostringstream oss;
-   oss << "AvgLoss: " << loss_/frames_ << " (Strt) " << endl;
+   oss << "AvgLoss: " << loss_arr_[ALL_TYPE]/frames_arr_[ALL_TYPE] << " (Strt) " << endl;
+   for(int i = ALL_TYPE + 1; i < END_TYPE; ++i){
+      if(frames_arr_[i] > 0)
+         oss << "  " << LABEL_NAME[i] << " Loss: " << loss_arr_[i] / frames_arr_[i] << " (Strt) " << endl;
+   }
+      
    if (loss_vec_.size() > 0) {
       oss << "progress: [";
       copy(loss_vec_.begin(),loss_vec_.end(),ostream_iterator<float>(oss," "));
       oss << "]" << endl;
    }
-   if (correct_ >= 0.0) {
-      oss << "\nFRAME_ACCURACY >> " << 100.0*correct_/frames_ << "% <<";
+   if (correct_arr_[ALL_TYPE] >= 0.0) {
+      oss << "\nFRAME_ACCURACY >> " << 100.0*correct_arr_[ALL_TYPE]/frames_arr_[ALL_TYPE] << "% <<" << endl;
+      for(int i = ALL_TYPE + 1; i < END_TYPE; ++i){
+         if(frames_arr_[i] > 0)
+            oss << "  " << LABEL_NAME[i] << " ACC >> " << 
+               100.0*correct_arr_[i] / frames_arr_[i] << "% << " << endl;
+      }
    }
    return oss.str(); 
 }

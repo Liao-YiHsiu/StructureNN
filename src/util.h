@@ -299,10 +299,13 @@ class CuIntVector{
       int  dim_;
 };
 
+enum LABEL { ALL_TYPE = 0, REF_TYPE, LAT_TYPE, RAND_TYPE, END_TYPE };
+const string LABEL_NAME[] = {"ALL_TYPE", "REF_TYPE", "LAT_TYPE", "RAND_TYPE", "END_TYPE"};
+
 // Structure learning loss
 class Strt {
    public:
-      Strt(): frames_(0), correct_(0), loss_(0),
+      Strt(): frames_arr_(END_TYPE), correct_arr_(END_TYPE), loss_arr_(END_TYPE),
       frames_progress_(0), correct_progress_(0), loss_progress_(0), diff_host_(2) {}
 
       ~Strt() { }
@@ -312,14 +315,15 @@ class Strt {
       /// counter  = # of errors
       /// returns the index of max f(x,y) + delta(y, y_hat);
       int Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat> &nnet_out, 
-            vector<CuMatrix<BaseFloat> > *diff, int* counter = NULL, int raw= -1);
+            vector<CuMatrix<BaseFloat> > *diff, int* counter = NULL, int raw= -1, 
+            const vector<int>* example_type = NULL);
 
       string Report();
 
    private: 
-      double frames_;
-      double correct_;
-      double loss_;
+      vector<double> frames_arr_;
+      vector<double> correct_arr_;
+      vector<double> loss_arr_;
 
       // partial results during training
       double frames_progress_;

@@ -17,10 +17,7 @@ using namespace kaldi::nnet1;
 
 typedef StdVectorRandomizer<CuMatrix<BaseFloat>* > MatrixPtRandomizer;
 typedef StdVectorRandomizer<vector<uchar>* >       LabelPtRandomizer;
-
-const uchar LABEL = 1;
-const uchar LATEX = 1;
-const uchar RANEX = 1;
+typedef StdVectorRandomizer<int>                 TypeRandomizer;
 
 int main(int argc, char *argv[]) {
   
@@ -113,7 +110,7 @@ int main(int argc, char *argv[]) {
     vector< CuMatrix<BaseFloat> >     features; // all features
     vector< vector< uchar > >         labels;   // reference labels
     vector< vector< vector<uchar> > > examples; // including positive & negative examples
-    vector< vector< uchar > >         types;
+    vector< vector< int > >           types;
 
     features.reserve(BUFSIZE);
     labels.reserve(BUFSIZE);
@@ -135,22 +132,22 @@ int main(int argc, char *argv[]) {
        features.push_back(CuMatrix<BaseFloat>(feat));
        labels.push_back(label);
        examples.push_back(vector< vector<uchar> >());
-       types.push_back(vector< uchar > ());
+       types.push_back(vector< int > ());
 
        vector< vector<uchar> > &seqs = examples[examples.size() - 1];
-       vector< uchar >         &tps  = types[types.size() - 1];
+       vector< int >           &tps  = types[types.size() - 1];
 
        seqs.reserve(1 + table.size() + negative_num);
        tps.reserve(1 + table.size() + negative_num);
 
        // positive examples
        seqs.push_back(label);
-       tps.push_back(LABEL);
+       tps.push_back(REF_TYPE);
 
        // negative examples
        for(int i = 0; i < table.size(); ++i){
           seqs.push_back(table[i].second);
-          tps.push_back(LATEX);
+          tps.push_back(LAT_TYPE);
        }
 
        // TODO set random seed
@@ -160,7 +157,7 @@ int main(int argc, char *argv[]) {
           for(int j = 0; j < neg_arr.size(); ++j)
              neg_arr[j] = rand() % stateMax + 1;
           seqs.push_back(neg_arr);
-          tps.push_back(RANEX);
+          tps.push_back(RAND_TYPE);
        }
     } 
     // -------------------------------------------------------------
@@ -172,11 +169,12 @@ int main(int argc, char *argv[]) {
     LabelPtRandomizer    label_randomizer(rnd_opts);
     LabelPtRandomizer    ref_label_randomizer(rnd_opts);
     VectorRandomizer     delta_randomizer(rnd_opts);
+    TypeRandomizer       type_randomizer(rnd_opts);
     
     KALDI_LOG << "Filling all randomizer. features # = " << features.size();
     KALDI_LOG << " each features get " << examples[0].size() << " exs.";
     // fill all data into randomizer
-    for(int i = 0; i < features.size(); ++i){
+    for(int i = 0; i < examples.size(); ++i){
 
        KALDI_ASSERT (!feature_randomizer.IsFull());
 
@@ -198,6 +196,8 @@ int main(int argc, char *argv[]) {
        label_randomizer.AddData(lab);
        ref_label_randomizer.AddData(ref_lab);
        delta_randomizer.AddData(dlt);
+
+       type_randomizer.AddData(types[i]);
     }
     KALDI_LOG << "Filled all data.";
 
@@ -233,6 +233,7 @@ int main(int argc, char *argv[]) {
        label_randomizer.Randomize(mask);
        ref_label_randomizer.Randomize(mask);
        delta_randomizer.Randomize(mask);
+       type_randomizer.Randomize(mask);
     }
 
     int64 num_done = 0;
@@ -240,7 +241,7 @@ int main(int argc, char *argv[]) {
     vector<CuMatrix<BaseFloat> > obj_diff(2);
     // train with data from randomizers (using mini-batches)
     for ( ; !feature_randomizer.Done(); feature_randomizer.Next(), label_randomizer.Next(),
-          ref_label_randomizer.Next(), delta_randomizer.Next()){
+          ref_label_randomizer.Next(), delta_randomizer.Next(), type_randomizer.Next()){
 
 #if HAVE_CUDA==1
        // check the GPU is not overheated
@@ -248,17 +249,19 @@ int main(int argc, char *argv[]) {
 #endif
 
        // get block of feature/delta pairs
-       const vector<CuMatrix<BaseFloat>* > &nnet_feat_in = feature_randomizer.Value();
-       const vector<vector<uchar> * > &nnet_label_in  = label_randomizer.Value();
-       const vector<vector<uchar> * > &nnet_ref_label = ref_label_randomizer.Value();
-       const Vector<BaseFloat> &delta = delta_randomizer.Value();
+       const vector<CuMatrix<BaseFloat>* > &nnet_feat_in   = feature_randomizer.Value();
+       const vector<vector<uchar> * >      &nnet_label_in  = label_randomizer.Value();
+       const vector<vector<uchar> * >      &nnet_ref_label = ref_label_randomizer.Value();
+       const Vector<BaseFloat>             &delta          = delta_randomizer.Value();
+
+       const vector<int>                   &example_type   = type_randomizer.Value();
 
        // Forward pass
        // nnet_out = f(x, y) - f(x, y_hat)
        nnet.Propagate(nnet_feat_in, nnet_label_in, nnet_ref_label, &nnet_out);
 
        int counter = 0;
-       strt.Eval(delta, nnet_out, &obj_diff, &counter);
+       strt.Eval(delta, nnet_out, &obj_diff, &counter, -1, &example_type);
 
        trn_opts_tmp = trn_opts;
        trn_opts_tmp.learn_rate *= counter;

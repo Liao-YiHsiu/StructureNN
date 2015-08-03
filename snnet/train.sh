@@ -55,7 +55,8 @@ echo "$0 $@"  # Print the command line for logging
 
 . parse_options.sh || exit 1;
 
-negative_num=$((lattice_N))
+#negative_num=$((lattice_N))
+negative_num=0
 
 files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat nnet1"
 
