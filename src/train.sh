@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 function tobyte {
    num=$1
@@ -38,6 +38,7 @@ minibatch_size=256
 randomizer_size=32768
 cut_size="1G"
 train_tool="nnet-train-frmshuff"
+feature_transform=
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
@@ -72,7 +73,7 @@ copy-post "$cv_labels" ark,scp:$dir/labels_cv.ark,$dir/labels_cv.scp || exit 1
 
 cut_size=$(tobyte $cut_size)
 data_size=$(du -sb $dir/feats_tr.ark | cut -f 1)
-data_num=$(( data_size / cut_size ))
+data_num=$(( (data_size + cut_size -1) / cut_size ))
 
 echo "data cut into $data_num chunks $data_size $cut_size"
 
@@ -91,7 +92,7 @@ $train_tool --cross-validate=true \
  ${feature_transform:+ --feature-transform=$feature_transform} \
  ${frame_weights:+ "--frame-weights=$frame_weights"} \
  "$feats_cv" "$labels_cv" $mlp_best \
- 2>> $log || exit 1;
+ 2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 loss=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
 
@@ -126,7 +127,7 @@ for iter in $(seq -w $max_iters); do
        ${feature_transform:+ --feature-transform=$feature_transform} \
        ${frame_weights:+ "--frame-weights=$frame_weights"} \
        "$feats_tr" "$labels_tr" $mlp_pre $mlp_next \
-       2>> $log || exit 1; 
+       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
       seed=$((seed + 1))
 
       tr_loss=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
@@ -143,7 +144,7 @@ for iter in $(seq -w $max_iters); do
     ${feature_transform:+ --feature-transform=$feature_transform} \
     ${frame_weights:+ "--frame-weights=$frame_weights"} \
     "$feats_cv" "$labels_cv" $mlp_next \
-    2>>$log || exit 1;
+    2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
    
    loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
    echo -n "CROSSVAL AVG.LOSS $(printf "%.4f" $loss_new), "

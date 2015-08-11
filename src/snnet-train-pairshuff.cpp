@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
   
   try {
     string usage;
-    usage.append("Perform one iteration of Structure Neural Network training by full shuffle mini-batch Stochastic Gradient Descent.\n")
+    usage.append("Perform one iteration of Structure Neural Network training by shuffle mini-batch Stochastic Gradient Descent on training pairs.\n")
        .append("Use feature, label and path to train the neural net. \n")
        .append("Usage: ").append(argv[0]).append(" [options] <feature-rspecifier> <label-rspecifier> <score-path-rspecifier> <nnet1-in> <nnet2-in> <stateMax> [<nnet1-out> <nnet2-out>]\n")
        .append("e.g.: \n")
@@ -61,6 +61,9 @@ int main(int argc, char *argv[]) {
 
     string feature_transform;
     po.Register("feature-transform", &feature_transform, "Feature transform in front of main network (in nnet format)");
+
+    bool binary_error = false;
+    po.Register("binary-error", &binary_error, "Use binary error ( 1, -1 ) instead of real number");
 
     po.Read(argc, argv);
 
@@ -137,15 +140,15 @@ int main(int argc, char *argv[]) {
        vector< vector<uchar> > &seqs = examples[examples.size() - 1];
        vector< int >           &tps  = types[types.size() - 1];
 
-       seqs.reserve(table.size() + negative_num);
-       tps.reserve(table.size() + negative_num);
+       //seqs.reserve(table.size() + negative_num);
+       //tps.reserve(table.size() + negative_num);
 
-       //seqs.reserve(1 + table.size() + negative_num);
-       //tps.reserve(1 + table.size() + negative_num);
+       seqs.reserve(1 + table.size() + negative_num);
+       tps.reserve(1 + table.size() + negative_num);
 
-       //// positive examples
-       //seqs.push_back(label);
-       //tps.push_back(REF_TYPE);
+       // positive examples
+       seqs.push_back(label);
+       tps.push_back(REF_TYPE);
 
        // negative examples
        for(int i = 0; i < table.size(); ++i){
@@ -181,28 +184,42 @@ int main(int argc, char *argv[]) {
 
        KALDI_ASSERT (!feature_randomizer.IsFull());
 
-       vector< CuMatrix<BaseFloat>* > feat(examples[i].size());
-       vector< vector<uchar>* >       lab(examples[i].size());
-       vector< vector<uchar>* >       ref_lab(examples[i].size());
-       Vector< BaseFloat >            dlt(examples[i].size(), kSetZero); 
+       int total = examples[i].size()*(examples[i].size()-1)/2;
 
-       for(int j = 0; j < examples[i].size(); ++j){
-          feat[j]    = &features[i];
-          lab[j]     = &examples[i][j];
-          ref_lab[j] = &labels[i];
-          dlt(j)     = (1 - acc_function(labels[i], examples[i][j], 1.0)); // error rate
+       vector< CuMatrix<BaseFloat>* > feat(total);
+       vector< vector<uchar>* >       lab(total);
+       vector< vector<uchar>* >       ref_lab(total);
+       Vector< BaseFloat >            dlt(total, kSetZero); 
+       vector< int >                  tps(total);
+
+       int j = 0;
+       for(int m = 0; m < examples[i].size(); ++m){
+          for(int n = m + 1; n < examples[i].size(); ++n){
+             feat[j]    = &features[i];
+             lab[j]     = &examples[i][m];
+             ref_lab[j] = &examples[i][n];
+             dlt(j)     = acc_function(labels[i], examples[i][m], 1.0) -
+                          acc_function(labels[i], examples[i][n], 1.0) ; // error rate
+             tps[j]      = types[i][m] * END_TYPE + types[i][n];
+
+             if(dlt(j) != 0.0) j++;
+          }
        }
+       feat.resize(j);
+       lab.resize(j);
+       ref_lab.resize(j);
+       dlt.Resize(j, kCopyData);
+       tps.resize(j);
 
-       numTotal += examples[i].size();
+       numTotal += j;
 
        feature_randomizer.AddData(feat);
        label_randomizer.AddData(lab);
        ref_label_randomizer.AddData(ref_lab);
        delta_randomizer.AddData(dlt);
-
-       type_randomizer.AddData(types[i]);
+       type_randomizer.AddData(tps);
     }
-    KALDI_LOG << "Filled all data.";
+    KALDI_LOG << "Filled all data. (" << numTotal << ")";
 
     // prepare Nnet
     SNnet nnet;
@@ -223,7 +240,7 @@ int main(int argc, char *argv[]) {
       nnet.SetDropoutRetention(1.0);
     }
 
-    Strt strt;
+    StrtCmp strt(binary_error);
 
     Timer time;
     KALDI_LOG << (crossvalidate?"CROSS-VALIDATION":"TRAINING") << " STARTED";
@@ -264,7 +281,7 @@ int main(int argc, char *argv[]) {
        nnet.Propagate(nnet_feat_in, nnet_label_in, nnet_ref_label, &nnet_out);
 
        int counter = 0;
-       strt.Eval(delta, nnet_out, &obj_diff, &counter, -1, &example_type);
+       strt.Eval(delta, nnet_out, &obj_diff, &counter, &example_type);
 
        trn_opts_tmp = trn_opts;
        trn_opts_tmp.learn_rate *= counter;

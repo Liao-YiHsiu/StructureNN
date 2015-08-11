@@ -96,7 +96,8 @@ int main(int argc, char *argv[]) {
             nnet_label_in.push_back(&table[i].second);
          }
 
-         nnet.Feedforward(feat, nnet_label_in, &nnet_out);
+         //nnet.Feedforward(feat, nnet_label_in, &nnet_out);
+         nnet.Propagate(feat, nnet_label_in, &nnet_out);
 
          nnet_out_host.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kUndefined);
          nnet_out_host.CopyFromMat(nnet_out);
@@ -106,10 +107,14 @@ int main(int argc, char *argv[]) {
 
          score_path_writer.Write(feature_reader.Key(), table);
 
-         if(num_done % 10 == 0){
+         if(num_done % 100 == 0){
             KALDI_LOG << "Done " << num_done;
          }
       }
+
+      // after last minibatch : show what happens in network 
+      KALDI_LOG << "###############################";
+      KALDI_LOG << nnet.InfoPropagate();
 
       // final message
       KALDI_LOG << "Done " << num_done << " files" 

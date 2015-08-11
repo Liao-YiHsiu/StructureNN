@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 function tobyte {
    num=$1
@@ -29,15 +29,18 @@ verbose=1
 
 frame_weights=
 tmpdir=$(mktemp -d)
-mlp_proto=
 seed=777
 learn_rate=0.004
 momentum=0.9
-minibatch_size=8
+minibatch_size=64
 randomizer_size=4194304
 error_function="fer"
-train_tool="snnet-train-fullshuff"
-cross_tool="snnet-train-cross"
+train_tool="snnet-train-pairshuff "
+cross_tool="snnet-train-pairshuff --cross-validate=true --randomizer-size=$randomizer_size "
+#train_tool="snnet-train-pairshuff --binary-error=true "
+#cross_tool="snnet-train-pairshuff --cross-validate=true --binary-error=true "
+#train_tool="snnet-train-fullshuff"
+#cross_tool="snnet-train-cross"
 #train_tool="snnet-train-shuff"
 #cross_tool="snnet-train-shuff --cross-validate=true"
 dnn_depth=1
@@ -91,15 +94,6 @@ cv_lat="ark:$dir/dev.lat"
 mkdir $tmpdir/nnet
 mkdir $tmpdir/log
 
-#initialize nnet2 model
-feat_dim=$(nnet-info $dir/nnet1 2>/dev/null | grep output-dim | head -n 1 | cut -d ' ' -f2)
-SVM_dim=$(( (stateMax + 1) * (feat_dim + 1) + stateMax*stateMax ))
-mlp2_init=$tmpdir/nnet2.init
-mlp_proto=$tmpdir/nnet.proto
-$timit/utils/nnet/make_nnet_proto.py --no-softmax $SVM_dim 1 $dnn_depth $dnn_width | \
-   sed -e "s@</NnetProto>@<Sigmoid> <InputDim> 1 <OutputDim> 1 \n</NnetProto>@g" > $mlp_proto || exit 1
-nnet-initialize $mlp_proto $mlp2_init || exit 1; 
-
 # precompute lattice data
 train_lattice_path=$dir/train.lab_${lattice_N}_${acwt}.gz
 
@@ -123,8 +117,32 @@ while [ ! -f $dev_lattice_path ]; do
        flock -w -1 $lockfile echo "finally get file lock"
 done
 
+#initialize nnet2 model
+feat_dim=$(nnet-info $dir/nnet1 2>/dev/null | grep output-dim | head -n 1 | cut -d ' ' -f2)
+SVM_dim=$(( (stateMax + 1) * (feat_dim + 1) + stateMax*stateMax ))
+mlp2_init=$tmpdir/nnet2.init
+mlp2_proto=$tmpdir/nnet2.proto
+$timit/utils/nnet/make_nnet_proto.py --no-softmax $SVM_dim 1 $dnn_depth $dnn_width | \
+   sed -e "s@</NnetProto>@</NnetProto>@g" > $mlp2_proto || exit 1
+#   add Sigmoid layer in the last layer
+#   sed -e "s@</NnetProto>@<Sigmoid> <InputDim> 1 <OutputDim> 1 \n</NnetProto>@g" > $mlp2_proto || exit 1
+nnet-initialize $mlp2_proto $mlp2_init || exit 1; 
+
+mlp2_cmvn=$tmpdir/nnet2.cvmn
+mlp2=$tmpdir/nnet2
+
+#compute cmvn layer for nnet2
+snnet-psi-cmvn --verbose=$verbose --binary=true --rand-seed=$seed --negative-num=$negative_num \
+         ${feature_transform:+ --feature-transform="$feature_transform"} \
+         "$train_ark" "$train_lab" "ark:gunzip -c $train_lattice_path |" \
+         $dir/nnet1 $mlp2_init $stateMax $mlp2_cmvn \
+         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1
+
+nnet-concat $mlp2_cmvn $mlp2_init $mlp2 \
+         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1
+
 mlp1_best=$dir/nnet1
-mlp2_best=$mlp2_init
+mlp2_best=$mlp2
 
    snnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
       "ark:gunzip -c $dev_lattice_path |" $mlp1_best $mlp2_best $stateMax \
@@ -168,11 +186,23 @@ for iter in $(seq -w $max_iters); do
 
 # train
    log=$tmpdir/log/iter${iter}.tr.log; hostname>$log
+
+   #snnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$train_ark" \
+   #   "ark:gunzip -c $train_lattice_path |" $mlp1_best $mlp2_best $stateMax \
+   #   "ark:| gzip -c > $tmpdir/train_${iter}.tag.gz"\
+   #   2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   #best-score-path "ark:gunzip -c $tmpdir/train_${iter}.tag.gz |" ark:$tmpdir/train_${iter}.tag.1best
+   #   2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   #calc.sh "$train_lab" ark:$tmpdir/train_${iter}.tag.1best \
+   #   2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
    
 # retry on fail
    retry=10
    while [ $retry -gt 0 ]; do
-      flock -n /tmp/gpu sleep 5
+      flock -n /tmp/gpu sleep 2
       $train_tool \
          --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
          --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
@@ -186,7 +216,7 @@ for iter in $(seq -w $max_iters); do
          2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
          #2>&1 | grep  --line-buffered -v "releasing cached memory and retrying" | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
       retry=$((retry - 1))
-      sleep 3
+      sleep 1
    done
    [ $retry -eq 0 ] && echo "retry over 10 times" && exit -1;
 
@@ -200,15 +230,16 @@ for iter in $(seq -w $max_iters); do
 # retry on fail
    retry=10
    while [ $retry -gt 0 ]; do
-      flock -n /tmp/gpu sleep 5
+      flock -n /tmp/gpu sleep 2
       $cross_tool \
          --verbose=$verbose --binary=true --error-function=$error_function \
+         --minibatch-size=$minibatch_size \
          ${feature_transform:+ --feature-transform="$feature_transform"} \
          "$cv_ark" "$cv_lab" "ark:gunzip -c $dev_lattice_path |" \
          $mlp1_next $mlp2_next $stateMax \
          2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
       retry=$((retry - 1))
-      sleep 3
+      sleep 1
    done
    [ $retry -eq 0 ] && echo "retry over 10 times" && exit -1;
 
@@ -231,7 +262,7 @@ for iter in $(seq -w $max_iters); do
 
    # accept or reject new parameters (based on objective function)
    loss_prev=$loss
-   if [ 1 == $(bc <<< "$loss_new < $loss") -o $iter -le $keep_lr_iters ]; then
+   if [ 1 == $(bc <<< "${loss_new/[eE]+*/*10^} < ${loss/[eE]+*/*10^}") -o $iter -le $keep_lr_iters ]; then
       loss=$loss_new
       mlp1_best=$tmpdir/nnet/nnet1.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $tr_loss)_cv$(printf "%.4f" $loss_new)
       mlp2_best=$tmpdir/nnet/nnet2.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $tr_loss)_cv$(printf "%.4f" $loss_new)
@@ -253,8 +284,8 @@ for iter in $(seq -w $max_iters); do
    [ $iter -le $keep_lr_iters ] && continue 
 
    # stopping criterion
-   rel_impr=$(bc <<< "scale=10; ($loss_prev-$loss)/$loss_prev")
-   if [ 1 == $halving -a 1 == $(bc <<< "$rel_impr < $end_halving_impr") ]; then
+   rel_impr=$(bc <<< "scale=10; (${loss_prev/[eE]+*/*10^}-${loss/[eE]+*/*10^})/${loss_prev/[eE]+*/*10^}")
+   if [ 1 == $halving -a 1 == $(bc <<< "${rel_impr/[eE]+*/*10^} < ${end_halving_impr/[eE]+*/*10^}") ]; then
      if [[ "$min_iters" != "" ]]; then
        if [ $min_iters -gt $iter ]; then
          echo we were supposed to finish, but we continue as min_iters : $min_iters
@@ -266,7 +297,7 @@ for iter in $(seq -w $max_iters); do
    fi
 
    # start annealing when improvement is low
-   if [ 1 == $(bc <<< "$rel_impr < $start_halving_impr") ]; then
+   if [ 1 == $(bc <<< "${rel_impr/[eE]+*/*10^} < ${start_halving_impr/[eE]+*/*10^}") ]; then
      halving=1
    fi
    

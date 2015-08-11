@@ -145,6 +145,76 @@ void SNnet::Feedforward(const CuMatrix<BaseFloat> &in, const vector<vector<uchar
    }
 }
 
+void SNnet::Propagate(const CuMatrix<BaseFloat> &in, const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
+   // feedforward the first pass
+   if(transf_arr_.size() != 1)     transf_arr_.resize(1);
+   if(propagate_buf_.size() != 1)  propagate_buf_.resize(1);
+
+   nnet_transf_.Feedforward(in, &transf_arr_[0]);
+
+   nnet1_.Propagate(transf_arr_[0], &propagate_buf_[0]);
+
+   // combine each buffer according to label
+   Psi(propagate_buf_, labels, &psi_buff_);
+
+   nnet2_.Propagate(psi_buff_, out);
+
+   if (!KALDI_ISFINITE(out->Sum())) { // check there's no nan/inf,
+      KALDI_ERR << "NaN or inf found in nn-output nnet2";
+   }
+}
+
+void SNnet::Acc(const CuMatrix<BaseFloat> &in, const vector<vector<uchar>* > &labels){
+   // feedforward the first pass
+   if(transf_arr_.size() != 1)     transf_arr_.resize(1);
+   if(propagate_buf_.size() != 1)  propagate_buf_.resize(1);
+
+   nnet_transf_.Feedforward(in, &transf_arr_[0]);
+
+   nnet1_.Propagate(transf_arr_[0], &propagate_buf_[0]);
+
+   // combine each buffer according to label
+   Psi(propagate_buf_, labels, &psi_buff_);
+
+   // compute mean and variance from psi_buff_
+   if(stat_aux_.NumRows() != psi_buff_.NumCols() || stat_aux_.NumCols() != 1 ){
+      stat_aux_.Resize(1, psi_buff_.NumRows(), kSetZero);
+      stat_aux_.Set(1);
+   }
+
+   if(stat_sum_.NumCols() != psi_buff_.NumCols() || stat_sum_.NumRows() != 1 ||
+         stat_sqr_.NumCols() != psi_buff_.NumCols() || stat_sqr_.NumRows() != 1){
+      stat_sum_.Resize(1, psi_buff_.NumCols(), kSetZero);
+      stat_sqr_.Resize(1, psi_buff_.NumCols(), kSetZero);
+      stat_N_ = 0;
+   }
+
+   stat_sum_.AddMatMat(1, stat_aux_, kNoTrans, psi_buff_, kNoTrans, 1);
+
+   psi_buff_.ApplyPow(2);
+   stat_sqr_.AddMatMat(1, stat_aux_, kNoTrans, psi_buff_, kNoTrans, 1);
+
+   stat_N_ += psi_buff_.NumRows();
+}
+
+void SNnet::Stat(CuVector<BaseFloat> &mean, CuVector<BaseFloat> &sd){
+   if(mean.Dim() != stat_sum_.NumCols()) mean.Resize(stat_sum_.NumCols(), kUndefined);
+   mean.CopyRowsFromMat(stat_sum_);
+
+   mean.Scale(1.0/stat_N_);
+
+   CuVector<BaseFloat> mean_sqr(mean);
+   mean_sqr.ApplyPow(2);
+
+   if(sd.Dim() != stat_sum_.NumCols()) sd.Resize(stat_sum_.NumCols(), kUndefined);
+   sd.CopyRowsFromMat(stat_sqr_);
+
+   sd.Scale(1.0/stat_N_);
+   sd.AddVec(-1, mean_sqr);
+
+   sd.ApplyPow(0.5);
+}
+
 int32 SNnet::InputDim() const{
    return nnet1_.InputDim();
 }

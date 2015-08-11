@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 # auto genarate commonly used files.
 
@@ -48,6 +48,7 @@ do
    base=$(basename $script)
    tmp=${base#gen_*_}
    dir=${tmp%.sh}
+   rm -rf $dir
    mkdir $dir
 
 # link files

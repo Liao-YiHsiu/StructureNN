@@ -14,6 +14,7 @@
 #include <iterator>
 #include <map>
 #include <string>
+#include <math.h>
 
 #define BUFSIZE 4096
 
@@ -83,6 +84,8 @@ typedef TableWriter<KaldiObjectHolder<ScorePath> >           ScorePathWriter;
 typedef SequentialTableReader<BasicVectorHolder<uchar> >     SequentialUcharVectorReader;
 typedef RandomAccessTableReader<BasicVectorHolder<uchar> >   RandomAccessUcharVectorReader;
 typedef TableWriter<BasicVectorHolder<uchar> >               UcharVectorWriter;
+
+inline double sigmoid(double x);
 
 double frame_acc(const vector<uchar>& path1, const vector<uchar>& path2, double param = 1.0);
 double phone_acc(const vector<uchar>& path1, const vector<uchar>& path2, double param = 1.0);
@@ -330,6 +333,43 @@ class Strt {
       double correct_progress_;
       double loss_progress_;
       vector<float> loss_vec_;
+
+      Matrix<BaseFloat>      nnet_out_host_;
+      vector<Matrix<BaseFloat> > diff_host_;
+};
+
+// Structure learning loss using comparision.
+class StrtCmp{
+   public:
+      StrtCmp(bool binary_error = false): frames_arr_(END_TYPE*END_TYPE), correct_arr_(END_TYPE*END_TYPE), loss_arr_(END_TYPE*END_TYPE),
+      frames_progress_(0), correct_progress_(0), loss_progress_(0),
+      binary_error_(binary_error),
+      diff_host_(2) {}
+
+      ~StrtCmp() { }
+
+      /// Evaluate cross entropy using target-matrix (supports soft labels),
+      /// nnet_out = (raw >= 0) ? f(x,y) : f(x, y) - f(x, y_hat)
+      /// counter  = # of errors
+      /// returns the index of max f(x,y) + delta(y, y_hat);
+      int Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat> &nnet_out, 
+            vector<CuMatrix<BaseFloat> > *diff, int* counter = NULL, 
+            const vector<int>* example_type = NULL);
+
+      string Report();
+
+   private: 
+      vector<double> frames_arr_;
+      vector<double> correct_arr_;
+      vector<double> loss_arr_;
+
+      // partial results during training
+      double frames_progress_;
+      double correct_progress_;
+      double loss_progress_;
+      vector<float> loss_vec_;
+
+      bool binary_error_;
 
       Matrix<BaseFloat>      nnet_out_host_;
       vector<Matrix<BaseFloat> > diff_host_;

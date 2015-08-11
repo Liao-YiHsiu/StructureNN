@@ -57,6 +57,16 @@ class SNnet{
       void Feedforward(const CuMatrix<BaseFloat> &in,
             const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out);
 
+      /// speedup version for those in_arr are the same.
+      void Propagate(const CuMatrix<BaseFloat> &in,
+            const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out);
+
+      // Accumulate for cmvn
+      void Acc(const CuMatrix<BaseFloat> &in, const vector<vector<uchar>* > &labels);
+
+      // Get data from cmvn
+      void Stat(CuVector<BaseFloat> &mean, CuVector<BaseFloat> &sd);
+
 
       /// Dimensionality on network input (input feature dim.)
       int32 InputDim() const; 
@@ -136,6 +146,13 @@ class SNnet{
       vector<uchar>           labelbuf_; // 2-d array encode in 1-d
       int                     labelbuf_cols_;
       CuMatrixG<uchar>        labelbuf_device_;
+
+      // for statistics
+      CuMatrix<BaseFloat>  stat_sum_;
+      CuMatrix<BaseFloat>  stat_sqr_;
+
+      CuMatrix<BaseFloat>  stat_aux_;
+      int                  stat_N_;
 
 };
 
