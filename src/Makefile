@@ -1,7 +1,7 @@
 #KALDISRC=/home/loach/kaldi/kaldi-trunk/src
 include ../path
 
-O3: CXXFLAGS += -O3
+O3: CXXFLAGS += -O3 -fopenmp
 O3: all
 
 all: $(LIBFILE)

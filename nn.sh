@@ -2,15 +2,17 @@
 source path
 
 error_function="per"
-dnn_depth=6
+dnn_depth=4
 dnn_width=1024
-lattice_N=10
+lattice_N=50
 test_lattice_N=10
 train_opt=
-learn_rate=0.0000004
+learn_rate=0.0004
 cpus=$(nproc)
 acwt=0.16
-nnet_ratio=0.1
+nnet_ratio=1
+m=1
+margin=
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
 
@@ -31,7 +33,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 dir=$1
-paramId=${lattice_N}_$((test_lattice_N))_${dnn_depth}_${dnn_width}_${learn_rate}_${nnet_ratio}_${acwt}_${error_function}
+paramId=${lattice_N}_$((test_lattice_N))_${dnn_depth}_${dnn_width}_${learn_rate}_${nnet_ratio}_${acwt}_${error_function}_${m}_${margin}
 
 log=log/$dir/${paramId}_${test_lattice_N}.log
 data=$dir/${paramId}_${test_lattice_N}.data
@@ -62,7 +64,7 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
    [ -f $model1 -a -f $model2 ] || snnet/train.sh --error-function $error_function --cpus $cpus\
       --dnn-depth $dnn_depth --dnn-width $dnn_width --lattice-N $lattice_N \
       --test-lattice-N $((test_lattice_N)) --learn-rate $learn_rate --acwt $acwt \
-      ${train_opt:+ --train-opt "$train_opt"} \
+      ${train_opt:+ --train-opt "$train_opt"} ${margin:+ --margin $margin} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
       ${feature_transform:+ --feature-transform "$feature_transform"} \
       ${nnet_ratio:+ --nnet-ratio "$nnet_ratio"} \

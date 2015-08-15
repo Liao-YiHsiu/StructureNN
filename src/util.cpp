@@ -585,12 +585,13 @@ string Strt::Report() {
    return oss.str(); 
 }
 
-int StrtCmp::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat> &nnet_out, 
-      vector<CuMatrix<BaseFloat> > *diff, int* counter, const vector<int> *example_type){
+void StrtBase::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat> &nnet_out, 
+      vector<CuMatrix<BaseFloat> > *diff, const vector<int>* example_type = NULL,
+      int bias= -1, int* counter = NULL, int *maxErrId = NULL ){
 
-   int N = delta.Dim();
-   int retIdx = -1;
-   double maxError = -1;
+   int       N = delta.Dim();
+   int       retIdx = -1;
+   BaseFloat maxError = -FLT_MAX;
 
    KALDI_ASSERT(nnet_out.NumCols() == 1);
    KALDI_ASSERT(N ==  nnet_out.NumRows());
@@ -599,25 +600,26 @@ int StrtCmp::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFlo
    nnet_out_host_.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kUndefined);
    nnet_out_host_.CopyFromMat(nnet_out);
 
-   if(diff != NULL){
-      diff_host_[0].Resize(N, 1, kSetZero);
-      diff_host_[1].Resize(N, 1, kSetZero);
-   }
+   diff_host_[0].Resize(N, 1, kSetZero);
+   diff_host_[1].Resize(N, 1, kSetZero);
 
    double total_error = 0, total_correct = 0;
+
    for(int i = 0; i < N; ++i){
       assert(delta(i) != 0);
-      int sign_delta = delta(i) > 0 ? 1: -1;
-      double error = exp(-sign_delta * nnet_out_host_(i, 0));
 
-      if(error > 1e4) error = 1e4;
+      BaseFloat error;
 
-      if(diff != NULL){
-         diff_host_[0](i, 0) = -sign_delta * error;
-         diff_host_[1](i, 0) =  sign_delta * error;
+      calcErr(nnet_out_host_(i, 0), delta(i),
+            error, diff_host[0](i, 0), diff_host[1](i, 0));
+     
+      if(error > maxError){
+         maxError = error;
+         retIdx   = i;
       }
 
-      if( -sign_delta * nnet_out_host_(i, 0) < 0 ){
+      // same sign is correct.
+      if( delta(i) * nnet_out_host_(i, 0) > 0 ){
          if(example_type != NULL)
             correct_arr_[(*example_type)[i]] += 1;
 
@@ -634,7 +636,6 @@ int StrtCmp::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFlo
    }
 
    KALDI_ASSERT(KALDI_ISFINITE(total_error));
-   if(counter != NULL) *counter = N - total_correct;
 
    if(diff != NULL){
       KALDI_ASSERT(diff -> size() == 2);
@@ -654,9 +655,9 @@ int StrtCmp::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFlo
       correct_progress_ += total_correct;
 
       if (frames_progress_ > progress_step) {
-         KALDI_VLOG(1) << "ProgressLoss[last " 
-            << static_cast<int>(frames_progress_/progress_step) << "h of " 
-            << static_cast<int>(frames_arr_[ALL_TYPE]/progress_step) << "h]: " 
+         KALDI_VLOG(1) << "ProgressLoss[ " 
+            << static_cast<int>(frames_arr_[ALL_TYPE]/progress_step) << "h of " 
+            << static_cast<int>(frames_N_/progress_step) << "h]: " 
             << loss_progress_/frames_progress_ << " (StrtCmp) " 
             << "FRAME ACC >> " << 100*correct_progress_/frames_progress_ << "% <<";
          // store
@@ -668,7 +669,143 @@ int StrtCmp::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFlo
       }
    }
 
-   return retIdx;
+}
+
+string StrtCmp::Report() {
+   ostringstream oss;
+   oss << "AvgLoss: " << loss_arr_[ALL_TYPE]/frames_arr_[ALL_TYPE] << " (StrtCmp) " << endl;
+   for(int i = ALL_TYPE + 1; i < END_TYPE*END_TYPE; ++i){
+      if(frames_arr_[i] > 0){
+         int m = i / END_TYPE;
+         int n = i % END_TYPE;
+         oss << "  " << LABEL_NAME[m] << " <-> " << LABEL_NAME[n]
+            << " Loss: " << loss_arr_[i] / frames_arr_[i] << " (StrtCmp) " << endl;
+      }
+   }
+      
+   if (loss_vec_.size() > 0) {
+      oss << "progress: [";
+      copy(loss_vec_.begin(),loss_vec_.end(),ostream_iterator<float>(oss," "));
+      oss << "]" << endl;
+   }
+   if (correct_arr_[ALL_TYPE] >= 0.0) {
+      oss << "\nFRAME_ACCURACY >> " << 100.0*correct_arr_[ALL_TYPE]/frames_arr_[ALL_TYPE] << "% <<" << endl;
+      for(int i = ALL_TYPE + 1; i < END_TYPE*END_TYPE; ++i){
+         if(frames_arr_[i] > 0){
+            int m = i / END_TYPE;
+            int n = i % END_TYPE;
+            oss << "  " << LABEL_NAME[m] << " <-> " << LABEL_NAME[n] << " ACC >> " << 
+               100.0*correct_arr_[i] / frames_arr_[i] << "% << " << endl;
+         }
+      }
+   }
+   return oss.str(); 
+}
+void StrtCmp::Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat> &nnet_out, 
+      vector<CuMatrix<BaseFloat> > *diff, const vector<int> *example_type){
+
+   int N = delta.Dim();
+
+   KALDI_ASSERT(nnet_out.NumCols() == 1);
+   KALDI_ASSERT(N ==  nnet_out.NumRows());
+
+   // copy data from gpu to cpu
+   nnet_out_host_.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kUndefined);
+   nnet_out_host_.CopyFromMat(nnet_out);
+
+   diff_host_[0].Resize(N, 1, kSetZero);
+   diff_host_[1].Resize(N, 1, kSetZero);
+
+   double total_error = 0, total_correct = 0;
+   for(int i = 0; i < N; ++i){
+      assert(delta(i) != 0);
+
+      BaseFloat error, diff1, diff2;
+      calcErr(nnet_out_host_(i, 0), delta(i), error, diff1, diff2);
+
+      if(diff != NULL){
+         diff_host_[0](i, 0) = diff1;
+         diff_host_[1](i, 0) = diff2;
+      }
+      
+
+//      //softmax
+//      double softmax = 1 / (1 + exp(-nnet_out_host_(i, 0)));
+//      double q = delta(i) > 0 ? softmax: 1 - softmax;
+//      q = q < 1e-10? 1e-10 : q;
+//      double error = -abs(delta(i))*log(q);
+//
+//    //  //int sign_delta = delta(i) > 0 ? 1: -1;
+//    //  //double error = exp(-sign_delta * nnet_out_host_(i, 0) * m_);
+//    //  double diff_err = nnet_out_host_(i, 0) - delta(i);
+//    // // if((nnet_out_host_(i, 0) > 0 && delta(i) > 0 && nnet_out_host_(i, 0) > delta(i) ) ||
+//    // // (nnet_out_host_(i, 0) < 0 && delta(i) < 0 && nnet_out_host_(i, 0) < delta(i) )) diff_err = 0;
+//    //  double error = diff_err * diff_err / 2;
+//
+//      //if(error > 1e4) error = 1e4;
+//
+//      if(diff != NULL){
+//         diff_host_[0](i, 0) = delta(i)*(q - 1);
+//         diff_host_[1](i, 0) = delta(i)*(1 - q);
+//
+//         //diff_host_[0](i, 0) = delta(i) > 0 ?  q - 1:1 - q; 
+//         //diff_host_[1](i, 0) = delta(i) > 0 ?  1 - q:q - 1;
+//         //
+//         //diff_host_[0](i, 0) = diff_err;
+//         //diff_host_[1](i, 0) = -diff_err;
+//         //diff_host_[0](i, 0) = -sign_delta * error * m_;
+//         //diff_host_[1](i, 0) =  sign_delta * error * m_;
+//      }
+
+      if( delta(i) * nnet_out_host_(i, 0) > 0 ){
+         if(example_type != NULL)
+            correct_arr_[(*example_type)[i]] += 1;
+
+         total_correct += 1;
+      }
+
+      if(example_type != NULL)
+         loss_arr_[(*example_type)[i]] += error;
+
+      total_error += error;
+
+      if(example_type != NULL)
+         frames_arr_[(*example_type)[i]] += 1;
+   }
+
+   KALDI_ASSERT(KALDI_ISFINITE(total_error));
+
+   if(diff != NULL){
+      KALDI_ASSERT(diff -> size() == 2);
+      (*diff)[0] = diff_host_[0];
+      (*diff)[1] = diff_host_[1];
+   }
+
+   frames_arr_[ALL_TYPE]  += N;
+   loss_arr_[ALL_TYPE]    += total_error;
+   correct_arr_[ALL_TYPE] += total_correct;
+
+   // progress losss reporting
+   {
+      static const int32 progress_step = 3600; 
+      frames_progress_  += N;
+      loss_progress_    += total_error; 
+      correct_progress_ += total_correct;
+
+      if (frames_progress_ > progress_step) {
+         KALDI_VLOG(1) << "ProgressLoss[ " 
+            << static_cast<int>(frames_arr_[ALL_TYPE]/progress_step) << "h of " 
+            << static_cast<int>(frames_N_/progress_step) << "h]: " 
+            << loss_progress_/frames_progress_ << " (StrtCmp) " 
+            << "FRAME ACC >> " << 100*correct_progress_/frames_progress_ << "% <<";
+         // store
+         loss_vec_.push_back(loss_progress_/frames_progress_);
+         // reset
+         frames_progress_  = 0;
+         loss_progress_    = 0;
+         correct_progress_ = 0;
+      }
+   }
 
 }
 

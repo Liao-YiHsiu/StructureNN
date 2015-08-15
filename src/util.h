@@ -15,6 +15,7 @@
 #include <map>
 #include <string>
 #include <math.h>
+#include <float.h>
 
 #define BUFSIZE 4096
 
@@ -338,27 +339,28 @@ class Strt {
       vector<Matrix<BaseFloat> > diff_host_;
 };
 
-// Structure learning loss using comparision.
+// Structure learning loss using comparision between two label seqs.
 class StrtCmp{
    public:
-      StrtCmp(bool binary_error = false): frames_arr_(END_TYPE*END_TYPE), correct_arr_(END_TYPE*END_TYPE), loss_arr_(END_TYPE*END_TYPE),
+      StrtCmp(): frames_arr_(END_TYPE*END_TYPE), correct_arr_(END_TYPE*END_TYPE), loss_arr_(END_TYPE*END_TYPE),
       frames_progress_(0), correct_progress_(0), loss_progress_(0),
-      binary_error_(binary_error),
-      diff_host_(2) {}
+      frames_N_(0), diff_host_(2) {}
 
       ~StrtCmp() { }
 
+      void SetAll(int frames_N){frames_N_ = frames_N;}
+
       /// Evaluate cross entropy using target-matrix (supports soft labels),
       /// nnet_out = (raw >= 0) ? f(x,y) : f(x, y) - f(x, y_hat)
-      /// counter  = # of errors
-      /// returns the index of max f(x,y) + delta(y, y_hat);
-      int Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat> &nnet_out, 
-            vector<CuMatrix<BaseFloat> > *diff, int* counter = NULL, 
-            const vector<int>* example_type = NULL);
+      void Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat> &nnet_out, 
+            vector<CuMatrix<BaseFloat> > *diff, const vector<int>* example_type = NULL);
 
       string Report();
 
-   private: 
+      virtual void calcErr(BaseFloat f_diff, BaseFloat a_diff,
+            BaseFloat &error, BaseFloat &diff1, BaseFloat &diff2) = 0;
+
+   pritvate:
       vector<double> frames_arr_;
       vector<double> correct_arr_;
       vector<double> loss_arr_;
@@ -369,9 +371,48 @@ class StrtCmp{
       double loss_progress_;
       vector<float> loss_vec_;
 
-      bool binary_error_;
+      int frames_N_;
 
       Matrix<BaseFloat>      nnet_out_host_;
       vector<Matrix<BaseFloat> > diff_host_;
 };
+
+class StrtBase{
+   public:
+      StrtBase(int types_num = END_TYPE):
+         frames_arr_(types_num), correct_arr_(types_num), loss_arr_(types_num),
+         frames_progress_(0), correct_progress_(0), loss_progress_(0),
+         frames_N_(0), diff_host_(2) {}
+
+      ~StrtBase() { }
+
+      void SetAll(int frames_N){frames_N_ = frames_N;}
+
+      /// Evaluate cross entropy using target-matrix (supports soft labels),
+      /// nnet_out = (raw >= 0) ? f(x,y) : f(x, y) - f(x, y_hat)
+      void Eval(const VectorBase<BaseFloat> &delta, const CuMatrixBase<BaseFloat> &nnet_out, 
+            vector<CuMatrix<BaseFloat> > *diff, const vector<int>* example_type = NULL,
+            int bias= -1, int* counter = NULL, int *maxErrId = NULL );
+
+      string Report();
+
+      virtual void calcErr(BaseFloat f_diff, BaseFloat a_diff,
+            BaseFloat &error, BaseFloat &diff1, BaseFloat &diff2) = 0;
+
+   pritvate:
+      vector<double> frames_arr_;
+      vector<double> correct_arr_;
+      vector<double> loss_arr_;
+
+      // partial results during training
+      double frames_progress_;
+      double correct_progress_;
+      double loss_progress_;
+      vector<float> loss_vec_;
+
+      int frames_N_;
+
+      Matrix<BaseFloat>      nnet_out_host_;
+      vector<Matrix<BaseFloat> > diff_host_;
+}
 #endif

@@ -19,3 +19,5 @@ score-oracle "$label" "$input" ark:- | best-score-path ark:- ark:$tmp && \
 
 score-oracle "$label" "$input" ark:- | weight-score-path ark:- -1 ark:- | \
    best-score-path ark:- ark:$tmp && calc.sh "$label" ark:$tmp
+
+rm -rf $tmp

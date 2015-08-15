@@ -36,7 +36,7 @@ minibatch_size=64
 randomizer_size=4194304
 error_function="fer"
 train_tool="snnet-train-pairshuff "
-cross_tool="snnet-train-pairshuff --cross-validate=true --randomizer-size=$randomizer_size "
+cross_tool="snnet-train-pairshuff --cross-validate=true"
 #train_tool="snnet-train-pairshuff --binary-error=true "
 #cross_tool="snnet-train-pairshuff --cross-validate=true --binary-error=true "
 #train_tool="snnet-train-fullshuff"
@@ -52,11 +52,18 @@ train_opt=
 cpus=$(nproc)
 feature_transform=
 nnet_ratio=
+m=
+margin=
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
 
 . parse_options.sh || exit 1;
+
+cross_tool="$cross_tool --randomizer-size=$randomizer_size "
+
+train_tool="$train_tool ${m:+ --m=$m} ${margin:+ --margin=$margin} "
+cross_tool="$cross_tool ${m:+ --m=$m} ${margin:+ --margin=$margin} "
 
 #negative_num=$((lattice_N))
 negative_num=0
@@ -215,6 +222,7 @@ for iter in $(seq -w $max_iters); do
          $mlp1_best $mlp2_best $stateMax $mlp1_next $mlp2_next \
          2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
          #2>&1 | grep  --line-buffered -v "releasing cached memory and retrying" | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
+
       retry=$((retry - 1))
       sleep 1
    done
@@ -243,6 +251,7 @@ for iter in $(seq -w $max_iters); do
    done
    [ $retry -eq 0 ] && echo "retry over 10 times" && exit -1;
 
+   #loss_new=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{print 100 - $3}')
    loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
    echo -n "CROSSVAL AVG.LOSS $(printf "%.4f" $loss_new), "
 
