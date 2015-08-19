@@ -67,6 +67,10 @@ class SNnet{
       // Get data from cmvn
       void Stat(CuVector<BaseFloat> &mean, CuVector<BaseFloat> &sd);
 
+      // propagate to nnet1 only.
+      void PropagatePsi(const CuMatrix<BaseFloat> &in,
+            const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out);
+
 
       /// Dimensionality on network input (input feature dim.)
       int32 InputDim() const; 
@@ -84,6 +88,9 @@ class SNnet{
       void Read(const string &file1, const string &file2, uchar stateMax);  
       /// Write MLP to file
       void Write(const string &file1, const string &file2, bool binary) const;
+
+      // Initialize only nnet1 (half network)
+      void Read(const string &file1, uchar stateMax);
 
       /// Create string with human readable description of the nnet
       string Info() const;

@@ -46,8 +46,11 @@ int main(int argc, char *argv[]) {
     po.Register("cross-validate", &crossvalidate, "Perform cross-validation (don't backpropagate)");
     po.Register("randomize", &randomize, "Perform the frame-level shuffling within the Cache");
 
-    string error_function = "fer";
-    po.Register("error-function", &error_function, "Error function : fer|per");
+    string acc_func = "fac";
+    po.Register("acc-func", &acc_func, "Acuracy function : fac|pac");
+
+    bool acc_norm = true;
+    po.Register("acc-norm", &acc_norm, "normalization acc function to [0, 1]");
 
     string use_gpu="yes";
     po.Register("use-gpu", &use_gpu, "yes|no|optional, only has effect if compiled with CUDA");
@@ -64,11 +67,18 @@ int main(int argc, char *argv[]) {
     string feature_transform;
     po.Register("feature-transform", &feature_transform, "Feature transform in front of main network (in nnet format)");
 
-    double m = 1.0;
-    po.Register("m", &m, "Exponential coefficient");
+    double error_margin = 0.01;
+    po.Register("error-margin", &error_margin, "train on pairs with: |acc(x1) - acc(x2)| >= error_margin");
 
-    double margin = 0.01;
-    po.Register("margin", &margin, "acc(x1) - acc(x2) >= margin");
+    bool absolute = false;
+    po.Register("absolute", &absolute, "if true: train on f(x) ~ acc(x), else: train on f(x1) - f(x2) ~ acc(x1) ~ acc(x2)");
+
+    bool pairwise = true;
+    po.Register("pairwise", &pairwise, "if true: train on each pair, else: train on (ref, others) pairs. "); 
+
+
+    string loss_func = "mse";
+    po.Register("loss-func", &loss_func, "training loss function: (mse, mgn, softmax, wsoftmax, exp)");
 
     po.Read(argc, argv);
 
@@ -77,6 +87,7 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
+    // setup input parameters
 
     string feat_rspecifier       = po.GetArg(1),
            label_rspecifier      = po.GetArg(2),
@@ -93,16 +104,18 @@ int main(int argc, char *argv[]) {
     }
 
     // function pointer used in calculating target.
-    double (*acc_function)(const vector<uchar>& path1, const vector<uchar>& path2, double param);
+    double (*acc_function)(const vector<uchar>& path1, const vector<uchar>& path2, bool norm);
 
-    if(error_function == "fer")
+    if(acc_func == "fac")
        acc_function = frame_acc;
-    else if(error_function == "per")
+    else if(acc_func == "pac")
        acc_function = phone_acc; 
     else{
        po.PrintUsage();
        exit(1);
     }
+
+    StrtBase* strt = StrtBase::getInstance(loss_func, !absolute, error_margin);
 
     //Select the GPU
 #if HAVE_CUDA==1
@@ -145,15 +158,12 @@ int main(int argc, char *argv[]) {
        vector< vector<uchar> > &seqs = examples[examples.size() - 1];
        vector< int >           &tps  = types[types.size() - 1];
 
-       seqs.reserve(table.size() + negative_num);
-       tps.reserve(table.size() + negative_num);
-
-       //seqs.reserve(1 + table.size() + negative_num);
-       //tps.reserve(1 + table.size() + negative_num);
+       seqs.reserve(1 + table.size() + negative_num);
+       tps.reserve(1 + table.size() + negative_num);
 
        // positive examples
-       //seqs.push_back(label);
-       //tps.push_back(REF_TYPE);
+       seqs.push_back(label);
+       tps.push_back(REF_TYPE);
 
        // negative examples
        for(int i = 0; i < table.size(); ++i){
@@ -161,7 +171,6 @@ int main(int argc, char *argv[]) {
           tps.push_back(LAT_TYPE);
        }
 
-       // TODO set random seed
        // random negitive examples
        vector<uchar> neg_arr(label.size());
        for(int i = 0; i < negative_num; ++i){
@@ -208,7 +217,6 @@ int main(int argc, char *argv[]) {
     CuMatrix<BaseFloat>          nnet_out;
     vector<CuMatrix<BaseFloat> > obj_diff(2);
 
-    StrtCmp strt(m);
     Timer time;
 
     for(int i = 0; i < examples.size(); ){
@@ -230,45 +238,53 @@ int main(int argc, char *argv[]) {
           vector< int >                  tps(total);
 
           vector< double >               acc(examples[i].size());
+
+          double ref_acc = acc_function(labels[i], labels[i], acc_norm);
+
 #pragma omp parallel for
           for(int j = 0; j < acc.size(); ++j)
-             acc[j] = acc_function(labels[i], examples[i][j], 1.0);
-
+             acc[j] = acc_function(labels[i], examples[i][j], acc_norm);
 
           int j = 0;
-//          if(crossvalidate){
-//             // too much!!!
-//             for(int m = 0; m < examples[i].size(); ++m){
-//                for(int n = m + 1; n < examples[i].size(); ++n){
-//                   if(abs(acc[m] - acc[n]) < margin) continue;
-//
-//                   feat[j]    = &features[i];
-//                   lab[j]     = &examples[i][m];
-//                   ref_lab[j] = &examples[i][n];
-//                   dlt(j)     = acc[m] - acc[n];
-//                   tps[j]      = types[i][m] * END_TYPE + types[i][n];
-//
-//                   j++;
-//                }
-//             }
-//          }else{
+          if(absolute){
 #pragma omp parallel for
              for(int m = 0; m < examples[i].size(); ++m){
-                while(true){
-                   int n = rand() % examples[i].size();
-                   if(abs(acc[m] - acc[n]) < margin) continue;
+                feat[m]    = &features[i];
+                lab[m]     = &examples[i][m];
+                ref_lab[m] = NULL;
+                dlt(m)     = acc[m];
+                tps[m]     = types[i][m];
+             }
+          }else{
+             if(pairwise){
+#pragma omp parallel for
+                for(int m = 0; m < examples[i].size(); ++m){
+                   while(true){
+                      int n = rand() % examples[i].size();
+                      if(abs(acc[m] - acc[n]) < error_margin) continue;
 
+                      feat[m]    = &features[i];
+                      lab[m]     = &examples[i][m];
+                      ref_lab[m] = &examples[i][n];
+                      dlt(m)     = acc[m] - acc[n];
+                      tps[m]      = types[i][m] * END_TYPE + types[i][n];
+
+                      break;
+                   }
+                }
+             }else{
+#pragma omp parallel for
+                for(int m = 0; m < examples[i].size(); ++m){
                    feat[m]    = &features[i];
                    lab[m]     = &examples[i][m];
-                   ref_lab[m] = &examples[i][n];
-                   dlt(m)     = acc[m] - acc[n];
-                   tps[m]      = types[i][m] * END_TYPE + types[i][n];
-
-                   break;
+                   ref_lab[m] = &labels[i];
+                   dlt(m)     = acc[m] - ref_acc;
+                   tps[m]      = types[i][m] * END_TYPE + REF_TYPE;
                 }
              }
-             j = examples[i].size();
-//          }
+          }
+
+          j = examples[i].size();
 
           feat.resize(j);
           lab.resize(j);
@@ -287,7 +303,7 @@ int main(int argc, char *argv[]) {
 
        KALDI_LOG << "Fill in " << numTotal << " examples";
 
-       strt.SetAll(numTotal);
+       strt->SetAll(numTotal);
 
        // randomize
        if (!crossvalidate && randomize) {
@@ -321,13 +337,21 @@ int main(int argc, char *argv[]) {
 
           // Forward pass
           // nnet_out = f(x, y) - f(x, y_hat)
-          nnet.Propagate(nnet_feat_in, nnet_label_in, nnet_ref_label, &nnet_out);
+          if(absolute){
+             nnet.Propagate(nnet_feat_in, nnet_label_in, &nnet_out);
+          }else{
+             nnet.Propagate(nnet_feat_in, nnet_label_in, nnet_ref_label, &nnet_out);
+          }
 
-          strt.Eval(delta, nnet_out, &obj_diff, &example_type);
+          strt->Eval(delta, nnet_out, &obj_diff, &example_type);
 
           // backpropagate
           if (!crossvalidate) {
-             nnet.Backpropagate(obj_diff, nnet_label_in, nnet_ref_label);
+             if(absolute){
+                nnet.Backpropagate(obj_diff[0], nnet_label_in);
+             }else{
+                nnet.Backpropagate(obj_diff, nnet_label_in, nnet_ref_label);
+             }
           }
 
           num_done += nnet_feat_in.size();
@@ -335,8 +359,6 @@ int main(int argc, char *argv[]) {
        KALDI_LOG << "Done " << num_done << " examples.";
 
     }
-
-
 
     // after last minibatch : show what happens in network 
     if (kaldi::g_kaldi_verbose_level >= 1) { // vlog-1
@@ -357,10 +379,13 @@ int main(int argc, char *argv[]) {
               << " with other errors. "
               << "[" << (crossvalidate?"CROSS-VALIDATION":"TRAINING")
               << ", " << (randomize?"RANDOMIZED":"NOT-RANDOMIZED") 
+              << ", " << (absolute?"ABSOLUTE VALUE":"RELATIVE VALUE") 
+              << ", " << (pairwise?"EACH PAIR":"REF PAIR") 
+              << ", " << loss_func 
               << ", " << time.Elapsed()/60 << " min"
               << "]";  
 
-    KALDI_LOG << strt.Report();
+    KALDI_LOG << strt->Report();
 
 #if HAVE_CUDA==1
     CuDevice::Instantiate().PrintProfile();

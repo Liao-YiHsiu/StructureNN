@@ -4,6 +4,7 @@ include ../path
 O3: CXXFLAGS += -O3 -fopenmp
 O3: all
 
+#all: CXXFLAGS += -std=c++11
 all: $(LIBFILE)
 EXTRA_CXXFLAGS = -Wno-sign-compare
 include $(KALDISRC)/kaldi.mk
@@ -18,12 +19,10 @@ BINFILES = post-phn acc con-svm nnet-pop lab-lda gen-lab lattice-to-vec \
 	   score-baseline lattice-baseline post-to-vec vec-to-score-path\
 	   score-path-copy weight-basefloat best-score-path weight-score-path\
 	   normalize-score-path exp-score-path log-score-path cmvn-score-path replace-feats \
-	   score-oracle score-path-point snnet-train-fullshuff snnet-score int32-to-uchar \
-	   uchar-to-int32 snnet-train-cross snnet-train-shuff snnet-train-pairshuff\
-	   snnet-psi-cmvn
-#snnet-gibbs snnet-gibbs2 snnet-gibbs3 snnet-train-shuff snnet-test snnet-best snnet-score 
+	   score-oracle score-path-point snnet-score int32-to-uchar uchar-to-int32 \
+	   snnet-train-pairshuff snnet-psi-cmvn snnet-gen-psi snnet-train-listshuff
 
-OBJFILES = kernel.o util.o snnet.o nnet-cache.o nnet-batch.o
+OBJFILES = kernel.o util.o strt.o snnet.o nnet-batch.o
 
 TESTFILES = 
 

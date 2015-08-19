@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
-    double (*acc_function)(const vector<uchar>& path1, const vector<uchar>& path2, double param);
+    double (*acc_function)(const vector<uchar>& path1, const vector<uchar>& path2, bool norm);
 
     if(error_function == "fer")
        acc_function = frame_acc;
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
           const vector<uchar> &lab = table[i].second;
           assert(lab.size() == ref.size());
 
-          double score = acc_function(ref, lab, 1.0);
+          double score = acc_function(ref, lab, true);
 
           table[i].first = score;
        }

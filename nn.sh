@@ -1,7 +1,14 @@
 #!/bin/bash
 source path
 
-error_function="per"
+acc_func=pac
+error_margin=0.01
+loss_func=softmax
+absolute="false"
+acc_norm="true"
+pairwise="true"
+nnet_ratio=1
+
 dnn_depth=4
 dnn_width=1024
 lattice_N=50
@@ -10,11 +17,11 @@ train_opt=
 learn_rate=0.0004
 cpus=$(nproc)
 acwt=0.16
-nnet_ratio=1
-m=1
-margin=
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
+
+rbm_pretrain="false"
+list="false"
 
 echo "$0 $@"  # Print the command line for logging
 command_line="$0 $@"
@@ -32,15 +39,31 @@ if [ "$#" -ne 1 ]; then
    exit 1;
 fi
 
-dir=$1
-paramId=${lattice_N}_$((test_lattice_N))_${dnn_depth}_${dnn_width}_${learn_rate}_${nnet_ratio}_${acwt}_${error_function}_${m}_${margin}
+if [ "$list" == "true" ]; then
+   train_tool="snnet-train-listshuff \
+         ${acc_func:+ --acc-func=$acc_func} \
+         ${nnet_ratio:+ --nnet-ratio=$nnet_ratio}" 
+else
+   train_tool="snnet-train-pairshuff \
+         ${acc_func:+ --acc-func=$acc_func} \
+         ${error_margin:+ --error-margin=$error_margin} \
+         ${loss_func:+ --loss-func=$loss_func} \
+         ${absolute:+ --absolute=$absolute} \
+         ${acc_norm:+ --acc-norm=$acc_norm} \
+         ${pairwise:+ --pairwise=$pairwise} \
+         ${nnet_ratio:+ --nnet-ratio=$nnet_ratio}" 
+fi
 
-log=log/$dir/${paramId}_${test_lattice_N}.log
-data=$dir/${paramId}_${test_lattice_N}.data
-model1=$dir/${paramId}.nnet1
-model2=$dir/${paramId}.nnet2
+dir=$1
+paramId=${dnn_depth}_${dnn_width}_${lattice_N}_$(test_lattice_N)_${learn_rate}_${acwt}_${rbm_pretrain}_${train_tool// /}
+
+log=log/$dir/${paramId}.log
+data=$dir/$paramId/data
+model1=$dir/$paramId/nnet1
+model2=$dir/$paramId/nnet2
 
 [ ! -d log/$dir ] && mkdir -p log/$dir
+[ ! -d $dir/lab ] && mkdir -p $dir/lab
 
 echo "$HOSTNAME `date`" \
 2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
@@ -58,20 +81,20 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
 
    [ -f $dir/transf.nnet ] && feature_transform=$dir/transf.nnet
 
-   echo "SVM with NN training start..................................."\
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+   [ ! -d $dir/$paramId ] && mkdir -p $dir/$paramId
 
-   [ -f $model1 -a -f $model2 ] || snnet/train.sh --error-function $error_function --cpus $cpus\
+   [ -f $model1 -a -f $model2 ] || snnet/train.sh --cpus $cpus\
       --dnn-depth $dnn_depth --dnn-width $dnn_width --lattice-N $lattice_N \
       --test-lattice-N $((test_lattice_N)) --learn-rate $learn_rate --acwt $acwt \
-      ${train_opt:+ --train-opt "$train_opt"} ${margin:+ --margin $margin} \
+      --train-tool "$train_tool" \
+      ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
       ${feature_transform:+ --feature-transform "$feature_transform"} \
-      ${nnet_ratio:+ --nnet-ratio "$nnet_ratio"} \
+      ${rbm_pretrain:+ --rbm-pretrain "$rbm_pretrain"} \
       $dir $lat_model $model1 $model2 $stateMax\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   test_lattice_path=$dir/test.lab_${test_lattice_N}_${acwt}.gz
+   test_lattice_path=$dir/lab/test.lab_${test_lattice_N}_${acwt}.gz
 
    while [ ! -f $test_lattice_path ]; do
        lockfile=/tmp/$(basename $test_lattice_path)

@@ -4,7 +4,6 @@
 #include "nnet/nnet-nnet.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
-#include "nnet-cache.h"
 #include "util.h"
 #include <iostream>
 #include <string>

@@ -43,7 +43,14 @@ void SNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff,
 
    BackPsi(psi_diff_, labels, backpropagate_buf_);
 
-   nnet1_.Backpropagate(backpropagate_buf_);
+   if(propagate_buf_.size() == 1){
+      for(int i = 1; i < backpropagate_buf_.size(); ++i)
+         backpropagate_buf_[0].AddMat(1.0, backpropagate_buf_[i]);
+      nnet1_.Backpropagate(backpropagate_buf_[0], NULL);
+   }else{
+      nnet1_.Backpropagate(backpropagate_buf_);
+   }
+
 }
 
 void SNnet::Propagate(const vector<CuMatrix<BaseFloat>* > &in_arr,
@@ -215,6 +222,26 @@ void SNnet::Stat(CuVector<BaseFloat> &mean, CuVector<BaseFloat> &sd){
    sd.ApplyPow(0.5);
 }
 
+void SNnet::PropagatePsi(const CuMatrix<BaseFloat> &in,
+      const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
+
+   // feedforward the first pass
+   if(transf_arr_.size() != 1)     transf_arr_.resize(1);
+   if(propagate_buf_.size() != 1)  propagate_buf_.resize(1);
+
+   nnet_transf_.Feedforward(in, &transf_arr_[0]);
+
+   nnet1_.Propagate(transf_arr_[0], &propagate_buf_[0]);
+
+   // combine each buffer according to label
+   Psi(propagate_buf_, labels, out);
+
+   if (!KALDI_ISFINITE(out->Sum())) { // check there's no nan/inf,
+      KALDI_ERR << "NaN or inf found in nn-output nnet2";
+   }
+}
+
+
 int32 SNnet::InputDim() const{
    return nnet1_.InputDim();
 }
@@ -252,6 +279,11 @@ void SNnet::Write(const string &file1, const string &file2, bool binary) const {
    nnet1_.Write(file1, binary);
    nnet2_.Write(file2, binary);
 }
+
+void SNnet::Read(const string &file1, uchar stateMax) {
+   nnet1_.Read(file1);
+   stateMax_ = stateMax;
+} 
 
 string SNnet::Info() const {
    return "Nnet1\n" + nnet1_.Info() + "Nnet2\n" + nnet2_.Info();
@@ -345,7 +377,7 @@ void SNnet::PsiKernel(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<u
 
    // build transition using cpu
    Matrix<BaseFloat> trans(N, trans_len, kSetZero);
-   // TODO openmp for parallel compute
+#pragma omp parallel for
    for(int i = 0; i < N; ++i){
       const vector<uchar>& lab = *labels[i];
       for(int j = 0; j < lab.size(); ++j){

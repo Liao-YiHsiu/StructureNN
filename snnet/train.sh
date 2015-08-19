@@ -1,14 +1,5 @@
 #!/bin/bash -ex
 
-function tobyte {
-   num=$1
-   case $num in
-      *[Kk]*) num=${num%[Kk]*}000 ;;
-      *[Mm]*) num=${num%[Mm]*}000000 ;;
-      *[Gg]*) num=${num%[Gg]*}000000000 ;;
-   esac
-   echo $num
-}
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/../path
 
@@ -19,7 +10,7 @@ config=
 l1_penalty=0
 l2_penalty=0
 max_iters=200
-min_iters=
+min_iters=4
 keep_lr_iters=1
 start_halving_impr=0.005
 end_halving_impr=0.00005
@@ -28,21 +19,12 @@ halving_factor=0.5
 verbose=1
 
 frame_weights=
-tmpdir=$(mktemp -d)
 seed=777
 learn_rate=0.004
-momentum=0.9
+momentum=0
 minibatch_size=64
 randomizer_size=4194304
-error_function="fer"
 train_tool="snnet-train-pairshuff "
-cross_tool="snnet-train-pairshuff --cross-validate=true"
-#train_tool="snnet-train-pairshuff --binary-error=true "
-#cross_tool="snnet-train-pairshuff --cross-validate=true --binary-error=true "
-#train_tool="snnet-train-fullshuff"
-#cross_tool="snnet-train-cross"
-#train_tool="snnet-train-shuff"
-#cross_tool="snnet-train-shuff --cross-validate=true"
 dnn_depth=1
 dnn_width=200
 lattice_N=1000
@@ -51,19 +33,14 @@ acwt=0.2
 train_opt=
 cpus=$(nproc)
 feature_transform=
-nnet_ratio=
-m=
-margin=
+rbm_pretrain="true"
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
 
 . parse_options.sh || exit 1;
 
-cross_tool="$cross_tool --randomizer-size=$randomizer_size "
-
-train_tool="$train_tool ${m:+ --m=$m} ${margin:+ --margin=$margin} "
-cross_tool="$cross_tool ${m:+ --m=$m} ${margin:+ --margin=$margin} "
+cross_tool="$train_tool --cross-validate=true"
 
 #negative_num=$((lattice_N))
 negative_num=0
@@ -84,6 +61,9 @@ nnet1_out=$3
 nnet2_out=$4
 stateMax=$5
 
+tmpdir=$(cd `dirname $nnet1_out`; pwd)/tmp
+[ ! -d $tmpdir ] && mkdir -p $tmpdir
+
 #check file existence.
 for file in $files;
 do
@@ -98,11 +78,11 @@ cv_ark="ark:$dir/dev.ark"
 cv_lab="ark:$dir/dev.lab"
 cv_lat="ark:$dir/dev.lat"
 
-mkdir $tmpdir/nnet
-mkdir $tmpdir/log
+mkdir -p $tmpdir/nnet
+mkdir -p $tmpdir/log
 
 # precompute lattice data
-train_lattice_path=$dir/train.lab_${lattice_N}_${acwt}.gz
+train_lattice_path=$dir/lab/train.lab_${lattice_N}_${acwt}.gz
 
 # lock file if others are using...
 while [ ! -f $train_lattice_path ]; do
@@ -110,46 +90,110 @@ while [ ! -f $train_lattice_path ]; do
     flock -n $lockfile \
        lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N \
        $lat_model "$train_lat" "ark:| gzip -c > $train_lattice_path" \
-       2>&1 | tee $log  || \
+       2>&1 | tee -a $log  || \
        flock -w -1 $lockfile echo "finally get file lock"
 done
 
-dev_lattice_path=$dir/dev.lab_${test_lattice_N}_${acwt}.gz
+dev_lattice_path=$dir/lab/dev.lab_${test_lattice_N}_${acwt}.gz
 while [ ! -f $dev_lattice_path ]; do
     lockfile=/tmp/$(basename $dev_lattice_path)
     flock -n $lockfile \
        lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $test_lattice_N \
        $lat_model "$cv_lat" "ark:| gzip -c > $dev_lattice_path" \
-       2>&1 | tee $log  || \
+       2>&1 | tee -a $log  || \
        flock -w -1 $lockfile echo "finally get file lock"
 done
 
-#initialize nnet2 model
-feat_dim=$(nnet-info $dir/nnet1 2>/dev/null | grep output-dim | head -n 1 | cut -d ' ' -f2)
-SVM_dim=$(( (stateMax + 1) * (feat_dim + 1) + stateMax*stateMax ))
-mlp2_init=$tmpdir/nnet2.init
-mlp2_proto=$tmpdir/nnet2.proto
-$timit/utils/nnet/make_nnet_proto.py --no-softmax $SVM_dim 1 $dnn_depth $dnn_width | \
-   sed -e "s@</NnetProto>@</NnetProto>@g" > $mlp2_proto || exit 1
-#   add Sigmoid layer in the last layer
-#   sed -e "s@</NnetProto>@<Sigmoid> <InputDim> 1 <OutputDim> 1 \n</NnetProto>@g" > $mlp2_proto || exit 1
-nnet-initialize $mlp2_proto $mlp2_init || exit 1; 
-
-mlp2_cmvn=$tmpdir/nnet2.cvmn
-mlp2=$tmpdir/nnet2
-
-#compute cmvn layer for nnet2
-snnet-psi-cmvn --verbose=$verbose --binary=true --rand-seed=$seed --negative-num=$negative_num \
-         ${feature_transform:+ --feature-transform="$feature_transform"} \
-         "$train_ark" "$train_lab" "ark:gunzip -c $train_lattice_path |" \
-         $dir/nnet1 $mlp2_init $stateMax $mlp2_cmvn \
-         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1
-
-nnet-concat $mlp2_cmvn $mlp2_init $mlp2 \
-         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1
-
+# use pretrained front end neural network
 mlp1_best=$dir/nnet1
+mlp2=$tmpdir/nnet2
 mlp2_best=$mlp2
+
+if [ $rbm_pretrain == "true" ]; then
+   # RBM pretraining
+   [ ! -d $dir/psi ] && mkdir $dir/psi
+   psi_feature=$(readlink -e $dir)/psi/train_${lattice_N}_${acwt}
+
+   if [ ! -f ${psi_feature}.scp ]; then
+      retry=10
+      while [ $retry -gt 0 ] ; do
+         flock -n /tmp/gpu sleep 2 
+         snnet-gen-psi \
+            --negative-num=$negative_num \
+            --rand-seed=$seed \
+            ${feature_transform:+ --feature-transform="$feature_transform"} \
+            "$train_ark" "$train_lab" "ark:gunzip -c $train_lattice_path |" \
+            $mlp1_best $stateMax ark,scp:${psi_feature}.ark,${psi_feature}.scp \
+            2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
+         retry=$((retry -1))
+         sleep 1
+      done
+   fi
+
+   mkdir -p $tmpdir/psi
+   cp ${psi_feature}.scp $tmpdir/psi/feats.scp
+
+   dbn=$dir/${dnn_depth}_${dnn_width}_${lattice_N}_${acwt}.dbn
+   dbn_transform=$dir/${dnn_depth}_${dnn_width}_${lattice_N}_${acwt}.trans
+
+   if [ ! -f $dbn ]; then
+      retry=10
+      while [ $retry -gt 0 ] ; do
+         flock -n /tmp/gpu sleep 2 
+         (cd $timit && steps/nnet/pretrain_dbn.sh \
+            --nn-depth $((dnn_depth - 1)) --hid_dim $dnn_width \
+            --splice 0 --rbm-iter 20 \
+            $tmpdir/psi $tmpdir/dbn \
+            2>&1 | tee -a $log) && break;
+         sleep 1
+      done
+      cp $tmpdir/dbn/$((dnn_depth - 1)).dbn $dbn
+      cp $tmpdir/dbn/final.feature_transform $dbn_transform
+   fi
+
+   #initialize nnet2 model
+   mlp2_last=$tmpdir/nnet2.last
+   mlp2_proto=$tmpdir/nnet2.proto
+   $timit/utils/nnet/make_nnet_proto.py --no-softmax $dnn_width 1 0 $dnn_width > $mlp2_proto || exit 1
+   nnet-initialize $mlp2_proto $mlp2_last || exit 1; 
+
+   # remove splice in dbn_transform.
+   nnet-copy --binary=false $dbn_transform - | \
+      sed  -e 'N;s@<Splice\>.*@@g' -e 's@\[ 0 \]@@g' | \
+      sed '/^$/d' > $tmpdir/nosplice
+
+   nnet-concat $tmpdir/nosplice $dbn $mlp2_last $mlp2 \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1
+
+else 
+
+   #initialize nnet2 model
+   feat_dim=$(nnet-info $dir/nnet1 2>/dev/null | grep output-dim | head -n 1 | cut -d ' ' -f2)
+   SVM_dim=$(( (stateMax + 1) * (feat_dim + 1) + stateMax*stateMax ))
+   mlp2_init=$tmpdir/nnet2.init
+   mlp2_proto=$tmpdir/nnet2.proto
+   $timit/utils/nnet/make_nnet_proto.py --no-softmax $SVM_dim 1 $dnn_depth $dnn_width | \
+      sed -e "s@</NnetProto>@</NnetProto>@g" > $mlp2_proto || exit 1
+   #   add Sigmoid layer in the last layer
+   #   sed -e "s@</NnetProto>@<Sigmoid> <InputDim> 1 <OutputDim> 1 \n</NnetProto>@g" > $mlp2_proto || exit 1
+   nnet-initialize $mlp2_proto $mlp2_init || exit 1; 
+
+   mlp2_cmvn=$tmpdir/nnet2.cvmn
+   mlp2=$tmpdir/nnet2
+
+   #compute cmvn layer for nnet2
+   snnet-psi-cmvn --verbose=$verbose --binary=true --rand-seed=$seed --negative-num=$negative_num \
+      ${feature_transform:+ --feature-transform="$feature_transform"} \
+      "$train_ark" "$train_lab" "ark:gunzip -c $train_lattice_path |" \
+      $dir/nnet1 $mlp2_init $stateMax $mlp2_cmvn \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1
+
+   nnet-concat $mlp2_cmvn $mlp2_init $mlp2 \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1
+
+fi
+
+
 
    snnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
       "ark:gunzip -c $dev_lattice_path |" $mlp1_best $mlp2_best $stateMax \
@@ -176,7 +220,7 @@ for iter in $(seq -w $max_iters); do
    # find negitive example
    log=$tmpdir/log/iter${iter}.ptr.log; hostname>$log
 
-   train_lattice_path_rand=$dir/train.lab_${lattice_N}_${acwt}_${seed}.gz
+   train_lattice_path_rand=$dir/lab/train.lab_${lattice_N}_${acwt}_${seed}.gz
 
    while [ ! -f $train_lattice_path_rand ]; do
        lockfile=/tmp/$(basename $train_lattice_path_rand)
@@ -214,9 +258,8 @@ for iter in $(seq -w $max_iters); do
          --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
          --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
          --verbose=$verbose --binary=true --randomizer-seed=$seed \
-         --negative-num=$negative_num --error-function=$error_function \
+         --negative-num=$negative_num \
          ${feature_transform:+ --feature-transform="$feature_transform"} \
-         ${nnet_ratio:+ --nnet-ratio="$nnet_ratio"} \
          ${train_opt:+ "$train_opt"} \
          "$train_ark" "$train_lab" "ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path_rand |\" \"ark:gunzip -c $train_lattice_path |\" |" \
          $mlp1_best $mlp2_best $stateMax $mlp1_next $mlp2_next \
@@ -240,7 +283,7 @@ for iter in $(seq -w $max_iters); do
    while [ $retry -gt 0 ]; do
       flock -n /tmp/gpu sleep 2
       $cross_tool \
-         --verbose=$verbose --binary=true --error-function=$error_function \
+         --verbose=$verbose --binary=true\
          --minibatch-size=$minibatch_size \
          ${feature_transform:+ --feature-transform="$feature_transform"} \
          "$cv_ark" "$cv_lab" "ark:gunzip -c $dev_lattice_path |" \
@@ -321,10 +364,6 @@ echo "train success"
 
 cp $mlp1_best $nnet1_out
 cp $mlp2_best $nnet2_out
-#rm -f $tmpdir/train_tmp.ark
-#rm -f $tmpdir/train.lab
-rm -rf $tmpdir
-
 
 exit 0;
 
