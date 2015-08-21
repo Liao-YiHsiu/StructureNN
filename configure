@@ -3,4 +3,4 @@
 rm -rf timit
 ln -sf $timit timit
 make clean -C src && make -C src -j $(nproc);
-(cd data_prepare; ./gen.sh )
+gen.sh

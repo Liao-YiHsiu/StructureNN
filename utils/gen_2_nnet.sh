@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source $DIR/path.sh
+source $DIR/genpath.sh
 cd $DIR/../data/nnet
 
 [ -e train.ark ]   || ln -sf ../raw_feature/train.ark train.ark

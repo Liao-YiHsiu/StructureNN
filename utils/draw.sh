@@ -25,4 +25,4 @@ real_score="ark:gunzip -c $tmpdir/real.tgz.gz |"
    # generating the points.
    score-path-point "$pred_score" "$real_score" > $outfile
 
-#rm -rf $tmpdir
+rm -rf $tmpdir

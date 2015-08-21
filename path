@@ -4,3 +4,4 @@ timit=/home/loach/kaldi/kaldi/egs/timit/s5/
 timit_corpus=/corpus/timit
 PATH+=:$timit/utils
 PATH+=:/home/loach/StructureNN/src
+PATH+=:/home/loach/StructureNN/utils

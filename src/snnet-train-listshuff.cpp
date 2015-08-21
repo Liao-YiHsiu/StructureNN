@@ -122,6 +122,7 @@ int main(int argc, char *argv[]) {
     examples.reserve(BUFSIZE);
 
     srand(rnd_opts.randomizer_seed);
+    int num_Total = 0;
 
     for ( ; !(score_path_reader.Done() || feature_reader.Done() || label_reader.Done());
           score_path_reader.Next(), feature_reader.Next(), label_reader.Next()) {
@@ -162,6 +163,8 @@ int main(int argc, char *argv[]) {
 #pragma omp parallel for
        for(int i = 0; i < seqs.size(); ++i)
           tgts[i] = acc_function(label, seqs[i], acc_norm);
+
+       num_Total += seqs.size();
     } 
     // -------------------------------------------------------------
     //
@@ -231,7 +234,7 @@ int main(int argc, char *argv[]) {
     CuMatrix<BaseFloat> obj_diff;
 
     StrtListBase strt;
-    strt.SetAll(features.size());
+    strt.SetAll(num_Total);
 
     for ( ; !feature_randomizer.Done(); feature_randomizer.Next(), 
           label_randomizer.Next(), target_randomizer.Next()){

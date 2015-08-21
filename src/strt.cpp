@@ -228,29 +228,29 @@ void StrtListBase::Eval(const vector<BaseFloat> &nnet_target,
       *diff = diff_host_;
    }
 
-   int correct = 1;
-   for(int i = 0; i < N; ++i){
-      if(index[i] != i){
-         correct = 0;
-         break;
+   int correct = 0;
+   for(int i = 1; i < N; ++i){
+      if(nnet_out_host_(index[i-1], 0) >
+            nnet_out_host_(index[i], 0)){
+         correct++;
       }
    }
-
-   frames_  += 1;
+   
+   frames_  += N;
    loss_    += loss;
    correct_ += correct;
 
    // progress losss reporting
    {
-      static const int32 progress_step = 10; 
-      frames_progress_  += 1;
+      static const int32 progress_step = 3600; 
+      frames_progress_  += N;
       loss_progress_    += loss; 
       correct_progress_ += correct;
 
       if (frames_progress_ > progress_step) {
          KALDI_VLOG(1) << "ProgressLoss[ " 
-            << static_cast<int>(frames_/progress_step) << "d of " 
-            << static_cast<int>(frames_N_/progress_step) << "d]: " 
+            << static_cast<int>(frames_/progress_step) << "h of " 
+            << static_cast<int>(frames_N_/progress_step) << "h]: " 
             << loss_progress_/frames_progress_ << " (Strt) " 
             << "FRAME ACC >> " << 100*correct_progress_/frames_progress_ << "% <<";
          // store

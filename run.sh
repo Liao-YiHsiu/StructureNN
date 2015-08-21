@@ -19,6 +19,7 @@ cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
+keep_lr_iters=1
 
 rbm_pretrain="false"
 list="false"
@@ -55,7 +56,7 @@ else
 fi
 
 dir=$1
-paramId=${dnn_depth}_${dnn_width}_${lattice_N}_$(test_lattice_N)_${learn_rate}_${acwt}_${rbm_pretrain}_${train_tool// /}
+paramId=${dnn_depth}_${dnn_width}_${lattice_N}_${test_lattice_N}_${learn_rate}_${acwt}_${rbm_pretrain}_${keep_lr_iters}_${train_tool// /}
 
 log=log/$dir/${paramId}.log
 data=$dir/$paramId/data
@@ -63,7 +64,7 @@ model1=$dir/$paramId/nnet1
 model2=$dir/$paramId/nnet2
 
 [ ! -d log/$dir ] && mkdir -p log/$dir
-[ ! -d $dir/lab ] && mkdir -p $dir/lab
+[ ! -d $dir/../lab ] && mkdir -p $dir/../lab
 
 echo "$HOSTNAME `date`" \
 2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
@@ -83,10 +84,11 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
 
    [ ! -d $dir/$paramId ] && mkdir -p $dir/$paramId
 
-   [ -f $model1 -a -f $model2 ] || snnet/train.sh --cpus $cpus\
+   [ -f $model1 -a -f $model2 ] || snnet_train.sh --cpus $cpus\
       --dnn-depth $dnn_depth --dnn-width $dnn_width --lattice-N $lattice_N \
-      --test-lattice-N $((test_lattice_N)) --learn-rate $learn_rate --acwt $acwt \
+      --test-lattice-N ${test_lattice_N} --learn-rate $learn_rate --acwt $acwt \
       --train-tool "$train_tool" \
+      ${keep_lr_iters:+ --keep-lr-iters $keep_lr_iters} \
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
       ${feature_transform:+ --feature-transform "$feature_transform"} \
@@ -94,7 +96,7 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
       $dir $lat_model $model1 $model2 $stateMax\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   test_lattice_path=$dir/lab/test.lab_${test_lattice_N}_${acwt}.gz
+   test_lattice_path=$dir/../lab/test.lab_${test_lattice_N}_${acwt}.gz
 
    while [ ! -f $test_lattice_path ]; do
        lockfile=/tmp/$(basename $test_lattice_path)

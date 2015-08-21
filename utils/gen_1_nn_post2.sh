@@ -3,7 +3,7 @@
 # no softmax layer
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source $DIR/path.sh
+source $DIR/genpath.sh
 cd $DIR/../data/nn_post2
 
 dim=49

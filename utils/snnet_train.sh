@@ -10,7 +10,7 @@ config=
 l1_penalty=0
 l2_penalty=0
 max_iters=200
-min_iters=4
+min_iters=
 keep_lr_iters=1
 start_halving_impr=0.005
 end_halving_impr=0.00005
@@ -34,6 +34,7 @@ train_opt=
 cpus=$(nproc)
 feature_transform=
 rbm_pretrain="true"
+tmpdir=$(mktemp -d)
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
@@ -61,8 +62,10 @@ nnet1_out=$3
 nnet2_out=$4
 stateMax=$5
 
-tmpdir=$(cd `dirname $nnet1_out`; pwd)/tmp
-[ ! -d $tmpdir ] && mkdir -p $tmpdir
+#tmpdir=$(cd `dirname $nnet1_out`; pwd)/tmp
+#[ ! -d $tmpdir ] && mkdir -p $tmpdir
+
+nnetdir=$(cd `dirname $nnet1_out`; pwd)
 
 #check file existence.
 for file in $files;
@@ -82,7 +85,7 @@ mkdir -p $tmpdir/nnet
 mkdir -p $tmpdir/log
 
 # precompute lattice data
-train_lattice_path=$dir/lab/train.lab_${lattice_N}_${acwt}.gz
+train_lattice_path=$dir/../lab/train.lab_${lattice_N}_${acwt}.gz
 
 # lock file if others are using...
 while [ ! -f $train_lattice_path ]; do
@@ -94,7 +97,7 @@ while [ ! -f $train_lattice_path ]; do
        flock -w -1 $lockfile echo "finally get file lock"
 done
 
-dev_lattice_path=$dir/lab/dev.lab_${test_lattice_N}_${acwt}.gz
+dev_lattice_path=$dir/../lab/dev.lab_${test_lattice_N}_${acwt}.gz
 while [ ! -f $dev_lattice_path ]; do
     lockfile=/tmp/$(basename $dev_lattice_path)
     flock -n $lockfile \
@@ -111,8 +114,8 @@ mlp2_best=$mlp2
 
 if [ $rbm_pretrain == "true" ]; then
    # RBM pretraining
-   [ ! -d $dir/psi ] && mkdir $dir/psi
-   psi_feature=$(readlink -e $dir)/psi/train_${lattice_N}_${acwt}
+   [ ! -d $dir/../psi ] && mkdir $dir/../psi
+   psi_feature=$(readlink -e $dir)/../psi/train_${lattice_N}_${acwt}
 
    if [ ! -f ${psi_feature}.scp ]; then
       retry=10
@@ -220,7 +223,7 @@ for iter in $(seq -w $max_iters); do
    # find negitive example
    log=$tmpdir/log/iter${iter}.ptr.log; hostname>$log
 
-   train_lattice_path_rand=$dir/lab/train.lab_${lattice_N}_${acwt}_${seed}.gz
+   train_lattice_path_rand=$dir/../lab/train.lab_${lattice_N}_${acwt}_${seed}.gz
 
    while [ ! -f $train_lattice_path_rand ]; do
        lockfile=/tmp/$(basename $train_lattice_path_rand)
@@ -273,6 +276,7 @@ for iter in $(seq -w $max_iters); do
 
    seed=$((seed + 1))
    loss_tr=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
+   acc_tr=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{ print $3; }')
    echo -n "TRAIN AVG.LOSS $(printf "%.4f" $loss_tr), "
 
    log=$tmpdir/log/iter${iter}.cv.log; hostname>$log
@@ -296,6 +300,7 @@ for iter in $(seq -w $max_iters); do
 
    #loss_new=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{print 100 - $3}')
    loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
+   acc_new=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{ print $3; }')
    echo -n "CROSSVAL AVG.LOSS $(printf "%.4f" $loss_new), "
 
 # evaluate dev set wer.
@@ -310,14 +315,19 @@ for iter in $(seq -w $max_iters); do
 
    calc.sh "$cv_lab" ark:$tmpdir/dev_${iter}.tag.1best \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+   WER=$(grep WER $log | tail -n 1 | awk '{ print $2; }')
 # ------------------------------------------------------------------------------------------------
 
    # accept or reject new parameters (based on objective function)
    loss_prev=$loss
+   
+   echo -n "$iter $(printf '%.10f' $learn_rate) $loss_tr $loss_new $acc_tr $acc_new $WER " >> $nnetdir/log
+
    if [ 1 == $(bc <<< "${loss_new/[eE]+*/*10^} < ${loss/[eE]+*/*10^}") -o $iter -le $keep_lr_iters ]; then
       loss=$loss_new
-      mlp1_best=$tmpdir/nnet/nnet1.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $tr_loss)_cv$(printf "%.4f" $loss_new)
-      mlp2_best=$tmpdir/nnet/nnet2.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $tr_loss)_cv$(printf "%.4f" $loss_new)
+      mlp1_best=$tmpdir/nnet/nnet1.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}
+      mlp2_best=$tmpdir/nnet/nnet2.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}
+      echo "accept" >> $nnetdir/log
       [ $iter -le $keep_lr_iters ] && mlp1_best=${mlp1_best}_keep-lr-iters-$keep_lr_iters 
       [ $iter -le $keep_lr_iters ] && mlp2_best=${mlp2_best}_keep-lr-iters-$keep_lr_iters
 
@@ -325,8 +335,9 @@ for iter in $(seq -w $max_iters); do
       mv $mlp2_next $mlp2_best
       echo "nnet accepted ($(basename $mlp1_best) $(basename $mlp2_best))"
    else
-     mlp1_reject=$tmpdir/nnet/nnet1.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $tr_loss)_cv$(printf "%.4f" $loss_new)_rejected
-     mlp2_reject=$tmpdir/nnet/nnet2.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $tr_loss)_cv$(printf "%.4f" $loss_new)_rejected
+     mlp1_reject=$tmpdir/nnet/nnet1.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}_rejected
+     mlp2_reject=$tmpdir/nnet/nnet2.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}_rejected
+     echo "rejected" >> $nnetdir/log
      mv $mlp1_next $mlp1_reject
      mv $mlp2_next $mlp2_reject
      echo "nnet rejected ($(basename $mlp1_reject) $(basename $mlp2_reject))"
@@ -365,7 +376,8 @@ echo "train success"
 cp $mlp1_best $nnet1_out
 cp $mlp2_best $nnet2_out
 
-exit 0;
+rm -rf $tmpdir
 
+exit 0;
 
 

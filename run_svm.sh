@@ -1,6 +1,7 @@
 #!/bin/bash
 
 C=1000
+svm_dir=utils/svm_hmm/
 
 echo "$0 $@"  # Print the command line for logging
 
@@ -35,12 +36,12 @@ model=$dir/data_${C}.model
    [ -f $dir/test.out ] || con-svm ark:$dir/test.lab ark:$dir/test.ark $dir/test.out  
 
    echo "SVM training start..................................."
-   [ -f $model ] || svm_hmm/svm_hmm_learn -c $C -e 0.5 $dir/data.out $model &> $log 
+   [ -f $model ] || $svm_dir/svm_hmm_learn -c $C -e 0.5 $dir/data.out $model &> $log 
    
    echo "SVM testing start..................................."
-   svm_hmm/svm_hmm_classify $dir/test.out $model $dir/test.tags &>> $log 
-   svm_hmm/svm_hmm_classify $dir/dev.out $model $dir/dev.tags &>> $log 
-   svm_hmm/svm_hmm_classify $dir/data.out $model $dir/data.tags &>> $log 
+   $svm_dir/svm_hmm_classify $dir/test.out $model $dir/test.tags &>> $log 
+   $svm_dir/svm_hmm_classify $dir/dev.out $model $dir/dev.tags &>> $log 
+   $svm_dir/svm_hmm_classify $dir/data.out $model $dir/data.tags &>> $log 
 
 exit 0;
 
