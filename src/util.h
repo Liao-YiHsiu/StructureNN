@@ -18,8 +18,14 @@
 #include <string>
 #include <math.h>
 #include <float.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/file.h>
+#include <stdlib.h>
 
 #define BUFSIZE 4096
+#define GPU_FILE "/tmp/gpu_lock"
 
 using namespace std;
 using namespace kaldi;
@@ -60,6 +66,8 @@ void print(const CuMatrixBase<BaseFloat> &mat, int row = -1);
 
 void propPsi(int N, int F, int S, int maxL, PsiPack* packs_ptr);
 void backPsi(int N, int F, int S, int maxL, PsiPack* packs_ptr);
+
+void LockSleep(string filename, int ms = 2000);
 
 template<typename T>
 void VecToVecRef(vector<T>& src, vector<T*> &dest);

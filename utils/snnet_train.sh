@@ -1,4 +1,6 @@
 #!/bin/bash -ex
+# kill child process upon exit
+trap 'kill $(jobs -p)' EXIT
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/../path
@@ -9,7 +11,7 @@ config=
 # training options
 l1_penalty=0
 l2_penalty=0
-max_iters=200
+max_iters=10000
 min_iters=
 keep_lr_iters=1
 start_halving_impr=0.005
@@ -34,6 +36,7 @@ train_opt=
 cpus=$(nproc)
 feature_transform=
 rbm_pretrain="true"
+lattice_source="both" # both, best, rand
 tmpdir=$(mktemp -d)
 # End configuration.
 
@@ -62,9 +65,6 @@ nnet1_out=$3
 nnet2_out=$4
 stateMax=$5
 
-#tmpdir=$(cd `dirname $nnet1_out`; pwd)/tmp
-#[ ! -d $tmpdir ] && mkdir -p $tmpdir
-
 nnetdir=$(cd `dirname $nnet1_out`; pwd)
 
 #check file existence.
@@ -86,26 +86,14 @@ mkdir -p $tmpdir/log
 
 # precompute lattice data
 train_lattice_path=$dir/../lab/train.lab_${lattice_N}_${acwt}.gz
-
-# lock file if others are using...
-while [ ! -f $train_lattice_path ]; do
-    lockfile=/tmp/$(basename $train_lattice_path)
-    flock -n $lockfile \
-       lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $lattice_N \
-       $lat_model "$train_lat" "ark:| gzip -c > $train_lattice_path" \
-       2>&1 | tee -a $log  || \
-       flock -w -1 $lockfile echo "finally get file lock"
-done
+lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/2 )) --acoustic-scale $acwt --n $lattice_N \
+   $lat_model "$train_lat" "$train_lattice_path" \
+   2>&1 | tee -a $log; ( exit ${PIPESTATUS[0]} ) || exit 1
 
 dev_lattice_path=$dir/../lab/dev.lab_${test_lattice_N}_${acwt}.gz
-while [ ! -f $dev_lattice_path ]; do
-    lockfile=/tmp/$(basename $dev_lattice_path)
-    flock -n $lockfile \
-       lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $test_lattice_N \
-       $lat_model "$cv_lat" "ark:| gzip -c > $dev_lattice_path" \
-       2>&1 | tee -a $log  || \
-       flock -w -1 $lockfile echo "finally get file lock"
-done
+lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/2 )) --acoustic-scale $acwt --n $test_lattice_N \
+   $lat_model "$cv_lat" "$dev_lattice_path" \
+   2>&1 | tee -a $log; ( exit ${PIPESTATUS[0]} ) || exit 1
 
 # use pretrained front end neural network
 mlp1_best=$dir/nnet1
@@ -118,19 +106,13 @@ if [ $rbm_pretrain == "true" ]; then
    psi_feature=$(readlink -e $dir)/../psi/train_${lattice_N}_${acwt}
 
    if [ ! -f ${psi_feature}.scp ]; then
-      retry=10
-      while [ $retry -gt 0 ] ; do
-         flock -n /tmp/gpu sleep 2 
-         snnet-gen-psi \
-            --negative-num=$negative_num \
-            --rand-seed=$seed \
-            ${feature_transform:+ --feature-transform="$feature_transform"} \
-            "$train_ark" "$train_lab" "ark:gunzip -c $train_lattice_path |" \
-            $mlp1_best $stateMax ark,scp:${psi_feature}.ark,${psi_feature}.scp \
-            2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
-         retry=$((retry -1))
-         sleep 1
-      done
+      snnet-gen-psi \
+         --negative-num=$negative_num \
+         --rand-seed=$seed \
+         ${feature_transform:+ --feature-transform="$feature_transform"} \
+         "$train_ark" "$train_lab" "ark:gunzip -c $train_lattice_path |" \
+         $mlp1_best $stateMax ark,scp:${psi_feature}.ark,${psi_feature}.scp \
+         2>&1 | tee -a $log; ( exit ${PIPESTATUS[0]} ) || exit 1
    fi
 
    mkdir -p $tmpdir/psi
@@ -140,18 +122,13 @@ if [ $rbm_pretrain == "true" ]; then
    dbn_transform=$dir/${dnn_depth}_${dnn_width}_${lattice_N}_${acwt}.trans
 
    if [ ! -f $dbn ]; then
-      retry=10
-      while [ $retry -gt 0 ] ; do
-         flock -n /tmp/gpu sleep 2 
-         (cd $timit && steps/nnet/pretrain_dbn.sh \
-            --nn-depth $((dnn_depth - 1)) --hid_dim $dnn_width \
-            --splice 0 --rbm-iter 20 \
-            $tmpdir/psi $tmpdir/dbn \
-            2>&1 | tee -a $log) && break;
-         sleep 1
-      done
-      cp $tmpdir/dbn/$((dnn_depth - 1)).dbn $dbn
-      cp $tmpdir/dbn/final.feature_transform $dbn_transform
+      (cd $timit && steps/nnet/pretrain_dbn.sh \
+         --nn-depth $((dnn_depth - 1)) --hid_dim $dnn_width \
+         --splice 0 --rbm-iter 20 \
+         $tmpdir/psi $tmpdir/dbn \
+         2>&1 | tee -a $log);
+      cp $tmpdir/dbn/$((dnn_depth - 1)).dbn $dbn || exit 1
+      cp $tmpdir/dbn/final.feature_transform $dbn_transform || exit 1
    fi
 
    #initialize nnet2 model
@@ -219,84 +196,69 @@ for iter in $(seq -w $max_iters); do
 
    mlp1_next=$tmpdir/nnet/nnet1.${iter}
    mlp2_next=$tmpdir/nnet/nnet2.${iter}
+   seed=$((seed + 1))
 
    # find negitive example
    log=$tmpdir/log/iter${iter}.ptr.log; hostname>$log
 
-   train_lattice_path_rand=$dir/../lab/train.lab_${lattice_N}_${acwt}_${seed}.gz
+   if [ "$lattice_source" == "both" -o "$lattice_source" == "rand" ]; then
+      train_lattice_path_rand=$dir/../lab/train.lab_${lattice_N}_${acwt}_${seed}.gz
+      lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/2 )) --acoustic-scale $acwt \
+         --random true --srand $seed \
+         --n $lattice_N $lat_model "$train_lat" "$train_lattice_path_rand" \
+         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   while [ ! -f $train_lattice_path_rand ]; do
-       lockfile=/tmp/$(basename $train_lattice_path_rand)
-       flock -n $lockfile \
-          lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --random true --srand $seed \
-          --n $lattice_N $lat_model "$train_lat" "ark:| gzip -c > $train_lattice_path_rand" \
-          2>&1 | tee $log  || \
-          flock -w -1 $lockfile echo "finally get file lock"
-   done
+      # precompute next iteration in backgroud
+      seed_next=$((seed + 1))
+      train_lattice_path_rand_next=$dir/../lab/train.lab_${lattice_N}_${acwt}_${seed_next}.gz
+      lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/2 )) --acoustic-scale $acwt \
+         --random true --srand $seed_next \
+         --n $lattice_N $lat_model "$train_lat" "$train_lattice_path_rand_next" \
+         >/dev/null 2>/dev/null &
+   fi
 
-
-   seed=$((seed + 1))
-
-
-# train
+   # train
    log=$tmpdir/log/iter${iter}.tr.log; hostname>$log
 
-   #snnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$train_ark" \
-   #   "ark:gunzip -c $train_lattice_path |" $mlp1_best $mlp2_best $stateMax \
-   #   "ark:| gzip -c > $tmpdir/train_${iter}.tag.gz"\
-   #   2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+   if [ "$lattice_source" == "both" ]; then
+      combined_score_path="ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path_rand |\" \"ark:gunzip -c $train_lattice_path |\" |"
 
-   #best-score-path "ark:gunzip -c $tmpdir/train_${iter}.tag.gz |" ark:$tmpdir/train_${iter}.tag.1best
-   #   2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+   elif [ "$lattice_source" == "best" ] ; then
+      combined_score_path="ark:gunzip -c $train_lattice_path |"
 
-   #calc.sh "$train_lab" ark:$tmpdir/train_${iter}.tag.1best \
-   #   2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+   elif [ "$lattice_source" == "rand" ] ; then
+      combined_score_path="ark:gunzip -c $train_lattice_path_rand |"
 
-   
-# retry on fail
-   retry=10
-   while [ $retry -gt 0 ]; do
-      flock -n /tmp/gpu sleep 2
-      $train_tool \
-         --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
-         --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
-         --verbose=$verbose --binary=true --randomizer-seed=$seed \
-         --negative-num=$negative_num \
-         ${feature_transform:+ --feature-transform="$feature_transform"} \
-         ${train_opt:+ "$train_opt"} \
-         "$train_ark" "$train_lab" "ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path_rand |\" \"ark:gunzip -c $train_lattice_path |\" |" \
-         $mlp1_best $mlp2_best $stateMax $mlp1_next $mlp2_next \
-         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
-         #2>&1 | grep  --line-buffered -v "releasing cached memory and retrying" | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
+   else
+      echo "lattice-source error, lattice-source=$lattice_source"
+      exit -1;
+   fi
 
-      retry=$((retry - 1))
-      sleep 1
-   done
-   [ $retry -eq 0 ] && echo "retry over 10 times" && exit -1;
+   $train_tool \
+      --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
+      --minibatch-size=$minibatch_size --randomizer-size=$randomizer_size --randomize=true \
+      --verbose=$verbose --binary=true --randomizer-seed=$seed \
+      --negative-num=$negative_num \
+      ${feature_transform:+ --feature-transform="$feature_transform"} \
+      ${train_opt:+ "$train_opt"} \
+      "$train_ark" "$train_lab" "$combined_score_path" \
+      $mlp1_best $mlp2_best $stateMax $mlp1_next $mlp2_next \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   seed=$((seed + 1))
    loss_tr=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
    acc_tr=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{ print $3; }')
    echo -n "TRAIN AVG.LOSS $(printf "%.4f" $loss_tr), "
 
    log=$tmpdir/log/iter${iter}.cv.log; hostname>$log
-   
-# CROSS VALIDATION
-# retry on fail
-   retry=10
-   while [ $retry -gt 0 ]; do
-      flock -n /tmp/gpu sleep 2
-      $cross_tool \
-         --verbose=$verbose --binary=true\
-         --minibatch-size=$minibatch_size \
-         ${feature_transform:+ --feature-transform="$feature_transform"} \
-         "$cv_ark" "$cv_lab" "ark:gunzip -c $dev_lattice_path |" \
-         $mlp1_next $mlp2_next $stateMax \
-         2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) && break;
-      retry=$((retry - 1))
-      sleep 1
-   done
-   [ $retry -eq 0 ] && echo "retry over 10 times" && exit -1;
+
+   # CROSS VALIDATION
+   $cross_tool \
+      --verbose=$verbose --binary=true\
+      --minibatch-size=$minibatch_size \
+      ${feature_transform:+ --feature-transform="$feature_transform"} \
+      "$cv_ark" "$cv_lab" "ark:gunzip -c $dev_lattice_path |" \
+      $mlp1_next $mlp2_next $stateMax \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    #loss_new=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{print 100 - $3}')
    loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')

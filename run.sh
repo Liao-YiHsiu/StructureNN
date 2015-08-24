@@ -23,6 +23,7 @@ keep_lr_iters=1
 
 rbm_pretrain="false"
 list="false"
+lattice_source="both" # both, best, rand
 
 echo "$0 $@"  # Print the command line for logging
 command_line="$0 $@"
@@ -56,7 +57,7 @@ else
 fi
 
 dir=$1
-paramId=${dnn_depth}_${dnn_width}_${lattice_N}_${test_lattice_N}_${learn_rate}_${acwt}_${rbm_pretrain}_${keep_lr_iters}_${train_tool// /}
+paramId=${dnn_depth}_${dnn_width}_${lattice_N}_${test_lattice_N}_${learn_rate}_${acwt}_${lattice_source}_${rbm_pretrain}_${keep_lr_iters}_${train_tool// /}
 
 log=log/$dir/${paramId}.log
 data=$dir/$paramId/data
@@ -87,7 +88,7 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
    [ -f $model1 -a -f $model2 ] || snnet_train.sh --cpus $cpus\
       --dnn-depth $dnn_depth --dnn-width $dnn_width --lattice-N $lattice_N \
       --test-lattice-N ${test_lattice_N} --learn-rate $learn_rate --acwt $acwt \
-      --train-tool "$train_tool" \
+      --train-tool "$train_tool" --lattice-source "$lattice_source" \
       ${keep_lr_iters:+ --keep-lr-iters $keep_lr_iters} \
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
@@ -97,15 +98,9 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    test_lattice_path=$dir/../lab/test.lab_${test_lattice_N}_${acwt}.gz
-
-   while [ ! -f $test_lattice_path ]; do
-       lockfile=/tmp/$(basename $test_lattice_path)
-       flock -n $lockfile \
-          lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $test_lattice_N \
-          $lat_model ark:$dir/test.lat "ark:| gzip -c > $test_lattice_path" \
-          2>&1 | tee -a $log  || \
-          flock -w -1 $lockfile echo "finally get file lock"
-   done
+   lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $test_lattice_N \
+      $lat_model ark:$dir/test.lat "$test_lattice_path" \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    snnet-score ${feature_transform:+ --feature-transform="$feature_transform"} ark:$dir/test.ark \
       "ark:gunzip -c $test_lattice_path |" $model1 $model2 $stateMax "ark:| gzip -c > ${data}.tag.gz"\

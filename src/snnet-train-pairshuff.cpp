@@ -117,8 +117,11 @@ int main(int argc, char *argv[]) {
 
     StrtBase* strt = StrtBase::getInstance(loss_func, !absolute, error_margin);
 
+
     //Select the GPU
 #if HAVE_CUDA==1
+    //sleep a while to get lock
+    LockSleep(GPU_FILE);
     CuDevice::Instantiate().SelectGpuId(use_gpu);
 #endif
     // ------------------------------------------------------------

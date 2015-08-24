@@ -13,7 +13,8 @@ acoustic_scale=
 n=
 random=
 srand=
-cpus=$(nproc)
+cpus=$(( (`nproc` + 1)/2 ))
+zip_file="true"
 
 dir=$(mktemp -d)
 
@@ -24,24 +25,39 @@ echo "$0 $@" >&2  # Print the command line for logging
 if [ "$#" -ne 3 ]; then
    echo "a wrapper script for lattice-to-nbest and lattice-to-vec for mulitple cpu computation."
    echo "Usage: $0 [options] <model> <lattice-rspecifier> <score-path-wspecifier>"
-   echo "e.g.: $0 --cpus 2 --acoustic-scale 0.1 --n 10 final.mdl ark:1.lats ark:nbest.ark"
+   echo "e.g.: $0 --cpus 2 --acoustic-scale 0.1 --n 10 final.mdl ark:1.lats nbest.ark"
    echo ""
    exit 1;
 fi
 
 model=$1
 lattice_r=$2
-score_path=$3
+score_path_w=$3
 
 if [ $cpus == 1 ]; then
    echo "Not for single cpu"
    exit 1;
 fi
 
+lock_file=$(basename $score_path_w)
+
+(
+flock -w -1 9
+
+# file already exists
+if [ -f $score_path_w ]; then
+   exit 0;
+fi
+
+if [ "$zip_file" == "true" ]; then
+   score_path_w="ark:| gzip -c > $score_path_w"
+else
+   score_path_w="ark:$score_path_w"
+fi
 
 lattice-copy "$lattice_r" ark,scp:$dir/tmp.ark,$dir/tmp.scp || exit 1;
 
-for (( i=0 ; i<cpus ; i++ ))
+for i in $(seq 0 $((cpus - 1)) )
 do
    file_in=$dir/in_${i}.scp
    file_out_scp=$dir/out_${i}.scp
@@ -67,11 +83,11 @@ EOF
 
 done
 
-   cat $dir/parallel | xargs -I CMD --max-procs=$(nproc) bash -c CMD || exit 1
+   cat $dir/parallel | xargs -I CMD --max-procs=$cpus bash -c CMD || exit 1
 
 file_out=$dir/out.scp
 #combine jobs
-for (( i=0 ; i<cpus ; i++ ))
+for i in $(seq 0 $((cpus - 1)) )
 do
    file_out_scp=$dir/out_${i}.scp
    file_out_ark=$dir/out_${i}.ark
@@ -79,12 +95,11 @@ do
    cat ${file_out_ark}.lm >> ${file_out}.lm
    cat ${file_out_ark}.am >> ${file_out}.am
 done
-   
-   weight-basefloat ark:${file_out}.lm_am 1.0 ark:${file_out}.lm $acoustic_scale ark:${file_out}.am  || exit 1;
 
-   vec-to-score-path --score-rspecifier="ark:${file_out}.lm_am" scp:$file_out "$score_path" || exit 1;
-#   $timit/utils/int2sym.pl -f 2- $timit/data/lang/phones.txt - - | \
-#   $timit/utils/sym2int.pl -f 2- $timit/data/lang/words.txt - | \
-#   vec-to-path-score ark:- "$path_score" || exit 1;
+weight-basefloat ark:${file_out}.lm_am 1.0 ark:${file_out}.lm $acoustic_scale ark:${file_out}.am  || exit 1;
 
+vec-to-score-path --score-rspecifier="ark:${file_out}.lm_am" scp:$file_out "$score_path_w" || exit 1;
+
+) 9>$lock_file
+rm $lock_file
 rm -rf $dir

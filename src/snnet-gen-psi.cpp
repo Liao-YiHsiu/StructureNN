@@ -66,6 +66,8 @@ int main(int argc, char *argv[]) {
 
     //Select the GPU
 #if HAVE_CUDA==1
+    //sleep a while to get lock
+    LockSleep(GPU_FILE);
     CuDevice::Instantiate().SelectGpuId(use_gpu);
 #endif
 

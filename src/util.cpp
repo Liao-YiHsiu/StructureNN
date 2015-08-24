@@ -221,3 +221,15 @@ void backPsi(int N, int F, int S, int maxL, PsiPack* packs_ptr){
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }
 
+void LockSleep(string filename, int ms){
+   int fd = open(filename.c_str() , O_RDWR | O_CREAT, 0666);
+   assert(fd > 0);
+
+   int rc = flock(fd, LOCK_EX | LOCK_NB);
+   if( rc == 0 ){
+      usleep(ms * 1000);
+   } 
+
+   flock(fd, LOCK_UN);
+   close(fd);
+}
