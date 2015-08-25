@@ -22,14 +22,14 @@ cat $log | sed 's/%/ /g' > $tmpdir/data
 gnuplot -persist<<- END
 set style data lines;
 set title "loss";
-plot "$tmpdir/data" using 1:3 notitle, "$tmpdir/data" using 1:4 notitle;
+plot "$tmpdir/data" using 1:3 title 'train' , "$tmpdir/data" using 1:4 title 'test';
 pause -1
 END
 
 gnuplot -persist<<- END
 set style data lines;
 set title "accuracy";
-plot "$tmpdir/data" using 1:5 notitle, "$tmpdir/data" using 1:6 notitle;
+plot "$tmpdir/data" using 1:5 title 'train', "$tmpdir/data" using 1:6 title 'test';
 pause -1
 END
 

@@ -20,6 +20,7 @@ acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
 keep_lr_iters=1
+norm_lr="true"
 
 rbm_pretrain="false"
 list="false"
@@ -54,6 +55,10 @@ else
          ${acc_norm:+ --acc-norm=$acc_norm} \
          ${pairwise:+ --pairwise=$pairwise} \
          ${nnet_ratio:+ --nnet-ratio=$nnet_ratio}" 
+fi
+
+if [ "$norm_lr" == "true" ]; then
+   learn_rate=$((learn_rate / lattice_N))
 fi
 
 dir=$1
