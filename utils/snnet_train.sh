@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 # kill child process upon exit
-trap 'kill $(jobs -p)' EXIT
+trap 'rm -rf $tmpdir; kill $(jobs -p) || true ' EXIT
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/../path
