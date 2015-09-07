@@ -16,6 +16,7 @@ using namespace kaldi::nnet1;
 class BNnet : public Nnet{
    public:
       BNnet() {}
+      BNnet(const Nnet& other) : Nnet(other) {}
       BNnet(const BNnet& other) : Nnet(other) {}
       BNnet &operator = (const BNnet &other) {Nnet::operator=(other); return *this;}
 
@@ -27,6 +28,9 @@ class BNnet : public Nnet{
 
       void Backpropagate(const vector< CuMatrix<BaseFloat> > &out_diff, 
             vector< CuMatrix<BaseFloat> > *in_diff = NULL);
+      
+      void Backpropagate(const CuMatrix<BaseFloat> &out_diff, 
+            vector< CuMatrix<BaseFloat> > *in_diff = NULL, int N = -1);
 
       void Feedforward(const vector< CuMatrix<BaseFloat> > &in_arr,
             vector< CuMatrix<BaseFloat> > &out_arr); 
@@ -40,6 +44,10 @@ class BNnet : public Nnet{
       void VecToMat(const vector< CuMatrix<BaseFloat> > &arr, CuMatrix<BaseFloat> &mat);
       void MatToVec(const CuMatrix<BaseFloat> &mat, const vector< CuMatrix<BaseFloat> > &ref,
             vector< CuMatrix<BaseFloat> > &arr);
+      void MatToVec(const CuMatrix<BaseFloat> &mat, const vector<int> &ref,
+            vector< CuMatrix<BaseFloat> > &arr);
+      void RepMat(const CuMatrix<BaseFloat> &src, CuMatrix<BaseFloat> &dest, int N);
+      vector<int> getRowsN(const vector< CuMatrix<BaseFloat> > &arr);
 };
 
 #endif // _NNET_BATCH_H_

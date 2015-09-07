@@ -159,7 +159,10 @@ typedef struct{
 bool tuple_cmp(const Tuple &a, const Tuple &b){
    if(a.v1 != b.v1) return a.v1 > b.v1;
    return a.v2 > b.v2;
+}
 
+bool tuple_cmp2(const Tuple &a, const Tuple &b){
+   return a.v2 > b.v2;
 }
 
 void StrtListBase::Eval(const vector<BaseFloat> &nnet_target,
@@ -183,62 +186,65 @@ void StrtListBase::Eval(const vector<BaseFloat> &nnet_target,
    }
 
    sort(arr.begin(), arr.end(), tuple_cmp);
-
-   vector<int> index(N);
+   vector<int> index_t(N);
    for(int i = 0; i < N; ++i)
-      index[i] = arr[i].id;
+      index_t[i] = arr[i].id;
 
-   // start accumulate.
-
-   double sum = 0;
+   sort(arr.begin(), arr.end(), tuple_cmp2);
+   vector<int> index_f(N);
    for(int i = 0; i < N; ++i)
-      sum += nnet_out_host_(i, 0);
+      index_f[i] = arr[i].id;
 
-   vector<double> acc_sum(N);
-   acc_sum[N-1] = nnet_out_host_(index[N-1], 0);
-   for(int i = N-2; i >= 0; --i){
-      acc_sum[i] = log_add(acc_sum[i+1], nnet_out_host_(index[i], 0));
-   }
+   // compute DCG @ T
+   // compute li
+   int min_L = 0, max_L = 4;
 
-   // calculating loss
-   double loss = -sum;
-   for(int i = 0; i < N; ++i){
-      loss += acc_sum[i];
-   }
-
-   // calculate gradient
-   vector<double> acc_sum_log(N);
-   acc_sum_log[0] = -acc_sum[0];
-   for(int i = 1; i < N; ++i)
-      acc_sum_log[i] = log_add(acc_sum_log[i-1], -acc_sum[i]);
-
-   diff_host_.Resize(N, 1);
-   for(int i = 0; i < N; ++i){
-      diff_host_(index[i], 0) = exp(nnet_out_host_(index[i], 0) + acc_sum_log[i]) - 1;
-   }
-
-   sum = 0;
+   vector< BaseFloat > relevance(N);
    for(int i = 0; i < N; ++i)
-      sum += diff_host_(i, 0);
+      relevance[index_t[i]] = min_L + (max_L - min_L)*(N - 1 - i)/(N - 1);
+
+   double dcg = 0;
+   for(int i = 0; i < T_ && i < N; ++i)
+      dcg += (pow(2, relevance[index_f[i]]) - 1) / log(2 + i);
    
-   KALDI_ASSERT(KALDI_ISFINITE(sum));
-   KALDI_ASSERT(KALDI_ISFINITE(loss));
+   double mdcg = 0;
+   for(int i = 0; i < T_ && i < N; ++i)
+      mdcg += (pow(2, relevance[index_t[i]]) - 1) / log(2 + i);
+
+   double ndcg = dcg / mdcg;
+
+   BaseFloat loss = 0;
+   calcLoss(nnet_target, index_t, index_f, relevance, loss);
 
    if(diff != NULL){
       *diff = diff_host_;
    }
 
-   int correct = 0;
-   for(int i = 1; i < N; ++i){
-      if(nnet_out_host_(index[i-1], 0) >
-            nnet_out_host_(index[i], 0)){
-         correct++;
+   // using all pairs
+   double correct = 0;
+   int corr_N = 0;
+
+#pragma omp parallel for reduction(+: correct, corr_N)
+   for(int i = 0; i < N; ++i)
+      for(int j = i + 1; j < N; ++j){
+         if( nnet_target[index_t[i]] - nnet_target[index_t[j]]
+               > error_ ){
+
+            if(nnet_out_host_(index_t[i], 0) >
+                  nnet_out_host_(index_t[j], 0)){
+               correct += 1;
+            }
+            corr_N++;
+         }
       }
-   }
+
+   correct = correct * N / corr_N;
+
    
    frames_  += N;
    loss_    += loss;
    correct_ += correct;
+   ndcg_    += ndcg * N;
 
    // progress losss reporting
    {
@@ -246,19 +252,22 @@ void StrtListBase::Eval(const vector<BaseFloat> &nnet_target,
       frames_progress_  += N;
       loss_progress_    += loss; 
       correct_progress_ += correct;
+      ndcg_progress_    += ndcg * N;
 
       if (frames_progress_ > progress_step) {
          KALDI_VLOG(1) << "ProgressLoss[ " 
             << static_cast<int>(frames_/progress_step) << "h of " 
             << static_cast<int>(frames_N_/progress_step) << "h]: " 
             << loss_progress_/frames_progress_ << " (Strt) " 
-            << "FRAME ACC >> " << 100*correct_progress_/frames_progress_ << "% <<";
+            << "FRAME ACC >> " << 100*correct_progress_/frames_progress_ << "% << "
+            << "NDCG " << ndcg_progress_/frames_progress_;
          // store
          loss_vec_.push_back(loss_progress_/frames_progress_);
          // reset
          frames_progress_  = 0;
          loss_progress_    = 0;
          correct_progress_ = 0;
+         ndcg_progress_    = 0;
       }
    }
 }
@@ -276,6 +285,7 @@ string StrtListBase::Report(){
    if (correct_ >= 0) {
       oss << "FRAME_ACCURACY >> " << 100.0*correct_/frames_ << "% <<" << endl;
    }
+   oss << "NDCG " << ndcg_/frames_ << endl;
    return oss.str(); 
 }
 
@@ -343,4 +353,216 @@ void StrtExp::calcLoss(BaseFloat f_out, BaseFloat a_tgt,
    int sign_a = a_tgt > 0 ? 1 : -1;
    loss = exp(-sign_a * f_out);
    diff = -sign_a * loss;
+}
+
+//---------------------------------------------------------------------------------
+
+StrtListBase* StrtListBase::getInstance(string name, double sigma, double error){
+   if(name == "listnet"){
+      return new StrtListNet(sigma, error);
+   }else if(name == "listrelu"){
+      return new StrtListRelu(sigma, error);
+   }else if(name == "ranknet"){
+      return new StrtRankNet(sigma, error);
+   }else if(name == "lambdarank"){
+      return new StrtLambdaRank(sigma, error);
+   }else{
+      return NULL;
+   }
+}
+
+void StrtListNet::calcLoss(const vector<BaseFloat> &nnet_target,
+      const vector<int> &index_t, const vector<int> &index_f,
+      const vector<BaseFloat> &relevance, BaseFloat &loss){
+   int N = nnet_out_host_.NumRows();
+   assert(N == index_t.size());
+   assert(N == index_f.size());
+   assert(N == relevance.size());
+
+   double sum = 0;
+   // start accumulate.
+   for(int i = 0; i < N; ++i)
+      sum += nnet_out_host_(i, 0);
+
+   vector<double> acc_sum(N);
+   acc_sum[N-1] = nnet_out_host_(index_t[N-1], 0);
+   for(int i = N-2; i >= 0; --i){
+      acc_sum[i] = log_add(acc_sum[i+1], nnet_out_host_(index_t[i], 0));
+   }
+
+   // calculating loss
+   loss = -sum;
+   for(int i = 0; i < N; ++i){
+      loss += acc_sum[i];
+   }
+
+   // calculate gradient
+   vector<double> acc_sum_log(N);
+   acc_sum_log[0] = -acc_sum[0];
+   for(int i = 1; i < N; ++i)
+      acc_sum_log[i] = log_add(acc_sum_log[i-1], -acc_sum[i]);
+
+   diff_host_.Resize(N, 1);
+   for(int i = 0; i < N; ++i){
+      diff_host_(index_t[i], 0) = exp(nnet_out_host_(index_t[i], 0) + acc_sum_log[i]) - 1;
+   }
+
+   sum = 0;
+   for(int i = 0; i < N; ++i)
+      sum += diff_host_(i, 0);
+   
+   KALDI_ASSERT(KALDI_ISFINITE(sum));
+   KALDI_ASSERT(KALDI_ISFINITE(loss));
+}
+
+void StrtListRelu::calcLoss(const vector<BaseFloat> &nnet_target,
+      const vector<int> &index_t, const vector<int> &index_f,
+      const vector<BaseFloat> &relevance, BaseFloat &loss){
+   int N = nnet_out_host_.NumRows();
+   assert(N == index_t.size());
+   assert(N == index_f.size());
+   assert(N == relevance.size());
+
+   vector<int> order_t(N);
+   for(int i = 0; i < N; ++i)
+      order_t[index_t[i]] = i;
+   vector<int> order_f(N);
+   for(int i = 0; i < N; ++i)
+      order_f[index_f[i]] = i;
+
+
+   diff_host_.Resize(N, 1);
+   for(int i = 0; i < N; ++i){
+      diff_host_(i, 0) = order_f[i] - order_t[i];
+   }
+
+   loss = 0;
+   for(int i = 0; i < N; ++i)
+      loss += diff_host_(i, 0) * nnet_out_host_(i, 0);
+   
+}
+
+void StrtRankNet::calcLoss(const vector<BaseFloat> &nnet_target,
+      const vector<int> &index_t, const vector<int> &index_f,
+      const vector<BaseFloat> &relevance, BaseFloat &loss){
+   int N = nnet_out_host_.NumRows();
+   assert(N == index_t.size());
+   assert(N == index_f.size());
+   assert(N == relevance.size());
+
+   double loss_t = 0;
+#pragma omp parallel for reduction(+: loss_t)
+   for(int i = 0; i < N; ++i)
+      for(int j = i + 1; j < N; ++j){
+         if( nnet_target[index_t[i]] - nnet_target[index_t[j]] > error_ )
+         loss_t += softplus( -sigma_ *
+               (nnet_out_host_(index_t[i], 0) - nnet_out_host_(index_t[j], 0) ) );
+      }
+
+   loss = loss_t;
+
+   vector< vector<double> > lambda(N);
+   for(int i = 0; i < N; ++i)
+      lambda[i].resize(N);
+
+#pragma omp parallel for
+   for(int i = 0; i < N; ++i)
+      for(int j = i+1; j < N; ++j){
+         double tmp = 0;
+
+         if( nnet_target[index_t[i]] - nnet_target[index_t[j]] > error_ )
+            tmp = -sigma_ / (1 + exp(sigma_ *
+                     (nnet_out_host_(index_t[i], 0) - nnet_out_host_(index_t[j], 0) ) ) );
+
+         lambda[i][j] = tmp;
+         lambda[j][i] = -tmp;
+      }
+
+   vector< double > Lba(N);
+#pragma omp parallel for
+   for(int i = 0; i < N; ++i)
+      for(int j = 0; j < N; ++j)
+         Lba[i] += lambda[i][j];
+
+   diff_host_.Resize(N, 1);
+   for(int i = 0; i < N; ++i)
+      diff_host_(index_t[i], 0) = Lba[i];
+      
+   double sum = 0;
+   for(int i = 0; i < N; ++i)
+      sum += diff_host_(i, 0);
+   
+   KALDI_ASSERT(KALDI_ISFINITE(sum));
+   KALDI_ASSERT(KALDI_ISFINITE(loss));
+}
+
+void StrtLambdaRank::calcLoss(const vector<BaseFloat> &nnet_target,
+      const vector<int> &index_t, const vector<int> &index_f,
+      const vector<BaseFloat> &relevance, BaseFloat &loss){
+   int N = nnet_out_host_.NumRows();
+   assert(N == index_t.size());
+   assert(N == index_f.size());
+   assert(N == relevance.size());
+
+   double loss_t = 0;
+#pragma omp parallel for reduction(+: loss_t)
+   for(int i = 0; i < N; ++i)
+      for(int j = i + 1; j < N; ++j){
+         if( nnet_target[index_t[i]] - nnet_target[index_t[j]] > error_ )
+         loss_t += softplus( -sigma_ *
+               (nnet_out_host_(index_t[i], 0) - nnet_out_host_(index_t[j], 0) ) );
+      }
+
+   loss = loss_t;
+
+   vector< vector<double> > lambda(N);
+   for(int i = 0; i < N; ++i)
+      lambda[i].resize(N);
+
+#pragma omp parallel for
+   for(int i = 0; i < N; ++i)
+      for(int j = i+1; j < N; ++j){
+         double tmp = 0;
+
+         if( nnet_target[index_t[i]] - nnet_target[index_t[j]] > error_ )
+            tmp = -sigma_ / (1 + exp(sigma_ *
+                     (nnet_out_host_(index_t[i], 0) - nnet_out_host_(index_t[j], 0) ) ) );
+
+         lambda[index_t[i]][index_t[j]] = tmp;
+         lambda[index_t[j]][index_t[i]] = -tmp;
+      }
+
+   vector< vector<double> > deltandcg(N);
+   for(int i = 0; i < N; ++i)
+      deltandcg[i].resize(N);
+
+   for(int i = 0; i < N; ++i)
+      for(int j = i + 1; j < N; ++j){
+         double tmp  =
+            + ( (i >= T_) ? 0: ((pow(2, relevance[index_f[i]]) - 1) / log(2 + i)) )
+            + ( (j >= T_) ? 0: ((pow(2, relevance[index_f[j]]) - 1) / log(2 + j)) )
+            - ( (j >= T_) ? 0: ((pow(2, relevance[index_f[i]]) - 1) / log(2 + j)) )
+            - ( (i >= T_) ? 0: ((pow(2, relevance[index_f[j]]) - 1) / log(2 + i)) );
+
+         tmp = abs(tmp);
+         deltandcg[index_f[i]][index_f[j]] = tmp;
+         deltandcg[index_f[j]][index_f[i]] = tmp;
+      }
+
+   vector< double > Lba(N);
+#pragma omp parallel for
+   for(int i = 0; i < N; ++i)
+      for(int j = 0; j < N; ++j)
+         Lba[i] += lambda[i][j] * deltandcg[i][j];
+
+   diff_host_.Resize(N, 1);
+   for(int i = 0; i < N; ++i)
+      diff_host_(i, 0) = Lba[i];
+      
+   double sum = 0;
+   for(int i = 0; i < N; ++i)
+      sum += diff_host_(i, 0);
+   
+   KALDI_ASSERT(KALDI_ISFINITE(sum));
+   KALDI_ASSERT(KALDI_ISFINITE(loss));
 }

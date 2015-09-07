@@ -62,7 +62,11 @@ class StrtBase{
 
 class StrtListBase{
    public:
-      StrtListBase(){}
+      StrtListBase(double sigma, double error):
+         sigma_(sigma), error_(error), T_(10),
+         frames_(0), correct_(0), loss_(0), ndcg_(0),
+         frames_progress_(0), correct_progress_(0), loss_progress_(0), ndcg_progress_(0),
+         frames_N_(0) {}
 
       ~StrtListBase() { }
 
@@ -73,25 +77,40 @@ class StrtListBase{
 
       string Report();
 
+      static StrtListBase* getInstance(string name, double sigma = 1.0, double error = 0);
+
+   protected:
+      virtual void calcLoss(const vector<BaseFloat> &nnet_target, 
+            const vector<int> &index_t, const vector<int> &index_f,
+            const vector<BaseFloat> &relevance, BaseFloat &loss) = 0;
+
+      Matrix<BaseFloat> nnet_out_host_;
+      Matrix<BaseFloat> diff_host_;
+
+      double sigma_;
+      double error_;
+      int T_;
+
    private:
 
       double frames_;
       double correct_;
       double loss_;
+      double ndcg_;
 
       // partial results during training
       double frames_progress_;
       double correct_progress_;
       double loss_progress_;
+      double ndcg_progress_;
       vector<float> loss_vec_;
 
       int frames_N_;
 
-      Matrix<BaseFloat> nnet_out_host_;
-      Matrix<BaseFloat> diff_host_;
+
 };
 
-#define NEW_STRT(name) \
+#define NEW_STRT_PAIR(name) \
    class name : public StrtBase{ \
       public: \
       name(bool pair, double error): StrtBase(pair, error) {}\
@@ -100,10 +119,24 @@ class StrtListBase{
             BaseFloat &loss, BaseFloat &diff); \
 } 
 
-NEW_STRT(StrtMse);
-NEW_STRT(StrtMgn);
-NEW_STRT(StrtSoftmax);
-NEW_STRT(StrtWSoftmax);
-NEW_STRT(StrtExp);
+NEW_STRT_PAIR(StrtMse);
+NEW_STRT_PAIR(StrtMgn);
+NEW_STRT_PAIR(StrtSoftmax);
+NEW_STRT_PAIR(StrtWSoftmax);
+NEW_STRT_PAIR(StrtExp);
+
+#define NEW_STRT_LIST(name) \
+   class name : public StrtListBase{ \
+      public: \
+      name(double sigma, double error): StrtListBase(sigma, error) {}\
+      protected: \
+      void calcLoss(const vector<BaseFloat> &nnet_target, \
+            const vector<int> &index_t, const vector<int> &index_f, \
+            const vector<BaseFloat> &relevance, BaseFloat &loss); \
+} 
+NEW_STRT_LIST(StrtListNet);
+NEW_STRT_LIST(StrtListRelu);
+NEW_STRT_LIST(StrtRankNet);
+NEW_STRT_LIST(StrtLambdaRank);
 
 #endif

@@ -12,7 +12,6 @@ typedef struct{
    float         *psi_feat;
 } PsiPack;
 
-
 void cuda_make_obs(dim3 grid, dim3 block, const float* feats, int rows, int cols, int stride, const int* lab, float *data, int d_stride, int S);
 
 void cuda_make_tran(dim3 grid, dim3 block, int rows, int cols, const int* lab, float *data, int d_stride, int S);
@@ -26,5 +25,22 @@ void cuda_make_tran(dim3 grid, dim3 block, int rows, int cols, const int* lab, i
 void cuda_prop_psi(dim3 grid, dim3 block, size_t shared_mem, int N, int F, int S, PsiPack *packs_ptr);
 
 void cuda_back_psi(dim3 grid, dim3 block, size_t shared_mem, int N, int F, int S, PsiPack *packs_ptr);
+
+typedef struct{
+   int           L;            // label #
+   int           T;            // utterance length
+   int           P;            // phone max state
+   int           D;            // D
+
+   int           phone_feat_stride;
+   int           frame_feat_stride;
+
+   unsigned char *lab;         // lab[l*T + t] == lab[l][t]
+   float         **phone_feat; // phone_feat[p] -> a matrix [t][d] phone_feat[p][t*phone_feat_stride + d]
+   float         **frame_feat; // frame_feat[t] -> a matrix [l][d] frame_feat[t][l*frame_feat_stride + d]
+} RPsiPack;
+
+void cuda_prop_rpsi(dim3 grid, dim3 block, RPsiPack *pack);
+void cuda_back_rpsi(dim3 grid, dim3 block, size_t shared_mem, RPsiPack *pack);
 
 #endif

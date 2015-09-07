@@ -44,7 +44,8 @@ typedef RandomAccessTableReader<BasicVectorHolder<uchar> >   RandomAccessUcharVe
 typedef TableWriter<BasicVectorHolder<uchar> >               UcharVectorWriter;
 
 inline double sigmoid(double x){ return 1/(1+exp(-x)); }
-inline double log_add(double a, double b){ return a >= b ? a + log(1 + exp(b-a)) : log_add(b, a);}
+inline double softplus(double x){ return x > 0 ? x + softplus(-x) : log(1+exp(x)); }
+inline double log_add(double a, double b){ return a + softplus(b-a);}
 
 double frame_acc(const vector<uchar>& path1, const vector<uchar>& path2, bool norm = true);
 double phone_acc(const vector<uchar>& path1, const vector<uchar>& path2, bool norm = true);
@@ -60,12 +61,17 @@ void getPhone(const string &key, const string &timit, map<string, int> &phMap, v
 void readPhMap(const string path, const string id_path, map<string, int> &phMap);
 string execute(const string &cmd);
 
+string strAfter(const string &src, const string &key);
+
 void print(const MatrixBase<BaseFloat> &mat, int row = -1);
 void print(const CuMatrixBase<BaseFloat> &mat, int row = -1);
 
 
 void propPsi(int N, int F, int S, int maxL, PsiPack* packs_ptr);
 void backPsi(int N, int F, int S, int maxL, PsiPack* packs_ptr);
+
+void propRPsi(RPsiPack *pack);
+void backRPsi(RPsiPack *pack);
 
 void LockSleep(string filename, int ms = 2000);
 

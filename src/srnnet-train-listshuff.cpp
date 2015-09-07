@@ -8,7 +8,7 @@
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
 #include "util.h"
-#include "snnet.h"
+#include "srnnet.h"
 #include <sstream>
 #include <omp.h>
 
@@ -24,11 +24,11 @@ int main(int argc, char *argv[]) {
   
   try {
     string usage;
-    usage.append("Perform one iteration of Structure Neural Network training by shuffle mini-batch Stochastic Gradient Descent on training lists. Use learning to rank techniques. \n")
+    usage.append("Perform one iteration of Structure Recurrent Neural Network training by shuffle mini-batch Stochastic Gradient Descent on training lists. Use learning to rank techniques. \n")
        .append("Use feature, label and path to train the neural net. \n")
-       .append("Usage: ").append(argv[0]).append(" [options] <feature-rspecifier> <label-rspecifier> <score-path-rspecifier> <nnet1-in> <nnet2-in> <stateMax> [<nnet1-out> <nnet2-out>]\n")
+       .append("Usage: ").append(argv[0]).append(" [options] <feature-rspecifier> <label-rspecifier> <score-path-rspecifier> <nnet-in> [<nnet-out>]\n")
        .append("e.g.: \n")
-       .append(" ").append(argv[0]).append(" ark:feat.ark ark:lab.ark \"ark:lattice-to-vec ark:1.lat ark:- |\" nnet.init nnet2.init 48 nnet.iter1 nnet2.iter1\n");
+       .append(" ").append(argv[0]).append(" ark:feat.ark ark:lab.ark \"ark:lattice-to-vec ark:1.lat ark:- |\" nnet.init nnet.iter1\n");
 
     ParseOptions po(usage.c_str());
 
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 
     po.Read(argc, argv);
 
-    if (po.NumArgs() != 8-(crossvalidate?2:0)) {
+    if (po.NumArgs() != 5-(crossvalidate?1:0)) {
       po.PrintUsage();
       exit(1);
     }
@@ -87,15 +87,11 @@ int main(int argc, char *argv[]) {
     string feat_rspecifier       = po.GetArg(1),
            label_rspecifier      = po.GetArg(2),
            score_path_rspecifier = po.GetArg(3),
-           nnet1_in_filename     = po.GetArg(4),
-           nnet2_in_filename     = po.GetArg(5);
-    int    stateMax              = atoi(po.GetArg(6).c_str());
-
-    string nnet1_out_filename, nnet2_out_filename;
+           nnet_in_filename      = po.GetArg(4),
+           nnet_out_filename;
 
     if(!crossvalidate){
-       nnet1_out_filename = po.GetArg(7);
-       nnet2_out_filename = po.GetArg(8);
+       nnet_out_filename = po.GetArg(5);
     }
 
     // function pointer used in calculating target.
@@ -121,6 +117,11 @@ int main(int argc, char *argv[]) {
     LockSleep(GPU_FILE);
     CuDevice::Instantiate().SelectGpuId(use_gpu);
 #endif
+    SRNnet nnet;
+    nnet.Read(nnet_in_filename);
+    nnet.SetTrainOptions(trn_opts, nnet_ratio);
+
+    int stateMax = nnet.StateMax();
 
     // ------------------------------------------------------------
     // read in all features and save to GPU
@@ -222,9 +223,6 @@ int main(int argc, char *argv[]) {
     }
 
     // prepare Nnet
-    SNnet nnet;
-    nnet.Read(nnet1_in_filename, nnet2_in_filename, stateMax);
-    nnet.SetTrainOptions(trn_opts, nnet_ratio);
 
     if (feature_transform != "") {
        Nnet nnet_transf;
@@ -295,7 +293,7 @@ int main(int argc, char *argv[]) {
 
 
     if (!crossvalidate) {
-       nnet.Write(nnet1_out_filename, nnet2_out_filename, binary);
+       nnet.Write(nnet_out_filename, binary);
     }
 
     KALDI_LOG << "Done " << num_done << " examples, " 

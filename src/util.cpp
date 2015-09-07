@@ -172,6 +172,12 @@ string execute(const string &cmd){
    return ret;
 }
 
+string strAfter(const string &src, const string &key){
+   size_t pos = src.find(key);
+   assert(pos >= 0);
+   return src.substr(pos + key.length());
+}
+
 void print(const MatrixBase<BaseFloat> &mat, int row){
    BaseFloat sum = 0;
    BaseFloat sqr_sum = 0;
@@ -217,6 +223,22 @@ void backPsi(int N, int F, int S, int maxL, PsiPack* packs_ptr){
 
    // TODO compute the dummy part only once.
    cuda_back_psi(N, maxL, F*S + F, N, F, S, packs_ptr);
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+}
+
+void propRPsi(RPsiPack* pack){
+   Timer tim;
+
+   cuda_prop_rpsi(pack->T, pack->L, pack);
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+}
+
+void backRPsi(RPsiPack *pack){
+   Timer tim;
+
+   cuda_back_rpsi(pack->T, pack->P, pack->L, pack);
 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }

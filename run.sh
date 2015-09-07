@@ -2,8 +2,8 @@
 source path
 
 acc_func=pac
-error_margin=0.01
-loss_func=softmax
+error_margin=
+loss_func=
 absolute="false"
 acc_norm="true"
 pairwise="true"
@@ -11,10 +11,10 @@ nnet_ratio=1
 
 dnn_depth=4
 dnn_width=1024
-lattice_N=50
+lattice_N=100
 test_lattice_N=10
 train_opt=
-learn_rate=0.0004
+learn_rate=0.002
 cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
@@ -23,8 +23,11 @@ keep_lr_iters=1
 norm_lr="true"
 
 rbm_pretrain="false"
-list="false"
-lattice_source="both" # both, best, rand
+list="true"
+sigma=
+lattice_source="rand" # both, best, rand
+
+debug=
 
 echo "$0 $@"  # Print the command line for logging
 command_line="$0 $@"
@@ -45,6 +48,9 @@ fi
 if [ "$list" == "true" ]; then
    train_tool="snnet-train-listshuff \
          ${acc_func:+ --acc-func=$acc_func} \
+         ${loss_func:+ --loss-func=$loss_func} \
+         ${error_margin:+ --error-margin=$error_margin} \
+         ${sigma:+ --sigma=$sigma} \
          ${nnet_ratio:+ --nnet-ratio=$nnet_ratio}" 
 else
    train_tool="snnet-train-pairshuff \
@@ -94,6 +100,7 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
       --dnn-depth $dnn_depth --dnn-width $dnn_width --lattice-N $lattice_N \
       --test-lattice-N ${test_lattice_N} --learn-rate $learn_rate --acwt $acwt \
       --train-tool "$train_tool" --lattice-source "$lattice_source" \
+      ${debug:+ --debug $debug} \
       ${keep_lr_iters:+ --keep-lr-iters $keep_lr_iters} \
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \

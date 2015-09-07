@@ -116,6 +116,9 @@ int main(int argc, char *argv[]) {
     }
 
     StrtBase* strt = StrtBase::getInstance(loss_func, !absolute, error_margin);
+    
+    if(strt == NULL)
+       po.PrintUsage();
 
 
     //Select the GPU

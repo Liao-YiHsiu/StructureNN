@@ -39,7 +39,9 @@ if [ $cpus == 1 ]; then
    exit 1;
 fi
 
-lock_file=$(basename $score_path_w)
+[ ! -d tmp ] && mkdir tmp
+
+lock_file=tmp/$(basename $score_path_w)
 
 (
 flock -w -1 9

@@ -1,6 +1,5 @@
 #!/bin/bash -ex
 # kill child process upon exit
-trap 'rm -rf $tmpdir; kill $(jobs -p) || true ' EXIT
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/../path
@@ -38,11 +37,18 @@ feature_transform=
 rbm_pretrain="true"
 lattice_source="both" # both, best, rand
 tmpdir=$(mktemp -d)
+debug=
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
 
 . parse_options.sh || exit 1;
+
+if [ "$debug" == "true" ]; then
+   trap 'kill $(jobs -p) || true ' EXIT
+else
+   trap 'rm -rf $tmpdir; kill $(jobs -p) || true ' EXIT
+fi
 
 cross_tool="$train_tool --cross-validate=true"
 
@@ -94,6 +100,11 @@ dev_lattice_path=$dir/../lab/dev.lab_${test_lattice_N}_${acwt}.gz
 lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/2 )) --acoustic-scale $acwt --n $test_lattice_N \
    $lat_model "$cv_lat" "$dev_lattice_path" \
    2>&1 | tee -a $log; ( exit ${PIPESTATUS[0]} ) || exit 1
+
+test_lattice_path=$dir/../lab/test.lab_${test_lattice_N}_${acwt}.gz
+lattice-to-nbest-path.sh --cpus $(( (cpus+1)/2 )) --acoustic-scale $acwt --n $test_lattice_N \
+   $lat_model ark:$dir/test.lat "$test_lattice_path" \
+   2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 # use pretrained front end neural network
 mlp1_best=$dir/nnet1
@@ -267,18 +278,31 @@ for iter in $(seq -w $max_iters); do
 
 # evaluate dev set wer.
 # ------------------------------------------------------------------------------------------------
-   snnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
-      "ark:gunzip -c $dev_lattice_path |" $mlp1_next $mlp2_next $stateMax \
-      "ark:| gzip -c > $tmpdir/dev_${iter}.tag.gz"\
+#   snnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
+#      "ark:gunzip -c $dev_lattice_path |" $mlp1_next $mlp2_next $stateMax \
+#      "ark:| gzip -c > $tmpdir/dev_${iter}.tag.gz"\
+#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+#
+#   best-score-path "ark:gunzip -c $tmpdir/dev_${iter}.tag.gz |" ark:$tmpdir/dev_${iter}.tag.1best
+#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+#
+#   calc.sh "$cv_lab" ark:$tmpdir/dev_${iter}.tag.1best \
+#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+#   WER=$(grep WER $log | tail -n 1 | awk '{ print $2; }')
+# ------------------------------------------------------------------------------------------------
+
+
+   snnet-score ${feature_transform:+ --feature-transform="$feature_transform"} ark:$dir/test.ark \
+      "ark:gunzip -c $test_lattice_path |" $mlp1_next $mlp2_next $stateMax \
+      "ark:| gzip -c > $tmpdir/test_${iter}.tag.gz"\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   best-score-path "ark:gunzip -c $tmpdir/dev_${iter}.tag.gz |" ark:$tmpdir/dev_${iter}.tag.1best
+   best-score-path "ark:gunzip -c $tmpdir/test_${iter}.tag.gz |" ark:$tmpdir/test_${iter}.tag.1best
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   calc.sh "$cv_lab" ark:$tmpdir/dev_${iter}.tag.1best \
+   calc.sh ark:$dir/test.lab ark:$tmpdir/test_${iter}.tag.1best \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
    WER=$(grep WER $log | tail -n 1 | awk '{ print $2; }')
-# ------------------------------------------------------------------------------------------------
 
    # accept or reject new parameters (based on objective function)
    loss_prev=$loss

@@ -19,6 +19,9 @@ __global__ static void _cuda_prop_psi(int N, int F, int S, PsiPack *packs_ptr);
 
 __global__ static void _cuda_back_psi(int N, int F, int S, PsiPack *packs_ptr);
 
+__global__ static void _cuda_prop_rpsi(RPsiPack pack);
+
+__global__ static void _cuda_back_rpsi(RPsiPack pack);
 
 void cuda_make_obs(dim3 grid, dim3 block, const float* feats, int rows, int cols, int stride, const int* lab, float *data, int d_stride, int S){
    assert( rows < MAX_L);
@@ -55,6 +58,14 @@ void cuda_prop_psi(dim3 grid, dim3 block, size_t shared_mem, int N, int F, int S
 
 void cuda_back_psi(dim3 grid, dim3 block, size_t shared_mem, int N, int F, int S, PsiPack *packs_ptr){
    _cuda_back_psi<<<grid, block, shared_mem*sizeof(float)>>>(N, F, S, packs_ptr);
+}
+
+void cuda_prop_rpsi(dim3 grid, dim3 block, RPsiPack *pack){
+   _cuda_prop_rpsi<<<grid, block>>>(*pack);
+}
+
+void cuda_back_rpsi(dim3 grid, dim3 block, size_t shared_mem, RPsiPack *pack){
+   _cuda_back_rpsi<<<grid, block, shared_mem*sizeof(unsigned char)>>>(*pack);
 }
 
 
@@ -302,4 +313,55 @@ __global__ static void _cuda_back_psi(int N, int F, int S, PsiPack *packs_ptr){
    for(int i = 0; i < F; ++i){
       feat[idx*feat_stride + i] = psi_feat[i] + psi_feat[F*lab + i];
    }
+}
+
+__global__ static void _cuda_prop_rpsi(RPsiPack pack){
+   int t = blockIdx.x;
+   int l = threadIdx.x;
+
+   int T = pack.T;
+   int D = pack.D;
+   
+   int phone_feat_stride = pack.phone_feat_stride;
+   int frame_feat_stride = pack.frame_feat_stride;
+
+   unsigned char lab = pack.lab[l*T + t];
+
+   float * frame = pack.frame_feat[t] + l * frame_feat_stride;
+   float * phone = pack.phone_feat[lab - 1] + t * phone_feat_stride;
+
+   if(lab == 0)return;
+   for(int i = 0; i < D; ++i)
+      frame[i] = phone[i];
+}
+
+__global__ static void _cuda_back_rpsi(RPsiPack pack){
+
+   extern __shared__ unsigned char lab[];
+
+   int t = blockIdx.x;
+   int p = threadIdx.x;
+
+   int L = pack.L;
+   int T = pack.T;
+   int D = pack.D;
+   
+   int phone_feat_stride = pack.phone_feat_stride;
+   int frame_feat_stride = pack.frame_feat_stride;
+   
+   // moving data to label. for the same time t.
+   for(int l = 0; l < L; ++l)
+      lab[l] = pack.lab[l*T + t];
+
+   float * phone = pack.phone_feat[ p ] + t * phone_feat_stride;
+   float * frame = pack.frame_feat[ t ];
+
+   for(int l = 0; l < L; ++l)
+      if(p == lab[l] - 1){
+         float * frm = frame + l * frame_feat_stride;
+         for(int d = 0; d < D; ++d){
+            // TODO use temporal mem.
+            phone[d] += frm[d];
+         }
+      }
 }
