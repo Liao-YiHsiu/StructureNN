@@ -5,7 +5,7 @@
 #include "base/kaldi-common.h"
 #include "nnet/nnet-randomizer.h"
 #include "util/common-utils.h"
-#include "nnet-batch.h"
+#include "bnnet.h"
 #include "util.h"
 #include <iostream>
 #include <string>

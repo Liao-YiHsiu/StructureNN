@@ -177,6 +177,11 @@ void StrtListBase::Eval(const vector<BaseFloat> &nnet_target,
    nnet_out_host_.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kUndefined);
    nnet_out_host_.CopyFromMat(nnet_out);
 
+   if (!KALDI_ISFINITE(nnet_out_host_.Sum())) { // check there's no nan/inf,
+      KALDI_ERR << "NaN or inf found in nn-output nnet2";
+      assert(false);
+   }
+
    // sorting
    vector< Tuple > arr(N);
    for(int i = 0; i < N; ++i){

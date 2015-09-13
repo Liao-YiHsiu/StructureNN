@@ -21,9 +21,9 @@ BINFILES = post-phn acc con-svm nnet-pop lab-lda gen-lab lattice-to-vec \
 	   normalize-score-path exp-score-path log-score-path cmvn-score-path replace-feats \
 	   score-oracle score-path-point snnet-score int32-to-uchar uchar-to-int32 \
 	   snnet-train-pairshuff snnet-psi-cmvn snnet-gen-psi snnet-train-listshuff\
-	   srnnet-train-listshuff srnnet-score srnnet-init
+	   srnnet-train-listshuff srnnet-score srnnet-init srnnet-decode srnnet-train-frameshuff
 
-OBJFILES = kernel.o util.o strt.o snnet.o nnet-batch.o srnnet.o
+OBJFILES = kernel.o util.o strt.o cumat.o snnet.o bnnet.o srnnet.o
 
 TESTFILES = 
 

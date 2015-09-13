@@ -42,29 +42,9 @@ SRNnet::~SRNnet(){
 
 void SRNnet::Propagate(const CuMatrix<BaseFloat> &in,
       const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
-   //int L = labels.size();
    int N = labels[0]->size();
 
-   nnet_transf_.Feedforward(in, &transf_);
-
-   nnet1_.Propagate(transf_, &propagate_feat_buf_);
-   
-   if(propagate_phone_buf_.size() != mux_components_.size())
-      propagate_phone_buf_.resize(mux_components_.size());
-
-   for(int i = 0; i < mux_components_.size(); ++i)
-      mux_components_[i]->Propagate(propagate_feat_buf_, &propagate_phone_buf_[i]);
-
-   // resize
-   if(propagate_frame_buf_.size() < N){
-      propagate_frame_buf_.resize(N);
-      propagate_acti_in_buf_.resize(N);
-      propagate_acti_out_buf_.resize(N);
-      propagate_forw_buf_.resize(N);
-      propagate_score_buf_.resize(N);
-   }
-
-   RPsi(propagate_phone_buf_, labels, propagate_frame_buf_);
+   PropagateRPsi(in, labels);
 
    rnn_init_->Propagate(propagate_frame_buf_[0], &propagate_acti_in_buf_[0]);
    acti_component_->Propagate(propagate_acti_in_buf_[0], &propagate_acti_out_buf_[0]);
@@ -77,9 +57,9 @@ void SRNnet::Propagate(const CuMatrix<BaseFloat> &in,
       acti_component_->Propagate(propagate_acti_in_buf_[i], &propagate_acti_out_buf_[i]);
    }
 
-   nnet2_.Propagate(propagate_acti_out_buf_, propagate_score_buf_);
+   nnet2_.Propagate(propagate_acti_out_buf_, propagate_score_buf_, N);
    
-   Sum(propagate_score_buf_, N, out);
+   Sum(propagate_score_buf_, out, N);
 }
 
 void SRNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff, 
@@ -125,7 +105,7 @@ void SRNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff,
       mux_components_[i]->Backpropagate(propagate_feat_buf_, propagate_phone_buf_[i],
             backpropagate_phone_buf_[i], &backpropagate_feat_buf_[i]);
 
-   Sum(backpropagate_feat_buf_, -1, &backpropagate_all_feat_buf_);
+   Sum(backpropagate_feat_buf_, &backpropagate_all_feat_buf_);
 
    nnet1_.Backpropagate(backpropagate_all_feat_buf_, NULL);
    
@@ -138,6 +118,106 @@ void SRNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff,
    for(int i = 1; i < N; ++i)
       forw_component_->Update(propagate_acti_out_buf_[i-1], backpropagate_acti_in_buf_[i]);
 
+}
+
+
+void SRNnet::Decode(const CuMatrix<BaseFloat> &in, ScorePath::Table &table, int Nbest){
+   int N = in.NumRows();
+
+   vector< vector<uchar> >  dummy_label(stateMax_);
+   vector< vector<uchar>* > dummy_label_ref(stateMax_);
+   for(int i = 0; i < dummy_label.size(); ++i){
+      dummy_label[i].resize(N, i + 1);
+      dummy_label_ref[i] = &dummy_label[i];
+   }
+
+   PropagateRPsi(in, dummy_label_ref);
+
+   // initialize double buffer
+   if(double_buffer_.size() != 2){
+      double_buffer_.resize(2);
+      for(int i = 0; i < double_buffer_.size(); ++i){
+         double_buffer_[i].resize(Nbest);
+         for(int j = 0; j < Nbest; ++j){
+            double_buffer_[i][j].Resize(stateMax_, forw_component_->OutputDim(), kUndefined);
+         }
+      }
+   }
+
+   // initialize backtrack & DP table
+   vector< vector< Token > > DP_table(N);
+
+   rnn_init_->Propagate(propagate_frame_buf_[0], &propagate_acti_in_);
+   acti_component_->Propagate(propagate_acti_in_, &double_buffer_[0][0]);
+   nnet2_.Propagate(double_buffer_[0][0], &propagate_score_);
+
+   assert(propagate_score_.NumRows() == stateMax_);
+   assert(propagate_score_.NumCols() == 1);
+
+   propagate_score_host_.Resize(stateMax_, 1, kUndefined);
+   propagate_score_host_.CopyFromMat(propagate_score_);
+
+   DP_table[0].resize(stateMax_);
+   for(int i = 0; i < stateMax_; ++i){
+      DP_table[0][i].score = propagate_score_host_(i, 0);
+      DP_table[0][i].phone = i+1;
+      DP_table[0][i].bt    = 0;
+   }
+   sort(DP_table[0].begin(), DP_table[0].end(), compareToken);
+   // initialization finished
+
+   for(int i = 1; i < N; ++i){
+      int tokenNum = DP_table[i - 1].size();
+      if(tokenNum > Nbest) tokenNum = Nbest;
+
+      DP_table[i].resize(tokenNum * stateMax_);
+
+      for(int j = 0; j < tokenNum; ++j){
+         int       bt    = DP_table[i - 1][j].bt;
+         uchar     phone = DP_table[i - 1][j].phone;
+         BaseFloat score = DP_table[i - 1][j].score;
+
+         CuSubMatrix<BaseFloat> sub = 
+            double_buffer_[(i - 1)%2][bt].RowRange(phone - 1, 1);
+
+         forw_component_->Propagate(sub, &propagate_forw_);
+         propagate_acti_in_ = propagate_frame_buf_[i];
+         propagate_acti_in_.AddVecToRows(1.0, propagate_forw_.Row(0), 1.0);
+
+         acti_component_->Propagate(propagate_acti_in_, &double_buffer_[i % 2][j]);
+         nnet2_.Propagate(double_buffer_[i % 2][j], &propagate_score_);
+
+         assert(propagate_score_.NumRows() == stateMax_);
+         assert(propagate_score_.NumCols() == 1);
+
+         // copy score back.
+         propagate_score_host_.Resize(stateMax_, 1, kUndefined);
+         propagate_score_host_.CopyFromMat(propagate_score_);
+
+         for(int p = 0; p < stateMax_; ++p){
+            DP_table[i][p + j * stateMax_].score = score + propagate_score_host_(p, 0);
+            DP_table[i][p + j * stateMax_].phone = p+1;
+            DP_table[i][p + j * stateMax_].bt    = j;
+         }
+      }
+
+      // sorting for DP_table[i]
+      sort(DP_table[i].begin(), DP_table[i].end(), compareToken);
+   }
+
+   int tokenNum = DP_table[N - 1].size();
+   if(tokenNum > Nbest) tokenNum = Nbest;
+
+   table.resize(tokenNum);
+   for(int i = 0; i < tokenNum; ++i){
+      table[i].first = DP_table[N - 1][i].score;
+      table[i].second.resize(N);
+      int index = i;
+      for(int t = N - 1; t >= 0; --t){
+         table[i].second[t] = DP_table[t][index].phone;
+         index = DP_table[t][index].bt;
+      }
+   }
 }
 
 int32 SRNnet::InputDim() const{
@@ -186,7 +266,7 @@ void SRNnet::Init(const Nnet& nnet1, const Nnet& nnet2, const string &config_fil
       istringstream(conf_line) >> ws >> token;
       if( token == "<SRNnetProto>" || token == "</SRNnetProto>") continue;
 
-      if( token == "<Mux>"){
+      if( token == "<MUX>"){
          while(true){
             getline(is, conf_line);
             if(conf_line == "") continue;
@@ -264,7 +344,8 @@ void SRNnet::Write(ostream &os, bool binary) const{
    nnet1_.Write(os, binary);
    nnet2_.Write(os, binary);
 
-   WriteBasicType(os, binary, mux_components_.size());
+   int stateMax = mux_components_.size();
+   WriteBasicType(os, binary, stateMax);
    for(int i = 0; i < mux_components_.size(); ++i)
       mux_components_[i]->Write(os, binary);
 
@@ -327,24 +408,24 @@ string SRNnet::InfoGradient() const{
 
 string SRNnet::InfoPropagate() const{
   ostringstream ostr;
-  ostr << "### Forward propagation buffer content(phones) :\n";
-  ostr << "[0] output of <Input> " << MomentStatistics(propagate_feat_buf_) << endl;
-  for(int i = 0;i < mux_components_.size(); ++i)
-     ostr << "[" << 1+i << "] output of <Mux> "
-        << MomentStatistics(propagate_phone_buf_[i]) << endl;
+  //ostr << "### Forward propagation buffer content(phones) :\n";
+  //ostr << "[0] output of <Input> " << MomentStatistics(propagate_feat_buf_) << endl;
+  //for(int i = 0;i < mux_components_.size(); ++i)
+  //   ostr << "[" << 1+i << "] output of <Mux> "
+  //      << MomentStatistics(propagate_phone_buf_[i]) << endl;
 
-  ostr << "### Forward propagation buffer content(frames) :\n";
-  for(int i = 0; i < propagate_frame_buf_.size(); ++i)
-     ostr << "[" << 1+i << "] output of <Frame> "
-        << MomentStatistics(propagate_frame_buf_[i]) << endl
-        << "[" << 1+i << "] input of <Acti> "
-        << MomentStatistics(propagate_acti_in_buf_[i]) << endl
-        << "[" << 1+i << "] output of <Acti> "
-        << MomentStatistics(propagate_acti_out_buf_[i]) << endl
-        << "[" << 1+i << "] output of <Forw> "
-        << MomentStatistics(propagate_forw_buf_[i]) << endl
-        << "[" << 1+i << "] output of <Score> "
-        << MomentStatistics(propagate_score_buf_[i]) << endl;
+  //ostr << "### Forward propagation buffer content(frames) :\n";
+  //for(int i = 0; i < propagate_frame_buf_.size(); ++i)
+  //   ostr << "[" << 1+i << "] output of <Frame> "
+  //      << MomentStatistics(propagate_frame_buf_[i]) << endl
+  //      << "[" << 1+i << "] input of <Acti> "
+  //      << MomentStatistics(propagate_acti_in_buf_[i]) << endl
+  //      << "[" << 1+i << "] output of <Acti> "
+  //      << MomentStatistics(propagate_acti_out_buf_[i]) << endl
+  //      << "[" << 1+i << "] output of <Forw> "
+  //      << MomentStatistics(propagate_forw_buf_[i]) << endl
+  //      << "[" << 1+i << "] output of <Score> "
+  //      << MomentStatistics(propagate_score_buf_[i]) << endl;
 
   ostr << "Nnet 1" << endl << nnet1_.InfoPropagate() << endl;
   ostr << "Nnet 2" << endl << nnet2_.InfoPropagate() << endl;
@@ -353,22 +434,22 @@ string SRNnet::InfoPropagate() const{
 
 string SRNnet::InfoBackPropagate() const{
   ostringstream ostr;
-  ostr << "### Backward propagation buffer content(phones) :\n";
-  ostr << "[0] diff of <Input> " << MomentStatistics(backpropagate_all_feat_buf_) << endl;
-  for(int i = 0;i < mux_components_.size(); ++i)
-     ostr << "[" << 1+i << "] diff of <Mux> "
-        << MomentStatistics(backpropagate_phone_buf_[i]) << endl
-        << "[" << 1+i << "] diff after <Mux> "
-        << MomentStatistics(backpropagate_feat_buf_[i]) << endl;
+  //ostr << "### Backward propagation buffer content(phones) :\n";
+  //ostr << "[0] diff of <Input> " << MomentStatistics(backpropagate_all_feat_buf_) << endl;
+  //for(int i = 0;i < mux_components_.size(); ++i)
+  //   ostr << "[" << 1+i << "] diff of <Mux> "
+  //      << MomentStatistics(backpropagate_phone_buf_[i]) << endl
+  //      << "[" << 1+i << "] diff after <Mux> "
+  //      << MomentStatistics(backpropagate_feat_buf_[i]) << endl;
 
-  ostr << "### Forward propagation buffer content(frames) :\n";
-  for(int i = 0; i < backpropagate_acti_out_buf_.size(); ++i)
-     ostr << "[" << 1+i << "] diff of <Acti>"
-        << MomentStatistics(backpropagate_acti_in_buf_[i]) << endl
-        << "[" << 1+i << "] diff after <Acti>"
-        << MomentStatistics(backpropagate_acti_out_buf_[i]) << endl
-        << "[" << 1+i << "] diff of <Forw>"
-        << MomentStatistics(backpropagate_forw_buf_[i]) << endl;
+  //ostr << "### Forward propagation buffer content(frames) :\n";
+  //for(int i = 0; i < backpropagate_acti_out_buf_.size(); ++i)
+  //   ostr << "[" << 1+i << "] diff of <Acti>"
+  //      << MomentStatistics(backpropagate_acti_in_buf_[i]) << endl
+  //      << "[" << 1+i << "] diff after <Acti>"
+  //      << MomentStatistics(backpropagate_acti_out_buf_[i]) << endl
+  //      << "[" << 1+i << "] diff of <Forw>"
+  //      << MomentStatistics(backpropagate_forw_buf_[i]) << endl;
 
   ostr << "Nnet 1" << endl << nnet1_.InfoBackPropagate() << endl;
   ostr << "Nnet 2" << endl << nnet2_.InfoBackPropagate() << endl;
@@ -433,6 +514,31 @@ void SRNnet::SetTransform(const Nnet &nnet){
    nnet_transf_ = nnet;
 }
 
+void SRNnet::PropagateRPsi(const CuMatrix<BaseFloat> &in, const vector< vector<uchar>* > &labels){
+   int N = labels[0]->size();
+
+   nnet_transf_.Feedforward(in, &transf_);
+
+   nnet1_.Propagate(transf_, &propagate_feat_buf_);
+   
+   if(propagate_phone_buf_.size() != mux_components_.size())
+      propagate_phone_buf_.resize(mux_components_.size());
+
+   for(int i = 0; i < mux_components_.size(); ++i)
+      mux_components_[i]->Propagate(propagate_feat_buf_, &propagate_phone_buf_[i]);
+
+   // resize
+   if(propagate_frame_buf_.size() < N){
+      propagate_frame_buf_.resize(N);
+      propagate_acti_in_buf_.resize(N);
+      propagate_acti_out_buf_.resize(N);
+      propagate_forw_buf_.resize(N);
+      propagate_score_buf_.resize(N);
+   }
+
+   RPsi(propagate_phone_buf_, labels, propagate_frame_buf_);
+}
+
 void SRNnet::RPsi(vector< CuMatrix<BaseFloat> > &propagate_phone,
       const vector< vector<uchar>* > &labels, vector< CuMatrix<BaseFloat> > &propagate_frame){
    
@@ -460,7 +566,7 @@ void SRNnet::BackRPsi(vector< CuMatrix<BaseFloat> > &backpropagate_frame,
    int D = backpropagate_frame[0].NumCols();
 
    KALDI_ASSERT(backpropagate_phone.size() == mux_components_.size());
-   KALDI_ASSERT(backpropagate_frame.size() <= T);
+   KALDI_ASSERT(backpropagate_frame.size() >= T);
 
    for(int i = 0; i < backpropagate_phone.size(); ++i)
       backpropagate_phone[i].Resize(T, D, kSetZero);
@@ -469,12 +575,6 @@ void SRNnet::BackRPsi(vector< CuMatrix<BaseFloat> > &backpropagate_frame,
    packRPsi(backpropagate_phone, labels, backpropagate_frame, &pack);
 
    backRPsi(&pack);
-}
-
-void SRNnet::Sum(const vector< CuMatrix<BaseFloat> > &arr, int N, CuMatrix<BaseFloat>* out){
-   *out = arr[0];
-   for(int i = 1; i < N; ++i)
-      out->AddMat(1.0, arr[i]);
 }
 
 void SRNnet::packRPsi(vector< CuMatrix<BaseFloat> > &phone_mat,
@@ -543,3 +643,4 @@ string SRNnet::Details(const Component* comp) const{
    return os.str();
 }
 
+bool compareToken(const Token &a, const Token &b){ return a.score > b.score; }

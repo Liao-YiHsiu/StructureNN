@@ -25,9 +25,10 @@ learn_rate=0.004
 momentum=0
 minibatch_size=64
 randomizer_size=4194304
-train_tool="snnet-train-pairshuff "
+train_tool="srnnet-train-pairshuff "
 dnn_depth=1
-dnn_width=200
+dnn_width=256
+rnn_width=64
 lattice_N=1000
 test_lattice_N=1000
 acwt=0.2
@@ -57,21 +58,20 @@ negative_num=0
 
 files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat nnet1"
 
-if [ "$#" -ne 5 ]; then
+if [ "$#" -ne 4 ]; then
    echo "Perform structure DNN training"
-   echo "Usage: $0 <dir> <lattice_model> <nnet1-out> <nnet2-out> <stateMax>"
-   echo "eg. $0 data/nn_post lat_model.in nnet1.out nnet2.out 48"
+   echo "Usage: $0 <dir> <lattice_model> <nnet> <stateMax>"
+   echo "eg. $0 data/nn_post lat_model.in nnet.out 48"
    echo ""
    exit 1;
 fi
 
 dir=$1
 lat_model=$2
-nnet1_out=$3
-nnet2_out=$4
-stateMax=$5
+nnet_out=$3
+stateMax=$4
 
-nnetdir=$(cd `dirname $nnet1_out`; pwd)
+nnetdir=$(cd `dirname $nnet_out`; pwd)
 
 #check file existence.
 for file in $files;
@@ -107,87 +107,47 @@ lattice-to-nbest-path.sh --cpus $(( (cpus+1)/2 )) --acoustic-scale $acwt --n $te
    2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 # use pretrained front end neural network
-mlp1_best=$dir/nnet1
 mlp2=$tmpdir/nnet2
+
+mlp1_best=$dir/nnet1
 mlp2_best=$mlp2
-
-if [ $rbm_pretrain == "true" ]; then
-   # RBM pretraining
-   [ ! -d $dir/../psi ] && mkdir $dir/../psi
-   psi_feature=$(readlink -e $dir)/../psi/train_${lattice_N}_${acwt}
-
-   if [ ! -f ${psi_feature}.scp ]; then
-      snnet-gen-psi \
-         --negative-num=$negative_num \
-         --rand-seed=$seed \
-         ${feature_transform:+ --feature-transform="$feature_transform"} \
-         "$train_ark" "$train_lab" "ark:gunzip -c $train_lattice_path |" \
-         $mlp1_best $stateMax ark,scp:${psi_feature}.ark,${psi_feature}.scp \
-         2>&1 | tee -a $log; ( exit ${PIPESTATUS[0]} ) || exit 1
-   fi
-
-   mkdir -p $tmpdir/psi
-   cp ${psi_feature}.scp $tmpdir/psi/feats.scp
-
-   dbn=$dir/${dnn_depth}_${dnn_width}_${lattice_N}_${acwt}.dbn
-   dbn_transform=$dir/${dnn_depth}_${dnn_width}_${lattice_N}_${acwt}.trans
-
-   if [ ! -f $dbn ]; then
-      (cd $timit && steps/nnet/pretrain_dbn.sh \
-         --nn-depth $((dnn_depth - 1)) --hid_dim $dnn_width \
-         --splice 0 --rbm-iter 20 \
-         $tmpdir/psi $tmpdir/dbn \
-         2>&1 | tee -a $log);
-      cp $tmpdir/dbn/$((dnn_depth - 1)).dbn $dbn || exit 1
-      cp $tmpdir/dbn/final.feature_transform $dbn_transform || exit 1
-   fi
-
-   #initialize nnet2 model
-   mlp2_last=$tmpdir/nnet2.last
-   mlp2_proto=$tmpdir/nnet2.proto
-   $timit/utils/nnet/make_nnet_proto.py --no-softmax $dnn_width 1 0 $dnn_width > $mlp2_proto || exit 1
-   nnet-initialize $mlp2_proto $mlp2_last || exit 1; 
-
-   # remove splice in dbn_transform.
-   nnet-copy --binary=false $dbn_transform - | \
-      sed  -e 'N;s@<Splice\>.*@@g' -e 's@\[ 0 \]@@g' | \
-      sed '/^$/d' > $tmpdir/nosplice
-
-   nnet-concat $tmpdir/nosplice $dbn $mlp2_last $mlp2 \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1
-
-else 
+mlp_best=$tmpdir/nnet.init
 
    #initialize nnet2 model
    feat_dim=$(nnet-info $dir/nnet1 2>/dev/null | grep output-dim | head -n 1 | cut -d ' ' -f2)
-   SVM_dim=$(( (stateMax + 1) * (feat_dim + 1) + stateMax*stateMax ))
+
    mlp2_init=$tmpdir/nnet2.init
    mlp2_proto=$tmpdir/nnet2.proto
-   $timit/utils/nnet/make_nnet_proto.py --no-softmax $SVM_dim 1 $dnn_depth $dnn_width | \
-      sed -e "s@</NnetProto>@</NnetProto>@g" > $mlp2_proto || exit 1
-   #   add Sigmoid layer in the last layer
-   #   sed -e "s@</NnetProto>@<Sigmoid> <InputDim> 1 <OutputDim> 1 \n</NnetProto>@g" > $mlp2_proto || exit 1
-   nnet-initialize $mlp2_proto $mlp2_init || exit 1; 
+   $timit/utils/nnet/make_nnet_proto.py --no-softmax $rnn_width 1 $dnn_depth $dnn_width > $mlp2_proto  \
+      || exit 1
+   nnet-initialize $mlp2_proto $mlp2 || exit 1; 
 
-   mlp2_cmvn=$tmpdir/nnet2.cmvn
-   mlp2=$tmpdir/nnet2
+   #generate configure file
+   srnn_config=$tmpdir/srnn.config
+   stddev=$(echo "scale=10; 3.5 * sqrt(2/($feat_dim + $rnn_width))" | bc)
+   Affine="<AffineTransform> <InputDim> $feat_dim <OutputDim> $rnn_width <BiasMean> 0.0 <BiasRange> 4.0 <ParamStddev> 0.02 <MaxNorm> 0.0"
 
-   #compute cmvn layer for nnet2
-   snnet-psi-cmvn --verbose=$verbose --binary=true --rand-seed=$seed --negative-num=$negative_num \
-      ${feature_transform:+ --feature-transform="$feature_transform"} \
-      "$train_ark" "$train_lab" "ark:gunzip -c $train_lattice_path |" \
-      $dir/nnet1 $mlp2_init $stateMax $mlp2_cmvn \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1
+   echo "<SRNnetProto>" > $srnn_config
+   echo "<MUX>"        >> $srnn_config
 
-   nnet-concat $mlp2_cmvn $mlp2_init $mlp2 \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1
+   for((i=0; i < $stateMax; ++i))
+   do
+      echo $Affine >> $srnn_config
+   done
 
-fi
+   cat >>$srnn_config <<EOF
+   </MUX>
+   <Init> <AddShift> <InputDim> $rnn_width <OutputDim> $rnn_width <InitParam> 0.0
+   <Forw> <AffineTransform> <InputDim> $rnn_width <OutputDim> $rnn_width <BiasMean> 0.0 <BiasRange> 4.0 <ParamStddev> 0.02 <MaxNorm> 0.0
+   <Acti> <Sigmoid> <InputDim> $rnn_width <OutputDim> $rnn_width
+   </SRNnetProto>
+EOF
+   
+   srnnet-init $mlp1_best $mlp2_best $srnn_config $mlp_best
 
 
-
-   snnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
-      "ark:gunzip -c $dev_lattice_path |" $mlp1_best $mlp2_best $stateMax \
+   srnnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
+      "ark:gunzip -c $dev_lattice_path |" $mlp_best \
       "ark:| gzip -c > $tmpdir/dev_${iter}.tag.gz"\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
@@ -197,6 +157,7 @@ fi
    calc.sh "$cv_lab" ark:$tmpdir/dev_${iter}.tag.1best \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
+rm -f $nnetdir/log
 
 #TODO use lattice best path as init path to do gibbs
 
@@ -205,8 +166,7 @@ halving=0
 # start training
 for iter in $(seq -w $max_iters); do
 
-   mlp1_next=$tmpdir/nnet/nnet1.${iter}
-   mlp2_next=$tmpdir/nnet/nnet2.${iter}
+   mlp_next=$tmpdir/nnet/nnet.${iter}
    seed=$((seed + 1))
 
    # find negitive example
@@ -231,14 +191,21 @@ for iter in $(seq -w $max_iters); do
    # train
    log=$tmpdir/log/iter${iter}.tr.log; hostname>$log
 
+   # add decode phone seq into training data.
+   [ -f ${mlp_best}.decode.ark ] || \
+   srnnet-decode --Nbest=1 \
+      ${feature_transform:+ --feature-transform="$feature_transform"} \
+      "$train_ark" $mlp_best ark:${mlp_best}.decode.ark \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
    if [ "$lattice_source" == "both" ]; then
-      combined_score_path="ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path_rand |\" \"ark:gunzip -c $train_lattice_path |\" |"
+      combined_score_path="ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path_rand |\" \"ark:gunzip -c $train_lattice_path |\" ark:${mlp_best}.decode.ark |"
 
    elif [ "$lattice_source" == "best" ] ; then
-      combined_score_path="ark:gunzip -c $train_lattice_path |"
+      combined_score_path="ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path |\" ark:${mlp_best}.decode.ark |"
 
    elif [ "$lattice_source" == "rand" ] ; then
-      combined_score_path="ark:gunzip -c $train_lattice_path_rand |"
+      combined_score_path="ark:combine-score-path ark:- \"ark:gunzip -c $train_lattice_path_rand |\" ark:${mlp_best}.decode.ark |"
 
    else
       echo "lattice-source error, lattice-source=$lattice_source"
@@ -253,7 +220,7 @@ for iter in $(seq -w $max_iters); do
       ${feature_transform:+ --feature-transform="$feature_transform"} \
       ${train_opt:+ "$train_opt"} \
       "$train_ark" "$train_lab" "$combined_score_path" \
-      $mlp1_best $mlp2_best $stateMax $mlp1_next $mlp2_next \
+      $mlp_best $mlp_next \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    loss_tr=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
@@ -268,7 +235,7 @@ for iter in $(seq -w $max_iters); do
       --minibatch-size=$minibatch_size \
       ${feature_transform:+ --feature-transform="$feature_transform"} \
       "$cv_ark" "$cv_lab" "ark:gunzip -c $dev_lattice_path |" \
-      $mlp1_next $mlp2_next $stateMax \
+      $mlp_next \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    #loss_new=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{print 100 - $3}')
@@ -278,32 +245,32 @@ for iter in $(seq -w $max_iters); do
 
 # evaluate dev set wer.
 # ------------------------------------------------------------------------------------------------
-#   snnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
-#      "ark:gunzip -c $dev_lattice_path |" $mlp1_next $mlp2_next $stateMax \
-#      "ark:| gzip -c > $tmpdir/dev_${iter}.tag.gz"\
-#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-#
-#   best-score-path "ark:gunzip -c $tmpdir/dev_${iter}.tag.gz |" ark:$tmpdir/dev_${iter}.tag.1best
-#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-#
-#   calc.sh "$cv_lab" ark:$tmpdir/dev_${iter}.tag.1best \
-#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-#   WER=$(grep WER $log | tail -n 1 | awk '{ print $2; }')
-# ------------------------------------------------------------------------------------------------
-
-
-   snnet-score ${feature_transform:+ --feature-transform="$feature_transform"} ark:$dir/test.ark \
-      "ark:gunzip -c $test_lattice_path |" $mlp1_next $mlp2_next $stateMax \
-      "ark:| gzip -c > $tmpdir/test_${iter}.tag.gz"\
+   srnnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
+      "ark:gunzip -c $dev_lattice_path |" $mlp_next \
+      "ark:| gzip -c > $tmpdir/dev_${iter}.tag.gz"\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   best-score-path "ark:gunzip -c $tmpdir/test_${iter}.tag.gz |" ark:$tmpdir/test_${iter}.tag.1best
+   best-score-path "ark:gunzip -c $tmpdir/dev_${iter}.tag.gz |" ark:$tmpdir/dev_${iter}.tag.1best
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   calc.sh ark:$dir/test.lab ark:$tmpdir/test_${iter}.tag.1best \
+   calc.sh "$cv_lab" ark:$tmpdir/dev_${iter}.tag.1best \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
    WER=$(grep WER $log | tail -n 1 | awk '{ print $2; }')
+# ------------------------------------------------------------------------------------------------
 
+#
+#   srnnet-score ${feature_transform:+ --feature-transform="$feature_transform"} ark:$dir/test.ark \
+#      "ark:gunzip -c $test_lattice_path |" $mlp_next \
+#      "ark:| gzip -c > $tmpdir/test_${iter}.tag.gz"\
+#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+#
+#   best-score-path "ark:gunzip -c $tmpdir/test_${iter}.tag.gz |" ark:$tmpdir/test_${iter}.tag.1best
+#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+#
+#   calc.sh ark:$dir/test.lab ark:$tmpdir/test_${iter}.tag.1best \
+#      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+#   WER=$(grep WER $log | tail -n 1 | awk '{ print $2; }')
+#
    # accept or reject new parameters (based on objective function)
    loss_prev=$loss
    
@@ -311,22 +278,17 @@ for iter in $(seq -w $max_iters); do
 
    if [ 1 == $(bc <<< "${loss_new/[eE]+*/*10^} < ${loss/[eE]+*/*10^}") -o $iter -le $keep_lr_iters ]; then
       loss=$loss_new
-      mlp1_best=$tmpdir/nnet/nnet1.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}
-      mlp2_best=$tmpdir/nnet/nnet2.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}
+      mlp_best=$tmpdir/nnet/nnet.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}
       echo "accept" >> $nnetdir/log
-      [ $iter -le $keep_lr_iters ] && mlp1_best=${mlp1_best}_keep-lr-iters-$keep_lr_iters 
-      [ $iter -le $keep_lr_iters ] && mlp2_best=${mlp2_best}_keep-lr-iters-$keep_lr_iters
+      [ $iter -le $keep_lr_iters ] && mlp_best=${mlp_best}_keep-lr-iters-$keep_lr_iters 
 
-      mv $mlp1_next $mlp1_best
-      mv $mlp2_next $mlp2_best
-      echo "nnet accepted ($(basename $mlp1_best) $(basename $mlp2_best))"
+      mv $mlp_next $mlp_best
+      echo "nnet accepted ($(basename $mlp_best))"
    else
-     mlp1_reject=$tmpdir/nnet/nnet1.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}_rejected
-     mlp2_reject=$tmpdir/nnet/nnet2.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}_rejected
+     mlp_reject=$tmpdir/nnet/nnet.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}_rejected
      echo "rejected" >> $nnetdir/log
-     mv $mlp1_next $mlp1_reject
-     mv $mlp2_next $mlp2_reject
-     echo "nnet rejected ($(basename $mlp1_reject) $(basename $mlp2_reject))"
+     mv $mlp_next $mlp_reject
+     echo "nnet rejected ($(basename $mlp_reject))"
    fi
 
    # no learn-rate halving yet, if keep_lr_iters set accordingly
@@ -359,8 +321,7 @@ done
 
 echo "train success"
 
-cp $mlp1_best $nnet1_out
-cp $mlp2_best $nnet2_out
+cp $mlp_best $nnet_out
 
 rm -rf $tmpdir
 

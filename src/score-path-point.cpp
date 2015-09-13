@@ -40,7 +40,6 @@ int main(int argc, char *argv[]) {
     SequentialScorePathReader score_path_reader1(score_path_rspecifier1);  
     SequentialScorePathReader score_path_reader2(score_path_rspecifier2);  
 
-    cout << "{ \\" << endl;
     int num_done = 0;
     for(; !score_path_reader1.Done() && !score_path_reader2.Done();
           score_path_reader1.Next(), score_path_reader2.Next()){
@@ -61,27 +60,13 @@ int main(int argc, char *argv[]) {
              assert(lab1[j] == lab2[j]);
        }
 
-       if(num_done != 0)
-          cout << ", ";
-       cout << "'" << score_path_reader1.Key() << "': ( [";
-
-       for(int i = 0; i < table1.size(); ++i){
-          if( i != 0)
-             cout << ", ";
-          cout << table1[i].first;
-       }
-       cout << "], [";
-
-       for(int i = 0; i < table2.size(); ++i){
-          if( i != 0)
-             cout << ", ";
-          cout << table2[i].first;
-       }
-       cout << "] ) \\" << endl;
+       for(int i = 0; i < table1.size(); ++i)
+          cout << score_path_reader1.Key() << "\t" 
+             << table1[i].first << "\t" 
+             << table2[i].first << endl;
 
        num_done++;
     }
-    cout << "}" << endl;
 
     KALDI_LOG << "Finished " << num_done;
     

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/../path
@@ -38,6 +38,8 @@ if [ $cpus == 1 ]; then
    echo "Not for single cpu"
    exit 1;
 fi
+
+[ -e tmp ] && [ ! -d tmp ] && rm -rf tmp
 
 [ ! -d tmp ] && mkdir tmp
 

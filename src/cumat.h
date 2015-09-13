@@ -1,9 +1,10 @@
 #ifndef _CUMAT_H_
-#define _CUMAT_H
+#define _CUMAT_H_
 
 #include "nnet/nnet-nnet.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
+#include "util.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -15,6 +16,19 @@ using namespace kaldi::nnet1;
 // get GPU memory pointer in a dirty way.
 template<typename Real>
 Real* getCuPointer(CuMatrixBase<Real> *matrix);
+
+void VecToMat(const vector< CuMatrix<BaseFloat> > &arr, CuMatrix<BaseFloat> &mat, int N = -1);
+void RepMat(const CuMatrix<BaseFloat> &src, CuMatrix<BaseFloat> &dest, int N = -1);
+
+void MatToVec(const CuMatrix<BaseFloat> &mat, const vector< CuMatrix<BaseFloat> > &ref,
+      vector< CuMatrix<BaseFloat> > &arr, int N = -1);
+void MatToVec(const CuMatrix<BaseFloat> &mat, const vector<int> &ref,
+      vector< CuMatrix<BaseFloat> > &arr);
+
+vector<int> getRowsN(const vector< CuMatrix<BaseFloat> > &arr);
+
+void Sum(const vector< CuMatrix<BaseFloat> > &arr, CuMatrix<BaseFloat>* out, int N = -1);
+
 
 // it's a general purpose vector
 template<typename T>

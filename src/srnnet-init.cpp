@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 
       po.Read(argc, argv);
 
-      if (po.NumArgs() != 6) {
+      if (po.NumArgs() != 4) {
          po.PrintUsage();
          exit(1);
       }

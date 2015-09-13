@@ -1,10 +1,11 @@
-#ifndef _NNET_BATCH_H_
-#define _NNET_BATCH_H_
+#ifndef _BNNET_H_
+#define _BNNET_H_
 
 #include "nnet/nnet-nnet.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "util.h"
+#include "cumat.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -24,7 +25,7 @@ class BNnet : public Nnet{
 
    public:
       void Propagate(const vector< CuMatrix<BaseFloat> > &in_arr,
-            vector< CuMatrix<BaseFloat> > &out_arr);
+            vector< CuMatrix<BaseFloat> > &out_arr, int N = -1);
 
       void Backpropagate(const vector< CuMatrix<BaseFloat> > &out_diff, 
             vector< CuMatrix<BaseFloat> > *in_diff = NULL);
@@ -40,14 +41,6 @@ class BNnet : public Nnet{
       void Backpropagate(const CuMatrixBase<BaseFloat> &out_diff, CuMatrix<BaseFloat> *in_diff);
       void Feedforward(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *out); 
 
-   private:
-      void VecToMat(const vector< CuMatrix<BaseFloat> > &arr, CuMatrix<BaseFloat> &mat);
-      void MatToVec(const CuMatrix<BaseFloat> &mat, const vector< CuMatrix<BaseFloat> > &ref,
-            vector< CuMatrix<BaseFloat> > &arr);
-      void MatToVec(const CuMatrix<BaseFloat> &mat, const vector<int> &ref,
-            vector< CuMatrix<BaseFloat> > &arr);
-      void RepMat(const CuMatrix<BaseFloat> &src, CuMatrix<BaseFloat> &dest, int N);
-      vector<int> getRowsN(const vector< CuMatrix<BaseFloat> > &arr);
 };
 
 #endif // _NNET_BATCH_H_

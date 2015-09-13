@@ -6,7 +6,7 @@
 #include "base/kaldi-common.h"
 #include "nnet/nnet-randomizer.h"
 #include "util/common-utils.h"
-#include "nnet-batch.h"
+#include "bnnet.h"
 #include "util.h"
 #include <iostream>
 #include <string>
@@ -39,6 +39,7 @@ class SRNnet{
       //void Feedforward(const CuMatrix<BaseFloat> &in,
       //      const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out);
 
+      void Decode(const CuMatrix<BaseFloat> &in, ScorePath::Table &table, int Nbest);
 
       /// Dimensionality on network input (input feature dim.)
       int32 InputDim() const; 
@@ -93,17 +94,18 @@ class SRNnet{
       void SetTransform(const Nnet &nnet);
 
    private:
+      void PropagateRPsi(const CuMatrix<BaseFloat> &in, const vector< vector<uchar>* > &labels);
+
       void RPsi(vector< CuMatrix<BaseFloat> > &propagate_phone,
             const vector< vector<uchar>* > &labels, vector< CuMatrix<BaseFloat> > &propagate_frame);
 
       void BackRPsi(vector< CuMatrix<BaseFloat> > &backpropagate_frame,
             const vector< vector<uchar>* > &labels, vector< CuMatrix<BaseFloat> > &backpropagate_phone);
 
-      void Sum(const vector< CuMatrix<BaseFloat> > &arr, int N, CuMatrix<BaseFloat>* out);
-
       void packRPsi(vector< CuMatrix<BaseFloat> > &phone_mat,
             const vector< vector<uchar>* > &labels, vector< CuMatrix<BaseFloat> > &frame_mat,
             RPsiPack* pack);
+
 
       string Details(const Component* comp)const;
       
@@ -143,6 +145,13 @@ class SRNnet{
 
       CuMatrix<BaseFloat>           backpropagate_all_feat_buf_;
 
+      // double buffer for decoding
+      vector< vector< CuMatrix<BaseFloat> > > double_buffer_;
+      CuMatrix<BaseFloat>                     propagate_acti_in_;
+      CuMatrix<BaseFloat>                     propagate_forw_;
+      CuMatrix<BaseFloat>                     propagate_score_;
+      Matrix<BaseFloat>                       propagate_score_host_;
+
       
       // kernel buffer
       vector<uchar>         labelbuf_;
@@ -156,5 +165,13 @@ class SRNnet{
 
 
 };
+
+typedef struct{
+   uchar       phone;
+   BaseFloat   score;
+   int         bt;  // back track
+} Token;
+
+bool compareToken(const Token &a, const Token &b);
 
 #endif // _SNNET_H_
