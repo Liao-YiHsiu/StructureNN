@@ -571,3 +571,89 @@ void StrtLambdaRank::calcLoss(const vector<BaseFloat> &nnet_target,
    KALDI_ASSERT(KALDI_ISFINITE(sum));
    KALDI_ASSERT(KALDI_ISFINITE(loss));
 }
+
+void StrtBest::Eval(int bestIdx, const CuMatrixBase<BaseFloat> &nnet_out, CuMatrix<BaseFloat> *diff){
+   int N = nnet_out.NumRows();
+
+   KALDI_ASSERT(1 == nnet_out.NumCols());
+   assert(bestIdx < N);
+
+   // copy data from gpu to cpu
+   nnet_out_host_.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kUndefined);
+   nnet_out_host_.CopyFromMat(nnet_out);
+
+   // shifting
+   double max    =  nnet_out_host_(0, 0);
+   int    maxIdx =  0;
+
+   for(int i = 1; i < N; ++i)
+      if(nnet_out_host_(i, 0) > max){
+         max    = nnet_out_host_(i, 0);
+         maxIdx = i;
+      }
+
+   for(int i = 0; i < N; ++i)
+      nnet_out_host_(i, 0) -= max;
+
+
+   if( tmp_vec_.size() != N )
+      tmp_vec_.resize(N);
+
+   double sum = 0;
+   for(int i = 0; i < N; ++i){
+      tmp_vec_[i] = exp(sigma_ * nnet_out_host_(i, 0));
+      sum        += tmp_vec_[i];
+   }
+   KALDI_ASSERT(KALDI_ISFINITE(sum));
+   
+   double loss = -sigma_ * nnet_out_host_(bestIdx, 0) + log(sum);
+
+   diff_host_.Resize(N, 1, kSetZero);
+   for(int i = 0; i < N; ++i)
+      diff_host_(i, 0) = sigma_ * tmp_vec_[i] / sum;
+
+   diff_host_(bestIdx, 0) -= sigma_;
+
+   if(diff != NULL)
+      *diff = diff_host_;
+
+   frames_  ++;
+   loss_    += loss;
+   correct_ += (maxIdx == bestIdx)?1:0;
+   
+   // progress losss reporting
+   {
+      static const int32 progress_step = 3600; 
+      frames_progress_  ++;
+      loss_progress_    += loss;
+      correct_progress_ += (maxIdx == bestIdx)?1:0;
+
+      if (frames_progress_ > progress_step) {
+         KALDI_VLOG(1) << "ProgressLoss[ " 
+            << static_cast<int>(frames_/progress_step) << "h of " 
+            << static_cast<int>(frames_N_/progress_step) << "h]: " 
+            << loss_progress_/frames_progress_ << " (Strt) " 
+            << "FRAME ACC >> " << 100*correct_progress_/frames_progress_ << "% <<";
+         // store
+         loss_vec_.push_back(loss_progress_/frames_progress_);
+         // reset
+         frames_progress_  = 0;
+         loss_progress_    = 0;
+         correct_progress_ = 0;
+      }
+   }
+}
+
+string StrtBest::Report() {
+   ostringstream oss;
+   oss << "AvgLoss: " << loss_/frames_ << " (Strt) " << endl;
+
+   if (loss_vec_.size() > 0) {
+      oss << "progress: [";
+      copy(loss_vec_.begin(),loss_vec_.end(),ostream_iterator<float>(oss," "));
+      oss << "]" << endl;
+   }
+
+   oss << "FRAME_ACCURACY >> " << 100.0*correct_/frames_ << "% <<" << endl;
+   return oss.str(); 
+}

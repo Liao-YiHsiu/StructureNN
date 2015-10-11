@@ -17,6 +17,9 @@ using namespace kaldi::nnet1;
 template<typename Real>
 Real* getCuPointer(CuMatrixBase<Real> *matrix);
 
+template<typename Real>
+const Real* getCuPointer(const CuMatrixBase<Real> *matrix);
+
 void VecToMat(const vector< CuMatrix<BaseFloat> > &arr, CuMatrix<BaseFloat> &mat, int N = -1);
 void RepMat(const CuMatrix<BaseFloat> &src, CuMatrix<BaseFloat> &dest, int N = -1);
 
@@ -36,6 +39,9 @@ class CuVectorG{
    public:
       CuVectorG(int dim = 0):data_(0), dim_(0){ Resize(dim); }
       CuVectorG(const vector<T> &arr): data_(0), dim_(0){ Resize(arr.size()); CopyFromVec(arr); }
+      CuVectorG(const CuVectorG &cuv);
+
+      CuVectorG& operator=(const vector<T> &arr);
 
       ~CuVectorG(){ Destroy(); }
 
@@ -103,6 +109,30 @@ Real* getCuPointer(CuMatrixBase<Real> *matrix){
    myCuMatrix<Real>* mat_ptr = (myCuMatrix<Real>*)(void*)matrix;
    return mat_ptr->Data();
 }
+
+template<typename Real>
+const Real* getCuPointer(const CuMatrixBase<Real> *matrix){
+   const myCuMatrix<Real>* mat_ptr = (const myCuMatrix<Real>*)(const void*)matrix;
+   return mat_ptr->Data();
+}
+
+template<typename T>
+CuVectorG<T>::CuVectorG(const CuVectorG &cuv){
+   Resize(cuv.dim_);
+
+   Timer tim;
+   CU_SAFE_CALL(cudaMemcpy(data_, cuv.data_, dim_ * sizeof(T), cudaMemcpyDeviceToDevice));
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+   
+}
+
+template<typename T>
+CuVectorG<T>& CuVectorG<T>::operator=(const vector<T> &src){
+   Resize(src.size());
+   CopyFromVec(src);
+   return *this;
+}
+
 
 template<typename T>
 void CuVectorG<T>::Destroy(){

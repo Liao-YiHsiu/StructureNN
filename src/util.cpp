@@ -23,13 +23,13 @@ double phone_acc(const vector<uchar>& path1, const vector<uchar>& path2, bool no
    trim_path(path1, path1_trim);
    trim_path(path2, path2_trim);
 
-   vector<int32> path1_trim_32;
-   vector<int32> path2_trim_32;
+   vector<int> path1_trim_32;
+   vector<int> path2_trim_32;
 
    UcharToInt32(path1_trim, path1_trim_32);
    UcharToInt32(path2_trim, path2_trim_32);
 
-   int32 dist = LevenshteinEditDistance(path1_trim_32, path2_trim_32);
+   int dist = LevenshteinEditDistance(path1_trim_32, path2_trim_32);
 
    double corr = path1_trim.size() - dist;
 
@@ -40,13 +40,13 @@ double phone_acc(const vector<uchar>& path1, const vector<uchar>& path2, bool no
    return corr;
 }
 
-void UcharToInt32(const vector<uchar>& src_path, vector<int32>& des_path){
+void UcharToInt32(const vector<uchar>& src_path, vector<int>& des_path){
    des_path.resize(src_path.size());
    for(int i = 0; i < src_path.size(); ++i)
       des_path[i] = src_path[i];
 }
 
-void Int32ToUchar(const vector<int32>& src_path, vector<uchar>& des_path){
+void Int32ToUchar(const vector<int>& src_path, vector<uchar>& des_path){
    des_path.resize(src_path.size());
    for(int i = 0; i < src_path.size(); ++i){
       des_path[i] = src_path[i];
@@ -54,10 +54,10 @@ void Int32ToUchar(const vector<int32>& src_path, vector<uchar>& des_path){
    }
 }
 
-int32 best(const vector<BaseFloat> &arr){
+int best(const vector<BaseFloat> &arr){
    assert(arr.size() >= 1);
    BaseFloat max = arr[0];
-   int32 index = 0;
+   int index = 0;
    for(int i = 1; i < arr.size(); ++i)
      if(max < arr[i]){
         max = arr[i];
@@ -69,7 +69,7 @@ int32 best(const vector<BaseFloat> &arr){
 void trim_path(const vector<uchar>& scr_path, vector<uchar>& des_path){
    des_path.clear();
 
-   int32 prev = scr_path[0];
+   int prev = scr_path[0];
    des_path.push_back(scr_path[0]);
 
    for(int i = 1; i < scr_path.size(); ++i){
@@ -126,7 +126,7 @@ void getPhone(const string &key, const string &timit, map<string, int> &phMap, v
 void readPhMap(const string path, const string id_path, map<string, int> &phMap){
    map<string, int> inner;
    string line, tmp;
-   int32 id;
+   int id;
 
    {
       ifstream fin(id_path.c_str());
@@ -239,6 +239,54 @@ void backRPsi(RPsiPack *pack){
    Timer tim;
 
    cuda_back_rpsi(pack->T, pack->P, pack->L, pack);
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+}
+
+void dist_prop(const CuMatrixBase<BaseFloat> &mat, const int* seq_arr, int seq_stride,
+      const int* id_arr, float** mat_arr){
+   Timer tim;
+
+   int rows = mat.NumRows();
+
+   cuda_dist_prop((rows-1)/BLOCKSIZE+1, BLOCKSIZE, getCuPointer(&mat),
+         rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr);
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+}
+
+void comb_prop(float** mat_arr, const int* seq_arr, int seq_stride,
+      const int* id_arr, CuMatrixBase<BaseFloat> &mat){
+   Timer tim;
+
+   int rows = mat.NumRows()/seq_stride;
+
+   cuda_comb_prop((rows-1)/BLOCKSIZE+1, BLOCKSIZE, getCuPointer(&mat),
+         rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr);
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+}
+
+void dist_back(const CuMatrixBase<BaseFloat> &mat, const int* seq_arr, int seq_stride,
+      const int* id_arr, float** mat_arr){
+   Timer tim;
+
+   int rows = mat.NumRows()/seq_stride;
+
+   cuda_dist_back((rows-1)/BLOCKSIZE+1, BLOCKSIZE, getCuPointer(&mat),
+         rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr);
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+}
+
+void comb_back(float** mat_arr, const int* seq_arr, int seq_stride,
+      const int* id_arr, CuMatrixBase<BaseFloat> &mat){
+   Timer tim;
+
+   int rows = mat.NumRows();
+
+   cuda_comb_prop((rows-1)/BLOCKSIZE+1, BLOCKSIZE, getCuPointer(&mat),
+         rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr);
 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }

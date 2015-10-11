@@ -39,18 +39,23 @@ SRNnet::~SRNnet(){
    Destroy();
 }
 
-
 void SRNnet::Propagate(const CuMatrix<BaseFloat> &in,
       const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
    int N = labels[0]->size();
 
    PropagateRPsi(in, labels);
 
-   rnn_init_->Propagate(propagate_frame_buf_[0], &propagate_acti_in_buf_[0]);
-   acti_component_->Propagate(propagate_acti_in_buf_[0], &propagate_acti_out_buf_[0]);
+   if(propagate_init_.NumRows() != propagate_frame_buf_[0].NumRows() ||
+         propagate_init_.NumCols() != propagate_frame_buf_[0].NumCols())
+      propagate_init_.Resize(propagate_frame_buf_[0].NumRows(),
+            propagate_frame_buf_[0].NumCols(), kSetZero);
 
-   for(int i = 1; i < N; ++i){
-      forw_component_->Propagate(propagate_acti_out_buf_[i-1], &propagate_forw_buf_[i]);
+   for(int i = 0; i < N; ++i){
+      if(i != 0)
+         forw_component_->Propagate(propagate_acti_out_buf_[i-1], &propagate_forw_buf_[i]);
+      else
+         rnn_init_->Propagate(propagate_init_, &propagate_forw_buf_[i]);
+
       propagate_acti_in_buf_[i] = propagate_forw_buf_[i];
       propagate_acti_in_buf_[i].AddMat(1.0, propagate_frame_buf_[i]);
 
@@ -68,31 +73,28 @@ void SRNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff,
    //int L = labels.size();
    int N = labels[0]->size();
 
-   if(backpropagate_acti_out_buf_.size() < N){
-      backpropagate_acti_out_buf_.resize(N);
+   if(backpropagate_acti_in_buf_.size() < N){
       backpropagate_acti_in_buf_.resize(N);
+      backpropagate_acti_out_buf_.resize(N);
       backpropagate_forw_buf_.resize(N);
    }
 
    nnet2_.Backpropagate(out_diff, &backpropagate_acti_out_buf_, N);
 
-   for(int i = N - 1; i > 0; --i){
+   for(int i = N - 1; i >= 0; --i){
       if(i != N - 1)
          backpropagate_acti_out_buf_[i].AddMat(1.0, backpropagate_forw_buf_[i+1]);
 
       acti_component_->Backpropagate(propagate_acti_in_buf_[i], propagate_acti_out_buf_[i], 
             backpropagate_acti_out_buf_[i], &backpropagate_acti_in_buf_[i]);
 
-      forw_component_->Backpropagate(propagate_acti_out_buf_[i-1], propagate_forw_buf_[i],
-            backpropagate_acti_in_buf_[i], &backpropagate_forw_buf_[i]);
+      if(i != 0)
+         forw_component_->Backpropagate(propagate_acti_out_buf_[i-1], propagate_forw_buf_[i],
+               backpropagate_acti_in_buf_[i], &backpropagate_forw_buf_[i]);
+      //else
+      //   rnn_init_->BackPropagate(propagate_init_, propagate_forw_buf_[i],
+      //         backpropagate_acti_in_buf_[i], &backpropagate_forw_buf_[i]);
    }
-
-   backpropagate_acti_out_buf_[0].AddMat(1.0, backpropagate_forw_buf_[1]);
-   acti_component_->Backpropagate(propagate_acti_in_buf_[0], propagate_acti_out_buf_[0], 
-         backpropagate_acti_out_buf_[0], &backpropagate_acti_in_buf_[0]);
-
-   rnn_init_->Backpropagate(propagate_frame_buf_[0], propagate_acti_in_buf_[0],
-         backpropagate_acti_in_buf_[0], &backpropagate_forw_buf_[0]);
 
    if(backpropagate_phone_buf_.size() != mux_components_.size()){
       backpropagate_phone_buf_.resize(mux_components_.size());
@@ -113,11 +115,146 @@ void SRNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff,
    for(int i = 0; i < mux_components_.size(); ++i)
       mux_components_[i]->Update(propagate_feat_buf_, backpropagate_phone_buf_[i]);
 
-   rnn_init_->Update(propagate_frame_buf_[0], backpropagate_acti_in_buf_[0]);
+   rnn_init_->Update(propagate_init_, backpropagate_acti_in_buf_[0]);
 
    for(int i = 1; i < N; ++i)
       forw_component_->Update(propagate_acti_out_buf_[i-1], backpropagate_acti_in_buf_[i]);
 
+}
+
+void SRNnet::Propagate(const CuMatrix<BaseFloat> &in,
+      const vector<uchar> &label, int pos, CuMatrix<BaseFloat> *out){
+   int N = pos + 1;
+
+   nnet_transf_.Feedforward(in.RowRange(0, pos+1), &transf_);
+
+   nnet1_.Propagate(transf_, &propagate_feat_);
+
+   // resize
+   if(propagate_frame_buf_.size() < N){
+      propagate_frame_buf_.resize(N);
+      propagate_acti_in_buf_.resize(N);
+      propagate_acti_out_buf_.resize(N);
+      propagate_forw_buf_.resize(N);
+      propagate_score_buf_.resize(N);
+   }
+
+   for(int i = 0; i < pos; ++i)
+      mux_components_[label[i] - 1]->Propagate(
+            propagate_feat_.RowRange(i, 1), &propagate_frame_buf_[i]);
+
+   propagate_phone_.Resize(stateMax_, forw_component_->OutputDim(), kUndefined);
+
+   for(int i = 0; i < mux_components_.size(); ++i){
+      mux_components_[i]->Propagate(
+            propagate_feat_.RowRange(pos, 1), &propagate_phone_tmp_);
+      
+      propagate_phone_.Row(i).CopyFromVec(propagate_phone_tmp_.Row(0));
+   }
+
+   if(propagate_init_.NumRows() != 1 ||
+         propagate_init_.NumCols() != rnn_init_->InputDim())
+      propagate_init_.Resize(1, rnn_init_->InputDim(), kSetZero);
+
+   for(int i = 0; i < pos; ++i){
+      if(i != 0)
+         forw_component_->Propagate(propagate_acti_out_buf_[i-1], &propagate_forw_buf_[i]);
+      else
+         rnn_init_->Propagate(propagate_init_, &propagate_forw_buf_[i]);
+
+      propagate_acti_in_buf_[i] = propagate_forw_buf_[i];
+      propagate_acti_in_buf_[i].AddMat(1.0, propagate_frame_buf_[i]);
+
+      acti_component_->Propagate(propagate_acti_in_buf_[i], &propagate_acti_out_buf_[i]);
+   }
+
+   if(pos != 0)
+      forw_component_->Propagate(propagate_acti_out_buf_[pos-1], &propagate_forw_);
+   else
+      rnn_init_->Propagate(propagate_init_, &propagate_forw_);
+   propagate_acti_in_ = propagate_phone_;
+   propagate_acti_in_.AddVecToRows(1.0, propagate_forw_.Row(0), 1.0);
+
+   acti_component_->Propagate(propagate_acti_in_, &propagate_acti_out_);
+
+   nnet2_.Propagate(propagate_acti_out_, out);
+}
+
+void SRNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff, 
+      const vector<uchar> &label, int pos, int depth){
+   int N = pos+1;
+
+   if(backpropagate_acti_out_buf_.size() < N){
+      backpropagate_acti_out_buf_.resize(N);
+      backpropagate_acti_in_buf_.resize(N);
+      backpropagate_forw_buf_.resize(N);
+   }
+
+   nnet2_.Backpropagate(out_diff, &backpropagate_acti_out_);
+
+   acti_component_->Backpropagate(propagate_acti_in_, propagate_acti_out_,
+         backpropagate_acti_out_, &backpropagate_acti_in_);
+
+   backpropagate_forw_.Resize(1, backpropagate_acti_in_.NumCols(), kSetZero);
+   backpropagate_forw_.Row(0).AddRowSumMat(1.0, backpropagate_acti_in_, 1.0);
+
+   if(pos != 0)
+      forw_component_->Backpropagate(propagate_acti_out_buf_[pos-1], propagate_forw_,
+            backpropagate_forw_, &backpropagate_acti_out_buf_[pos-1]);
+   
+
+   for(int i = pos - 1, d = 0; i >= 0 && d <= depth; --i, ++d){
+      acti_component_->Backpropagate(propagate_acti_in_buf_[i], propagate_acti_out_buf_[i], 
+            backpropagate_acti_out_buf_[i], &backpropagate_acti_in_buf_[i]);
+
+      if(i != 0)
+         forw_component_->Backpropagate(propagate_acti_out_buf_[i-1], propagate_forw_buf_[i],
+               backpropagate_acti_in_buf_[i], &backpropagate_acti_out_buf_[i-1]);
+   }
+
+   backpropagate_feat_.Resize(stateMax_,   mux_components_[0]->InputDim(), kUndefined);
+   backpropagate_all_feat_.Resize(pos + 1, mux_components_[0]->InputDim(), kSetZero);
+
+   for(int i = 0; i < mux_components_.size(); ++i){
+      mux_components_[i]->Backpropagate(
+            propagate_feat_.RowRange(pos, 1), propagate_phone_.RowRange(i, 1),
+            backpropagate_acti_in_.RowRange(i, 1), &backpropagate_feat_tmp_);
+      backpropagate_feat_.Row(i).CopyFromVec(backpropagate_feat_tmp_.Row(0));
+   }
+
+   backpropagate_all_feat_.Row(pos).AddRowSumMat(1.0, backpropagate_feat_, 1.0);
+
+   for(int i = pos - 1, d = 0; i >= 0 && d <= depth; --i, ++d){
+      mux_components_[label[i] - 1]->Backpropagate(
+            propagate_feat_.RowRange(i, 1), propagate_frame_buf_[i],
+            backpropagate_acti_in_buf_[i], &backpropagate_all_feat_tmp_);
+      backpropagate_all_feat_.Row(i).CopyFromVec(backpropagate_all_feat_tmp_.Row(0));
+   }
+
+   nnet1_.Backpropagate(backpropagate_all_feat_, NULL);
+
+   //update Componnets
+   for(int i = pos - 1, d = 0; i >= 0 && d <= depth; --i, ++d){
+      mux_components_[label[i] - 1]->Update(
+            propagate_feat_.RowRange(i, 1), backpropagate_acti_in_buf_[i]);
+   }
+
+   for(int i = 0; i < mux_components_.size(); ++i)
+      mux_components_[i]->Update(propagate_feat_.RowRange(pos, 1), 
+            backpropagate_acti_in_.RowRange(i, 1));
+
+   for(int i = pos - 1, d = 0; i >= 0 && d <= depth; --i, ++d){
+      if(i != 0)
+         forw_component_->Update(propagate_acti_out_buf_[i-1],
+               backpropagate_acti_in_buf_[i]);
+      else
+         rnn_init_->Update(propagate_init_, backpropagate_acti_in_buf_[0]);
+   }
+
+   if(pos != 0)
+      forw_component_->Update(propagate_acti_out_buf_[pos-1], backpropagate_forw_);
+   else
+      rnn_init_->Update(propagate_init_, backpropagate_forw_);
 }
 
 

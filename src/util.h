@@ -50,11 +50,11 @@ inline double log_add(double a, double b){ return a + softplus(b-a);}
 double frame_acc(const vector<uchar>& path1, const vector<uchar>& path2, bool norm = true);
 double phone_acc(const vector<uchar>& path1, const vector<uchar>& path2, bool norm = true);
 
-int32 best(const vector<BaseFloat> &arr);
+int best(const vector<BaseFloat> &arr);
 
 void trim_path(const vector<uchar>& scr_path, vector<uchar>& des_path);
-void UcharToInt32(const vector<uchar>& src_path, vector<int32>& des_path);
-void Int32ToUchar(const vector<int32>& src_path, vector<uchar>& des_path);
+void UcharToInt32(const vector<uchar>& src_path, vector<int>& des_path);
+void Int32ToUchar(const vector<int>& src_path, vector<uchar>& des_path);
 
 
 void getPhone(const string &key, const string &timit, map<string, int> &phMap, vector<uchar> &phIdx);
@@ -72,6 +72,19 @@ void backPsi(int N, int F, int S, int maxL, PsiPack* packs_ptr);
 
 void propRPsi(RPsiPack *pack);
 void backRPsi(RPsiPack *pack);
+
+void dist_prop(const CuMatrixBase<BaseFloat> &mat, const int* seq_arr, int seq_stride,
+      const int* id_arr, float** mat_arr);
+
+void comb_prop(float** mat_arr, const int* seq_arr, int seq_stride,
+      const int* id_arr, CuMatrixBase<BaseFloat> &mat);
+
+void dist_back(const CuMatrixBase<BaseFloat> &mat, const int* seq_arr, int seq_stride,
+      const int* id_arr, float** mat_arr);
+
+void comb_back(float** mat_arr, const int* seq_arr, int seq_stride,
+      const int* id_arr, CuMatrixBase<BaseFloat> &mat);
+
 
 void LockSleep(string filename, int ms = 2000);
 
@@ -104,7 +117,7 @@ template<class V, class T> class ValueVectorPair{
 template<class V, class T>
 void ValueVectorPair<V, T>::Write(ostream &os, bool binary) const{
    try{
-      int32 vecsz = static_cast<int32>(val.size());
+      int vecsz = static_cast<int>(val.size());
       KALDI_ASSERT((size_t)vecsz == val.size());
 
       if(binary){
@@ -125,7 +138,7 @@ void ValueVectorPair<V, T>::Write(ostream &os, bool binary) const{
 
 template<class V, class T>
 void ValueVectorPair<V, T>::Read(istream &is, bool binary){
-   int32 vecsz;
+   int vecsz;
    if(binary){
       is.read(reinterpret_cast<char *>(&vecsz), sizeof(vecsz));
    }else{

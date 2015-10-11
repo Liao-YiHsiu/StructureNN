@@ -23,8 +23,6 @@ typedef struct{
 
 typedef StdVectorRandomizer<Frame> FrameRandomizer;
 
-void makeLabel(const vector<uchar> &label, vector< vector<uchar> > &dest, int pos, uchar stateMax);
-
 int main(int argc, char *argv[]) {
   
   try {
@@ -66,8 +64,11 @@ int main(int argc, char *argv[]) {
     double sigma = 1.0;
     po.Register("sigma", &sigma, "parameters of ranknet.");
 
-    string loss_func = "listnet";
-    po.Register("loss-func", &loss_func, "training loss function: (listnet, listrelu, ranknet)");
+    int num_frames = -1;
+    po.Register("num-frame", &num_frames, "limit the number of frames used in training(-1 for all training set).");
+
+    int depth = 20;
+    po.Register("depth", &depth, "BPTT depth");
 
     po.Read(argc, argv);
 
@@ -87,7 +88,7 @@ int main(int argc, char *argv[]) {
        nnet_out_filename = po.GetArg(4);
     }
 
-    StrtListBase* strt = StrtListBase::getInstance(loss_func, sigma, 0.0001);
+    StrtBest* strt = new StrtBest(sigma);
     
     if(strt == NULL)
        po.PrintUsage();
@@ -102,7 +103,7 @@ int main(int argc, char *argv[]) {
     nnet.Read(nnet_in_filename);
     nnet.SetTrainOptions(trn_opts, nnet_ratio);
 
-    int stateMax = nnet.StateMax();
+    //int stateMax = nnet.StateMax();
 
     // ------------------------------------------------------------
     // read in all features and save to GPU
@@ -154,7 +155,8 @@ int main(int argc, char *argv[]) {
        << ", frame # = " << frame_randomizer.NumFrames();
     
     // randomize
-    if (!crossvalidate && randomize) {
+    //if (!crossvalidate && randomize) {
+    if (randomize) {
        const std::vector<int32>& mask = 
           randomizer_mask.Generate(frame_randomizer.NumFrames());
        frame_randomizer.Randomize(mask);
@@ -183,9 +185,13 @@ int main(int argc, char *argv[]) {
     CuMatrix<BaseFloat> nnet_out;
     CuMatrix<BaseFloat> obj_diff;
 
-    strt->SetAll(frame_randomizer.NumFrames() * stateMax);
+    int total_frames = frame_randomizer.NumFrames();
+    if(num_frames < 0 || num_frames > total_frames)
+       num_frames = frame_randomizer.NumFrames();
 
-    for ( ; !frame_randomizer.Done(); frame_randomizer.Next()){
+    strt->SetAll(num_frames);
+
+    for (; (!frame_randomizer.Done()) && num_done < num_frames; frame_randomizer.Next()){
 
 #if HAVE_CUDA==1
        // check the GPU is not overheated
@@ -197,28 +203,18 @@ int main(int argc, char *argv[]) {
        const CuMatrix<BaseFloat> &nnet_feat_in = features[frm.labelID]; 
        const vector<uchar>       &ref_label_in = ref_label[frm.labelID];
 
-       vector< vector<uchar> >   nnet_label_in;
-       makeLabel(ref_label_in, nnet_label_in, frm.frameID, stateMax);
+       nnet.Propagate(nnet_feat_in, ref_label_in, frm.frameID, &nnet_out);
 
-       vector< vector<uchar>* >  nnet_label_in_ref;
-       VecToVecRef(nnet_label_in, nnet_label_in_ref);
-
-
-       nnet.Propagate(nnet_feat_in, nnet_label_in_ref, &nnet_out);
-
-       vector<BaseFloat>         nnet_target;
-       nnet_target.resize(stateMax, 0);
-       nnet_target[ref_label_in[frm.frameID] - 1] = 1;
-       strt->Eval(nnet_target, nnet_out, &obj_diff);
+       strt->Eval(ref_label_in[frm.frameID] - 1, nnet_out, &obj_diff);
 
        // backpropagate
        if (!crossvalidate) {
-          nnet.Backpropagate(obj_diff, nnet_label_in_ref);
+          nnet.Backpropagate(obj_diff, ref_label_in, frm.frameID, depth);
        }
 
        num_done ++;
     }
-    KALDI_LOG << "Done " << num_done << " label sequences.";
+    KALDI_LOG << "Done " << num_done << " frames.";
 
 
     // after last minibatch : show what happens in network 
@@ -256,15 +252,3 @@ int main(int argc, char *argv[]) {
   }
 }
 
-void makeLabel(const vector<uchar> &label, vector< vector<uchar> > &dest, int pos, uchar stateMax){
-   dest.resize(stateMax);
-
-   vector< uchar > cache = label;
-   cache.resize(pos);
-
-   for(int i = 0; i < stateMax; ++i){
-      dest[i] = cache;
-      dest[i].push_back(i + 1);
-   }
-
-}

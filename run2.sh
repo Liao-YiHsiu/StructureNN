@@ -1,32 +1,24 @@
 #!/bin/bash
 source path
 
-acc_func=pac
-error_margin=
-loss_func=ranknet
-absolute="false"
-acc_norm="true"
-pairwise="true"
 nnet_ratio=1
 
-dnn_depth=4
+dnn_depth=2
 dnn_width=512
 rnn_width=64
-lattice_N=10
+depth=-1
 test_lattice_N=10
 train_opt=
-learn_rate=0.002
+learn_rate=0.005
 cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
 keep_lr_iters=1
-norm_lr="true"
+dnn1_depth=2
+dnn1_width=512
 
-list="true"
 sigma=
-lattice_source="rand" # both, best, rand
-
 debug=
 
 echo "$0 $@"  # Print the command line for logging
@@ -45,30 +37,13 @@ if [ "$#" -ne 1 ]; then
    exit 1;
 fi
 
-if [ "$list" == "true" ]; then
-   train_tool="srnnet-train-listshuff \
-         ${acc_func:+ --acc-func=$acc_func} \
-         ${loss_func:+ --loss-func=$loss_func} \
-         ${error_margin:+ --error-margin=$error_margin} \
-         ${sigma:+ --sigma=$sigma} \
-         ${nnet_ratio:+ --nnet-ratio=$nnet_ratio}" 
-else
-   train_tool="srnnet-train-pairshuff \
-         ${acc_func:+ --acc-func=$acc_func} \
-         ${error_margin:+ --error-margin=$error_margin} \
-         ${loss_func:+ --loss-func=$loss_func} \
-         ${absolute:+ --absolute=$absolute} \
-         ${acc_norm:+ --acc-norm=$acc_norm} \
-         ${pairwise:+ --pairwise=$pairwise} \
-         ${nnet_ratio:+ --nnet-ratio=$nnet_ratio}" 
-fi
-
-if [ "$norm_lr" == "true" ]; then
-   learn_rate=$((learn_rate / lattice_N))
-fi
+train_tool="srnnet-train-frameshuff \
+   ${sigma:+ --sigma=$sigma} \
+   ${depth:+ --depth=$depth} \
+   ${nnet_ratio:+ --nnet-ratio=$nnet_ratio}" 
 
 dir=$1
-paramId=${dnn_depth}_${dnn_width}_${rnn_width}_${lattice_N}_${test_lattice_N}_${learn_rate}_${acwt}_${lattice_source}_${rbm_pretrain}_${keep_lr_iters}_${train_tool// /}
+paramId=${dnn_depth}_${dnn_width}_${rnn_width}_${dnn1_depth}_${dnn1_width}_${test_lattice_N}_${learn_rate}_${acwt}_${rbm_pretrain}_${keep_lr_iters}_${train_tool// /}
 
 log=log/$dir/${paramId}.log
 data=$dir/$paramId/data
@@ -96,16 +71,18 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
    [ ! -d $dir/$paramId ] && mkdir -p $dir/$paramId
 
    [ -f $model ] || snnet_train2.sh --cpus $cpus\
-      --dnn-depth $dnn_depth --dnn-width $dnn_width --lattice-N $lattice_N \
-      --test-lattice-N ${test_lattice_N} --learn-rate $learn_rate --acwt $acwt \
-      --train-tool "$train_tool" --lattice-source "$lattice_source" \
+      --dnn-depth $dnn_depth --dnn-width $dnn_width \
+      --learn-rate $learn_rate --acwt $acwt \
+      --train-tool "$train_tool" --test-lattice-N ${test_lattice_N}\
       ${rnn_width:+ --rnn-width $rnn_width} ${debug:+ --debug $debug} \
       ${keep_lr_iters:+ --keep-lr-iters $keep_lr_iters} \
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
       ${feature_transform:+ --feature-transform "$feature_transform"} \
       ${rbm_pretrain:+ --rbm-pretrain "$rbm_pretrain"} \
-      $dir $lat_model $model $stateMax\
+      ${dnn1_depth:+ --dnn1-depth $dnn1_depth} \
+      ${dnn1_width:+ --dnn1-width $dnn1_width} \
+      $dir $lat_model $model $stateMax \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    test_lattice_path=$dir/../lab/test.lab_${test_lattice_N}_${acwt}.gz
@@ -113,8 +90,11 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
       $lat_model ark:$dir/test.lat "$test_lattice_path" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   srnnet-score ${feature_transform:+ --feature-transform="$feature_transform"} ark:$dir/test.ark \
-      "ark:gunzip -c $test_lattice_path |" $model "ark:| gzip -c > ${data}.tag.gz"\
+   srnnet-score \
+      ${feature_transform:+ --feature-transform="$feature_transform"} \
+      ark:$dir/test.ark \
+      "ark:gunzip -c $test_lattice_path |" \
+      $model "ark:| gzip -c > ${data}.tag.gz"\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    best-score-path "ark:gunzip -c ${data}.tag.gz |" ark:${data}.tag.1best

@@ -23,6 +23,25 @@ __global__ static void _cuda_prop_rpsi(RPsiPack pack);
 
 __global__ static void _cuda_back_rpsi(RPsiPack pack);
 
+__global__ static void _cuda_distribute(const float* mat, int rows, int cols, int stride, 
+      const int* seq_arr, const int* id_arr, float** mat_arr);
+
+__global__ static void _cuda_combine(float* mat, int rows, int cols, int stride,
+      const int* seq_arr, const int* id_arr, const float** mat_arr);
+
+
+__global__ static void _cuda_dist_prop(const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr);
+
+__global__ static void _cuda_comb_prop(float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr);
+
+__global__ static void _cuda_dist_back(const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr);
+
+__global__ static void _cuda_comb_back(float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr);
+
 void cuda_make_obs(dim3 grid, dim3 block, const float* feats, int rows, int cols, int stride, const int* lab, float *data, int d_stride, int S){
    assert( rows < MAX_L);
    assert( S < MAX_S);
@@ -68,6 +87,36 @@ void cuda_back_rpsi(dim3 grid, dim3 block, size_t shared_mem, RPsiPack *pack){
    _cuda_back_rpsi<<<grid, block, shared_mem*sizeof(unsigned char)>>>(*pack);
 }
 
+void cuda_distribute(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, const int* id_arr, float** mat_arr){
+   _cuda_distribute<<<grid, block>>>(mat, rows, cols, stride, seq_arr, id_arr, mat_arr);
+}
+
+void cuda_combine(dim3 grid, dim3 block, float* mat, int rows, int cols, int stride,
+      const int* seq_arr, const int* id_arr, const float** mat_arr){
+   _cuda_combine<<<grid, block>>>(mat, rows, cols, stride, seq_arr, id_arr, mat_arr);
+}
+
+
+void cuda_dist_prop(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride, 
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr){
+   _cuda_dist_prop<<<grid, block>>>(mat, rows, cols, stride, seq_arr, seq_stride, id_arr, mat_arr);
+}
+
+void cuda_comb_prop(dim3 grid, dim3 block, float* mat, int rows, int cols, int stride, 
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr){
+   _cuda_comb_prop<<<grid, block>>>(mat, rows, cols, stride, seq_arr, seq_stride, id_arr, mat_arr);
+}
+
+void cuda_dist_back(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride, 
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr){
+   _cuda_dist_back<<<grid, block>>>(mat, rows, cols, stride, seq_arr, seq_stride, id_arr, mat_arr);
+}
+
+void cuda_comb_back(dim3 grid, dim3 block, float* mat, int rows, int cols, int stride, 
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr){
+   _cuda_comb_back<<<grid, block>>>(mat, rows, cols, stride, seq_arr, seq_stride, id_arr, mat_arr);
+}
 
 __device__
 static void _load(int* tgt, const int* src, int L, int l, int s){
@@ -364,4 +413,108 @@ __global__ static void _cuda_back_rpsi(RPsiPack pack){
             phone[d] += frm[d];
          }
       }
+}
+
+__global__ static void _cuda_distribute(const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, const int* id_arr, float** mat_arr){
+
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+   if(idx > rows) return;
+
+   float       *odata = mat_arr[seq_arr[idx]] + id_arr[idx] * stride;
+   const float *idata = mat + stride * idx;
+
+   for(int i = 0; i < cols; ++i)
+      odata[i] = idata[i];
+}
+
+__global__ static void _cuda_combine(float* mat, int rows, int cols, int stride,
+      const int* seq_arr, const int* id_arr, const float** mat_arr){
+
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+   if(idx > rows) return;
+
+   const float *idata = mat_arr[seq_arr[idx]] + id_arr[idx] * stride;
+   float       *odata = mat + stride * idx;
+
+   for(int i = 0; i < cols; ++i)
+      odata[i] = idata[i];
+}
+
+__global__ static void _cuda_dist_prop(const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr){
+
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+   if(idx > rows) return;
+
+   const int *seqs = seq_arr + seq_stride * idx;
+   const int *ids  = id_arr  + seq_stride * idx;
+
+   char mask[64] = {0};
+   
+   const float *idata = mat + stride * idx;
+
+   for(int i = 0; i < seq_stride; ++i){
+      if(mask[seqs[i]]) continue;
+      float *odata = mat_arr[seqs[i]] + ids[i] * stride;
+
+      for(int j = 0; j < cols; ++j)
+         odata[j] = idata[j];
+      mask[seqs[i]] = 1;
+   }
+}
+
+__global__ static void _cuda_comb_prop(float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr){
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+   if(idx > rows) return;
+
+   const int *seqs = seq_arr + seq_stride * idx;
+   const int *ids  = id_arr  + seq_stride * idx;
+
+   for(int i = 0; i < seq_stride; ++i){
+      float *idata = mat_arr[seqs[i]] + ids[i] * stride;
+      float *odata = mat + stride * (idx * seq_stride + i);
+
+      for(int j = 0; j < cols; ++j)
+         odata[j] = idata[j];
+   }
+}
+
+__global__ static void _cuda_dist_back(const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr){
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+   if(idx > rows) return;
+
+   const int *seqs = seq_arr + seq_stride * idx;
+   const int *ids  = id_arr  + seq_stride * idx;
+
+   for(int i = 0; i < seq_stride; ++i){
+      float       *odata = mat_arr[seqs[i]] + ids[i] * stride;
+      const float *idata = mat + stride * (idx * seq_stride + i);
+
+      for(int j = 0; j < cols; ++j)
+         odata[j] += idata[j];
+   }
+}
+
+__global__ static void _cuda_comb_back(float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr){
+
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+   if(idx > rows) return;
+
+   const int *seqs = seq_arr + seq_stride * idx;
+   const int *ids  = id_arr  + seq_stride * idx;
+
+   float *odata = mat + stride * idx;
+
+   for(int i = 0; i < seq_stride; ++i){
+      float *idata = mat_arr[seqs[i]] + ids[i] * stride;
+
+      for(int j = 0; j < cols; ++j)
+         odata[j] += idata[j];
+   }
 }

@@ -26,6 +26,25 @@ void cuda_prop_psi(dim3 grid, dim3 block, size_t shared_mem, int N, int F, int S
 
 void cuda_back_psi(dim3 grid, dim3 block, size_t shared_mem, int N, int F, int S, PsiPack *packs_ptr);
 
+void cuda_distribute(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, const int* id_arr, float** mat_arr);
+
+void cuda_combine(dim3 grid, dim3 block, float* mat, int rows, int cols, int stride,
+      const int* seq_arr, const int* id_arr, const float** mat_arr);
+
+
+void cuda_dist_prop(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride, 
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr);
+
+void cuda_comb_prop(dim3 grid, dim3 block, float* mat, int rows, int cols, int stride, 
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr);
+
+void cuda_dist_back(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride, 
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr);
+
+void cuda_comb_back(dim3 grid, dim3 block, float* mat, int rows, int cols, int stride, 
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr);
+
 typedef struct{
    int           L;            // label #
    int           T;            // utterance length

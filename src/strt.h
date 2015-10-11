@@ -110,6 +110,46 @@ class StrtListBase{
 
 };
 
+class StrtBest{
+   public:
+      StrtBest(double sigma):
+         sigma_(sigma),
+         frames_(0), correct_(0), loss_(0),
+         frames_progress_(0), correct_progress_(0), loss_progress_(0),
+         frames_N_(0) {}
+
+      ~StrtBest() { }
+
+      void SetAll(int frames_N){frames_N_ = frames_N;}
+
+      void Eval(int bestIdx, const CuMatrixBase<BaseFloat> &nnet_out, CuMatrix<BaseFloat> *diff);
+
+      string Report();
+
+   protected:
+
+      Matrix<BaseFloat> nnet_out_host_;
+      Matrix<BaseFloat> diff_host_;
+
+      double sigma_;
+
+   private:
+
+      double frames_;
+      double correct_;
+      double loss_;
+
+      // partial results during training
+      double frames_progress_;
+      double correct_progress_;
+      double loss_progress_;
+
+      vector<float> loss_vec_;
+      vector<double> tmp_vec_;
+
+      int frames_N_;
+};
+
 #define NEW_STRT_PAIR(name) \
    class name : public StrtBase{ \
       public: \

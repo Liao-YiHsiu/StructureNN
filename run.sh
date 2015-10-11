@@ -27,7 +27,7 @@ list="true"
 sigma=
 lattice_source="rand" # both, best, rand
 
-debug=
+debug=true
 
 echo "$0 $@"  # Print the command line for logging
 command_line="$0 $@"

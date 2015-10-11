@@ -35,6 +35,13 @@ class SRNnet{
       void Backpropagate(const CuMatrix<BaseFloat> &out_diff, 
             const vector<vector<uchar>* >&labels);
 
+      // frameshuffle
+      void Propagate(const CuMatrix<BaseFloat> &in,
+            const vector<uchar> &label, int pos, CuMatrix<BaseFloat> *out);
+
+      void Backpropagate(const CuMatrix<BaseFloat> &out_diff, 
+            const vector<uchar> &labels, int pos, int depth);
+
       /// speedup version for those in_arr are the same.
       //void Feedforward(const CuMatrix<BaseFloat> &in,
       //      const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out);
@@ -127,6 +134,7 @@ class SRNnet{
       // -------------------- buf -------------------------
       CuMatrix<BaseFloat>           transf_;
       CuMatrix<BaseFloat>           propagate_feat_buf_;
+      CuMatrix<BaseFloat>           propagate_init_;
 
       vector< CuMatrix<BaseFloat> > propagate_phone_buf_;
 
@@ -144,6 +152,22 @@ class SRNnet{
       vector< CuMatrix<BaseFloat> > backpropagate_feat_buf_;
 
       CuMatrix<BaseFloat>           backpropagate_all_feat_buf_;
+
+      // for Propagate label
+      CuMatrix<BaseFloat>           propagate_phone_;
+      CuMatrix<BaseFloat>           propagate_acti_out_;
+      CuMatrix<BaseFloat>           propagate_feat_;
+
+      CuMatrix<BaseFloat>           backpropagate_acti_out_;
+      CuMatrix<BaseFloat>           backpropagate_acti_in_;
+      CuMatrix<BaseFloat>           backpropagate_forw_;
+      CuMatrix<BaseFloat>           backpropagate_feat_;
+      CuMatrix<BaseFloat>           backpropagate_all_feat_;
+
+      CuMatrix<BaseFloat>           propagate_phone_tmp_;
+      CuMatrix<BaseFloat>           backpropagate_feat_tmp_;
+      CuMatrix<BaseFloat>           backpropagate_all_feat_tmp_;
+
 
       // double buffer for decoding
       vector< vector< CuMatrix<BaseFloat> > > double_buffer_;
