@@ -72,6 +72,7 @@ int main(int argc, char *argv[]) {
       Timer time;
       int32 num_done = 0;
 
+      CuMatrix<BaseFloat> nnet_in;
       CuMatrix<BaseFloat> nnet_out;
       Matrix<BaseFloat> nnet_out_host;
 
@@ -94,7 +95,7 @@ int main(int argc, char *argv[]) {
             const vector<uchar> &arr = table[i].second;
             assert(arr.size() == T);
             for(int j = 0; j < T; ++j)
-               label_seq[j*table.size()+i] = arr[j];
+               label_seq[j*table.size()+i] = arr[j] - 1;
          }
 
          vector<int32> reset_flag(1, 1);
@@ -104,7 +105,8 @@ int main(int argc, char *argv[]) {
          nnet.ResetLstmStreams(reset_flag);
          nnet.SetSeqLengths(seq_length);
 
-         nnet.Propagate(feat, &nnet_out);
+         nnet_transf.Feedforward(feat, &nnet_in);
+         nnet.Propagate(nnet_in, &nnet_out);
 
          nnet_out_host.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kUndefined);
          nnet_out_host.CopyFromMat(nnet_out);

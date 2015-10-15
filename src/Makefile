@@ -2,6 +2,7 @@
 include ../path
 
 O3: CXXFLAGS += -O3 -fopenmp
+O3: NVCCFLAGS += -O3
 O3: all
 
 #all: CXXFLAGS += -std=c++11
@@ -69,4 +70,4 @@ ifeq ($(CUDA), true)
 endif
 
 %.o : %.cu 
-	$(CUDATKDIR)/bin/nvcc -O3 -c $< -o $@ $(CUDA_INCLUDE) $(CUDA_FLAGS) $(CUDA_ARCH) -I$(KALDISRC)
+	$(CUDATKDIR)/bin/nvcc -g -G $(NVCCFLAGS) -c $< -o $@ $(CUDA_INCLUDE) $(CUDA_FLAGS) $(CUDA_ARCH) -I$(KALDISRC)

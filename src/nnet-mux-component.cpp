@@ -137,9 +137,12 @@ Mux* Mux::Read(istream &is, bool binary){
 
 void Mux::Write(ostream &os, bool binary) const{
    WriteToken(os, binary, "<Mux>");
-   WriteBasicType(os, binary, comps_.size());
-   WriteBasicType(os, binary, input_dim_);
-   WriteBasicType(os, binary, output_dim_);
+   int32 num = comps_.size();
+   int32 input_dim = input_dim_;
+   int32 output_dim = output_dim_;
+   WriteBasicType(os, binary, num);
+   WriteBasicType(os, binary, input_dim);
+   WriteBasicType(os, binary, output_dim);
 
    for(int i = 0; i < comps_.size(); ++i)
       comps_[i]->Write(os, binary);
@@ -184,7 +187,7 @@ int32 Mux::NumParams() const {
 
 void Mux::Update(const CuMatrixBase<BaseFloat> &input, const CuMatrixBase<BaseFloat> &diff){
    for(int i = 0; i < comps_.size(); ++i)
-      if(comps_[i]->IsUpdatable()){
+      if(comps_[i]->IsUpdatable() && cnt_[i] != 0){
          UpdatableComponent *uc = dynamic_cast<UpdatableComponent*>(comps_[i]);
          uc->Update(in_buff_[i], out_diff_buff_[i]);
       }

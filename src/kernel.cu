@@ -420,7 +420,7 @@ __global__ static void _cuda_distribute(const float* mat, int rows, int cols, in
 
    int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-   if(idx > rows) return;
+   if(idx >= rows) return;
 
    float       *odata = mat_arr[seq_arr[idx]] + id_arr[idx] * stride;
    const float *idata = mat + stride * idx;
@@ -434,7 +434,7 @@ __global__ static void _cuda_combine(float* mat, int rows, int cols, int stride,
 
    int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-   if(idx > rows) return;
+   if(idx >= rows) return;
 
    const float *idata = mat_arr[seq_arr[idx]] + id_arr[idx] * stride;
    float       *odata = mat + stride * idx;
@@ -447,7 +447,7 @@ __global__ static void _cuda_dist_prop(const float* mat, int rows, int cols, int
       const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr){
 
    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-   if(idx > rows) return;
+   if(idx >= rows) return;
 
    const int *seqs = seq_arr + seq_stride * idx;
    const int *ids  = id_arr  + seq_stride * idx;
@@ -469,7 +469,7 @@ __global__ static void _cuda_dist_prop(const float* mat, int rows, int cols, int
 __global__ static void _cuda_comb_prop(float* mat, int rows, int cols, int stride,
       const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr){
    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-   if(idx > rows) return;
+   if(idx >= rows) return;
 
    const int *seqs = seq_arr + seq_stride * idx;
    const int *ids  = id_arr  + seq_stride * idx;
@@ -486,7 +486,7 @@ __global__ static void _cuda_comb_prop(float* mat, int rows, int cols, int strid
 __global__ static void _cuda_dist_back(const float* mat, int rows, int cols, int stride,
       const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr){
    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-   if(idx > rows) return;
+   if(idx >= rows) return;
 
    const int *seqs = seq_arr + seq_stride * idx;
    const int *ids  = id_arr  + seq_stride * idx;
@@ -504,7 +504,7 @@ __global__ static void _cuda_comb_back(float* mat, int rows, int cols, int strid
       const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr){
 
    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-   if(idx > rows) return;
+   if(idx >= rows) return;
 
    const int *seqs = seq_arr + seq_stride * idx;
    const int *ids  = id_arr  + seq_stride * idx;

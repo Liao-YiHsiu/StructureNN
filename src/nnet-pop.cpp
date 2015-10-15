@@ -38,8 +38,10 @@ int main(int argc, char *argv[]) {
     
     bool binary_write = true;
     int32 num = 1;
+    bool front = false;
     po.Register("binary", &binary_write, "Write output in binary mode");
     po.Register("num", &num, "Pop the last n layers");
+    po.Register("front", &front, "Pop from front");
 
     po.Read(argc, argv);
 
@@ -60,8 +62,12 @@ int main(int argc, char *argv[]) {
       nnet.Read(ki.Stream(), binary_read);
     }
 
+    if(front){
+       for(int i = 0; i < num; ++i)
+          nnet.RemoveComponent(0);
+
     // pop the last few layers
-    {
+    }else{
        for(int i = 0; i < num; ++i)
           nnet.RemoveLastComponent();
     }

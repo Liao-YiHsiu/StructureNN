@@ -93,9 +93,13 @@ void MSNnet::SetDropoutRetention(BaseFloat r){
 }
 
 void MSNnet::SetLabelSeqs(const vector<int32> &labels, int labels_stride){
-   assert( labels.size() % labels_stride_ == 0 );
+   assert( labels.size() % labels_stride == 0 );
+   // check validation
+#pragma omp parallel for
+   for(int i = 0; i < labels.size(); ++i)
+      assert(labels[i] < mux_->NumComponents());
    labels_ = labels;
-   labels_stride_ = labels_stride_;
+   labels_stride_ = labels_stride;
 
    mux_->setSeqs(labels, labels_stride);
 }
@@ -136,8 +140,8 @@ void MSNnet::Read(const string &file){
 
 void MSNnet::Read(istream &is, bool binary){
    nnet1_.Read(is, binary);
-   mux_ = Mux::Read(is, binary);
    nnet2_.Read(is, binary);
+   mux_ = Mux::Read(is, binary);
 
    Check();
 }
@@ -151,8 +155,8 @@ void MSNnet::Write(const string &file, bool binary) const{
 void MSNnet::Write(ostream &os, bool binary) const{
    Check();
    nnet1_.Write(os, binary);
-   mux_ ->Write(os, binary);
    nnet2_.Write(os, binary);
+   mux_ ->Write(os, binary);
 }
 
 string MSNnet::Info() const{

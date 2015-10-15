@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
     po.Register("loss-func", &loss_func, "training loss function: (listnet, listrelu, ranknet)");
 
     // lstm parameters
-    int32 num_stream = 4;
+    int32 num_stream = 2;
     po.Register("num-stream", &num_stream, "---LSTM--- BPTT multi-stream training");
     // lstm parameters
 
