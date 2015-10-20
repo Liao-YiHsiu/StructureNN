@@ -40,11 +40,20 @@ void Mux::setSeqs(const vector<int32> &seq, int seq_stride){
 void Mux::Propagate(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *out){
    assert(in.NumRows()*seq_stride_ == seq_.size() && in.NumCols() == input_dim_);
 
-   for(int i = 0; i < cnt_.size(); ++i)
-      if(in_buff_[i].NumRows() < cnt_[i]){
+   // clear all previous buf...
+   for(int i = 0; i < in_buff_.size(); ++i){
+      in_buff_[i].Resize(0, 0, kUndefined);
+      in_diff_buff_[i].Resize(0, 0, kUndefined);
+      out_buff_[i].Resize(0, 0, kUndefined);
+      out_diff_buff_[i].Resize(0, 0, kUndefined);
+   }
+
+   for(int i = 0; i < cnt_.size(); ++i){
+      if(cnt_[i] != 0){
          in_buff_[i].Resize(cnt_[i], input_dim_, kUndefined);
          assert(in_buff_[i].Stride() == in.Stride());
       }
+   }
 
    dist_prop(in, seq_device_.Data(), seq_stride_, id_device_.Data(), getVecCuMatrixPt(in_buff_));
 
@@ -66,12 +75,10 @@ void Mux::Backpropagate(const CuMatrixBase<BaseFloat> &in, const CuMatrixBase<Ba
    assert(out_diff.NumRows() == seq_.size() && out_diff.NumCols() == output_dim_);
 
    for(int i = 0; i < cnt_.size(); ++i){
-      if(out_diff_buff_[i].NumRows() < cnt_[i]){
-         out_diff_buff_[i].Resize(cnt_[i], output_dim_, kUndefined);
+      if(cnt_[i] != 0){
+         out_diff_buff_[i].Resize(cnt_[i], output_dim_, kSetZero);
          assert(out_diff_buff_[i].Stride() == out_diff.Stride());
       }
-
-      out_diff_buff_[i].SetZero();
    }
 
    dist_back(out_diff, seq_device_.Data(), seq_stride_,

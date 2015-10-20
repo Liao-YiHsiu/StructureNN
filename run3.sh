@@ -2,21 +2,21 @@
 source path
 
 dnn_depth=1
-dnn_width=40
-mux_width=40
+dnn_width=32
+mux_width=32
 test_lattice_N=10
 lattice_N=50
 train_opt=
 momentum=0.9
-learn_rate=0.002
+learn_rate=0.000002
 cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
 keep_lr_iters=100
-dnn1_depth=2
-dnn1_width=256
-num_stream=4
+dnn1_depth=4
+dnn1_width=1024
+num_stream=5
 
 sigma=
 debug=

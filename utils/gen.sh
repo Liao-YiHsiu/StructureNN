@@ -60,7 +60,7 @@ do
 done
 
 # generate features.
-for file in $(ls $DIR/gen_*.sh)
+for file in $DIR/gen_*.sh;
 do
    $file
 done

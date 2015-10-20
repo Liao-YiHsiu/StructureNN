@@ -21,6 +21,11 @@ typedef StdVectorRandomizer<vector<vector<uchar> >* > LabelArrPtRandomizer;
 typedef StdVectorRandomizer<vector<BaseFloat>* >      TargetArrPtRandomizer;
 
 void fillin(CuMatrixBase<BaseFloat> &dest, vector< CuMatrix<BaseFloat> > &src, int stream_num);
+struct by_first { 
+   bool operator()(pair<int, int> const &a, pair<int, int> const &b) const { 
+      return a.first > b.first;
+   }
+};
 
 int main(int argc, char *argv[]) {
   
@@ -45,11 +50,9 @@ int main(int argc, char *argv[]) {
     po.Register("binary", &binary, "Write model in binary mode");
     po.Register("cross-validate", &crossvalidate, "Perform cross-validation (don't backpropagate)");
 
-    // <dummy> not used
     NnetDataRandomizerOptions rnd_opts;
     rnd_opts.Register(&po);
-    po.Register("randomize", &randomize, "dummy option");
-    // </dummy>
+    po.Register("randomize", &randomize, "Set training procedure randomized.");
 
     string acc_func = "fac";
     po.Register("acc-func", &acc_func, "Acuracy function : fac|pac");
@@ -145,120 +148,171 @@ int main(int argc, char *argv[]) {
     KALDI_LOG << (crossvalidate?"CROSS-VALIDATION":"TRAINING") << " STARTED";
 
     // ------------------------------------------------------------
-    // read in all features and save to GPU
-    // read in all labels and save to CPU
-    SequentialScorePathReader        score_path_reader(score_path_rspecifier);
-    SequentialBaseFloatMatrixReader  feature_reader(feat_rspecifier);
-    SequentialUcharVectorReader      label_reader(label_rspecifier);
+    // read in all features and save to CPU (for shuffling)
+    // read in all labels and save to CPU (for shuffling)
+    SequentialScorePathReader         score_path_reader(score_path_rspecifier);
+    SequentialBaseFloatMatrixReader   feature_reader(feat_rspecifier);
+    SequentialUcharVectorReader       label_reader(label_rspecifier);
 
-    int64 num_done = 0;
+    vector< Matrix<BaseFloat> >       feature_arr;
+    vector< vector< vector<uchar> > > label_arr;
+    vector< vector<BaseFloat> >       target_arr;
+    vector< pair< int, int >  >       length_arr;
+
     int num_Total = 0;
+    int cols = -1; int seqs_stride = -1;
+
+    srand(rnd_opts.randomizer_seed);
+
+    for(; !(score_path_reader.Done() || feature_reader.Done() || label_reader.Done());
+          score_path_reader.Next(), feature_reader.Next(), label_reader.Next()){
+
+       assert( score_path_reader.Key() == feature_reader.Key() );
+       assert( label_reader.Key() == feature_reader.Key() );
+
+       const ScorePath::Table  &table = score_path_reader.Value().Value();
+       const Matrix<BaseFloat> &feat  = feature_reader.Value();
+       const vector<uchar>     &label = label_reader.Value();
+
+       if(cols < 0) cols = feat.NumCols();
+       assert( cols == feat.NumCols() );
+
+       feature_arr.push_back(feat);
+       length_arr.push_back(make_pair(feat.NumRows(), length_arr.size()));
+
+       target_arr.push_back(vector<BaseFloat>());
+       label_arr.push_back(vector< vector<uchar> >());
+
+       vector< vector<uchar> > &seqs = label_arr[label_arr.size() - 1];
+       vector< BaseFloat >     &tgts = target_arr[target_arr.size() -1];
+
+       seqs.reserve(1 + table.size() + negative_num);
+
+       seqs.push_back(label);
+       for(int i = 0; i < table.size(); ++i)
+          seqs.push_back(table[i].second);
+
+       vector<uchar> neg_arr(label.size());
+       for(int i = 0; i < negative_num; ++i){
+          for(int j = 0; j < neg_arr.size(); ++j)
+             neg_arr[j] = rand() % stateMax + 1;
+          seqs.push_back(neg_arr);
+       }
+
+       if(seqs_stride < 0) seqs_stride = seqs.size();
+       assert(seqs_stride == seqs.size());
+
+       tgts.resize(seqs.size());
+#pragma omp parallel for
+       for(int i = 0; i < seqs.size(); ++i)
+          tgts[i] = acc_function(label, seqs[i], true);
+
+       num_Total += seqs.size();
+    }
+
+    KALDI_LOG << "All Data Loaded.";
+
+    // random shuffle
+    for(int i = 0; i < length_arr.size(); ++i){
+       int j = rand() % length_arr.size();
+       pair<int, int> tmp = length_arr[i];
+       length_arr[i] = length_arr[j];
+       length_arr[j] = tmp;
+    }
+
+    // sorting according to the length
+    sort(length_arr.begin(), length_arr.end(), by_first());
+
+    // constructing mini-batch
+    vector< vector<int> > mini_batch_idx;
+    for(int i = 0; i < length_arr.size(); ){
+       vector<int> batch;
+       for(int j = 0; j < num_stream && i < length_arr.size(); ++i, ++j){
+          batch.push_back(length_arr[i].second);
+       }
+       mini_batch_idx.push_back(batch);
+    }
+
+    // random shuffle
+    vector<int> shuffle_arr(mini_batch_idx.size());
+    for(int i = 0; i < shuffle_arr.size(); ++i)
+       shuffle_arr[i] = i;
+
+    if(randomize && !crossvalidate){
+       for(int i = 0; i < shuffle_arr.size(); ++i){
+          int j = rand() % shuffle_arr.size();
+
+          // swap
+          int tmp = shuffle_arr[i];
+          shuffle_arr[i] = shuffle_arr[j];
+          shuffle_arr[j] = tmp;
+       }
+    }
 
     strt->SetAll(num_Total);
-    srand(rnd_opts.randomizer_seed);
 
     CuMatrix<BaseFloat> nnet_out;
     CuMatrix<BaseFloat> nnet_out_diff;
     vector< CuMatrix<BaseFloat> > nnet_out_diff_arr(num_stream);
+
+    int64 num_done = 0;
     
-    while(1) {
+    //for(int i = 0; i < shuffle_arr.size(); ++i){
+    for(int i = 0; i < 5; ++i){
        // filled in training array.
        vector< CuMatrix<BaseFloat> >     features(num_stream); // all features
-       vector< vector<BaseFloat> >       targets(num_stream);
-       vector< vector< vector<uchar> > > examples(num_stream);
 
-       int snum;
-       int maxT = 0; int cols = -1; int seqs_stride = -1;
+       int maxT = 0; 
 
-       for(snum = 0; snum < num_stream; ++snum){
-          if(score_path_reader.Done() || feature_reader.Done() || label_reader.Done())
-             break;
+       const vector<int> & mini_batch = mini_batch_idx[shuffle_arr[i]];
 
-          assert( score_path_reader.Key() == feature_reader.Key() );
-          assert( label_reader.Key() == feature_reader.Key() );
-
-          const ScorePath::Table  &table = score_path_reader.Value().Value();
-          const Matrix<BaseFloat> &feat  = feature_reader.Value();
-          const vector<uchar>     &label = label_reader.Value();
-
+       for(int j = 0; j < mini_batch.size(); ++j){
+          const Matrix<BaseFloat> & feat = feature_arr[mini_batch[j]];
           if(maxT < feat.NumRows()) maxT = feat.NumRows();
-          
-          
-          nnet_transf.Feedforward(CuMatrix<BaseFloat>(feat), &features[snum]);
-          if(cols < 0) cols = features[snum].NumCols();
-          assert( cols == features[snum].NumCols() );
-
-          vector< vector<uchar> > &seqs = examples[snum];
-          vector< BaseFloat >     &tgts = targets[snum];
-
-          seqs.reserve(1 + table.size() + negative_num);
-
-          seqs.push_back(label);
-          for(int i = 0; i < table.size(); ++i)
-             seqs.push_back(table[i].second);
-
-          vector<uchar> neg_arr(label.size());
-          for(int i = 0; i < negative_num; ++i){
-             for(int j = 0; j < neg_arr.size(); ++j)
-                neg_arr[j] = rand() % stateMax + 1;
-             seqs.push_back(neg_arr);
-          }
-
-          if(seqs_stride < 0) seqs_stride = seqs.size();
-          assert(seqs_stride == seqs.size());
-
-          tgts.resize(seqs.size());
-#pragma omp parallel for
-          for(int i = 0; i < seqs.size(); ++i)
-             tgts[i] = acc_function(label, seqs[i], true);
-
-          num_Total += seqs.size();
-
-          score_path_reader.Next();
-          feature_reader.Next();
-          label_reader.Next();
+          nnet_transf.Feedforward(CuMatrix<BaseFloat>(feat), &features[j]);
        }
-
-       if(snum == 0)break;
 
        // construct labels input
 
-       CuMatrix<BaseFloat> nnet_in(maxT * snum, cols, kSetZero);
-       vector<int32>     labels_in(maxT * snum * seqs_stride, 0);
+       CuMatrix<BaseFloat> nnet_in(maxT * num_stream, cols, kSetZero);
+       vector<int32>     labels_in(maxT * num_stream * seqs_stride, 0);
 
-       fillin(nnet_in, features, snum);
+       fillin(nnet_in, features, num_stream);
 #pragma omp parallel for
-       for(int i = 0; i < snum; ++i)
-          for(int j = 0; j < seqs_stride; ++j)
-             for(int k = 0; k < examples[i][j].size(); ++k)
-                labels_in[ seqs_stride * snum * k  + seqs_stride * i + j] = examples[i][j][k] - 1;
-
+       for(int l = 0; l < mini_batch.size(); ++l){
+          const vector< vector<uchar> > &label = label_arr[mini_batch[l]];
+          for(int j = 0; j < label.size(); ++j)
+             for(int k = 0; k < label[j].size(); ++k)
+                labels_in[ seqs_stride * num_stream * k  + seqs_stride * l + j] =
+                   label[j][k] - 1;
+       }
 
        // setup nnet input
        nnet.SetLabelSeqs(labels_in, seqs_stride);
 
-       vector<int32> flag(snum, 1);
+       vector<int32> flag(num_stream , 1);
        nnet.ResetLstmStreams(flag);
 
-       vector<int32> seq_length(snum);
-       for(int i = 0; i < snum; ++i)
-          seq_length[i] = examples[i][0].size();
+       vector<int32> seq_length(num_stream, 0);
+       for(int l = 0; l < mini_batch.size(); ++l)
+          seq_length[l] = label_arr[mini_batch[l]][0].size();
        nnet.SetSeqLengths(seq_length);
 
        // propagate nnet output
        nnet.Propagate(nnet_in, &nnet_out);
 
-       nnet_out_diff.Resize(seqs_stride*snum, nnet_out.NumCols(), kUndefined);
-       for(int i = 0; i < snum; ++i){
-          strt->Eval(targets[i], nnet_out.RowRange(i*seqs_stride, seqs_stride), &nnet_out_diff_arr[i]);
-          nnet_out_diff.RowRange(i * seqs_stride, seqs_stride).CopyFromMat(nnet_out_diff_arr[i]);
+       nnet_out_diff.Resize(seqs_stride*num_stream, nnet_out.NumCols(), kSetZero);
+       for(int l = 0; l < mini_batch.size(); ++l){
+          strt->Eval(target_arr[mini_batch[l]],
+                nnet_out.RowRange(l*seqs_stride, seqs_stride), &nnet_out_diff_arr[l]);
+          nnet_out_diff.RowRange(l * seqs_stride, seqs_stride).CopyFromMat(nnet_out_diff_arr[l]);
        }
 
        if(!crossvalidate){
           nnet.Backpropagate(nnet_out_diff, NULL);
        }
 
-       num_done += snum * seqs_stride;
+       num_done += mini_batch.size() * seqs_stride;
     }
     
     KALDI_LOG << "Done " << num_done << " label sequences.";
@@ -290,6 +344,7 @@ int main(int argc, char *argv[]) {
 #if HAVE_CUDA==1
     CuDevice::Instantiate().PrintProfile();
 #endif
+    cudaDeviceReset();
 
     return 0;
   } catch(const std::exception &e) {
@@ -308,7 +363,8 @@ void fillin(CuMatrixBase<BaseFloat> &dest, vector< CuMatrix<BaseFloat> > &src, i
       size_t width     = src[i].NumCols() * sizeof(BaseFloat);
       size_t height    = src[i].NumRows();
 
-      CU_SAFE_CALL(cudaMemcpy2D(dest_data, dst_pitch, src_data, src_pitch,
-               width, height, cudaMemcpyDeviceToDevice));
+      if(height != 0)
+         CU_SAFE_CALL(cudaMemcpy2D(dest_data, dst_pitch, src_data, src_pitch,
+                  width, height, cudaMemcpyDeviceToDevice));
    }
 }

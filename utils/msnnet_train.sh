@@ -144,8 +144,8 @@ mlp_best=$tmpdir/nnet.init
    feat_dim=$(nnet-info $mlp1_best 2>/dev/null | grep output-dim | head -n 1 | cut -d ' ' -f2)
 
    mlp2_proto=$tmpdir/nnet2.proto
-   #$timit/utils/nnet/make_nnet_proto.py --no-softmax $mux_width 1 $dnn_depth $dnn_width > $mlp2_proto  \
-   #   || exit 1
+#$timit/utils/nnet/make_nnet_proto.py --no-softmax $mux_width 1 $dnn_depth $dnn_width > $mlp2_proto  || exit 1
+#   nnet-initialize $mlp2_proto $mlp2_best
    $timit/utils/nnet/make_lstm_proto.py --num-cells=$((dnn_width*2)) --num-recurrent=$dnn_width --num-layers=1 $mux_width 1  > $mlp2_proto || exit 1
    mlp2_tmp=$tmpdir/nnet2.proto.tmp
    nnet-initialize $mlp2_proto $mlp2_tmp || exit 1; 
