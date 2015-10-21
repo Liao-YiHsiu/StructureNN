@@ -257,8 +257,7 @@ int main(int argc, char *argv[]) {
 
     int64 num_done = 0;
     
-    //for(int i = 0; i < shuffle_arr.size(); ++i){
-    for(int i = 0; i < 5; ++i){
+    for(int i = 0; i < shuffle_arr.size(); ++i){
        // filled in training array.
        vector< CuMatrix<BaseFloat> >     features(num_stream); // all features
 

@@ -32,6 +32,8 @@ vector<int> getRowsN(const vector< CuMatrix<BaseFloat> > &arr);
 
 void Sum(const vector< CuMatrix<BaseFloat> > &arr, CuMatrix<BaseFloat>* out, int N = -1);
 
+bool Same(const CuMatrixBase<BaseFloat> &a, const CuMatrixBase<BaseFloat> &b, double err = 1e-10);
+
 
 // it's a general purpose vector
 template<typename T>

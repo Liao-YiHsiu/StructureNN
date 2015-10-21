@@ -66,6 +66,16 @@ void Mux::Propagate(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *out)
       }
 
    comb_prop(getVecCuMatrixPt(out_buff_), seq_device_.Data(), seq_stride_, id_device_.Data(), *out);
+
+   // check consistence
+   //CuMatrix<BaseFloat> tmp_out(seq_.size(), output_dim_, kUndefined);
+   //CuMatrix<BaseFloat> tmp_row(1, output_dim_, kUndefined);
+   //for(int i = 0; i < seq_.size(); ++i){
+   //   comps_[seq_[i]]->Propagate(in.RowRange(i/seq_stride_, 1), &tmp_row);
+   //   tmp_out.RowRange(i, 1).CopyFromMat(tmp_row);
+   //}
+
+   //assert(Same(*out, tmp_out));
 }
 
 void Mux::Backpropagate(const CuMatrixBase<BaseFloat> &in, const CuMatrixBase<BaseFloat> &out,
@@ -94,6 +104,26 @@ void Mux::Backpropagate(const CuMatrixBase<BaseFloat> &in, const CuMatrixBase<Ba
       }
 
    comb_back(getVecCuMatrixPt(in_diff_buff_), seq_device_.Data(), seq_stride_, id_device_.Data(), *in_diff);
+
+   // check consistence...
+   //CuMatrix<BaseFloat> tmp_sum(1, output_dim_, kSetZero);
+   //CuMatrix<BaseFloat> tmp_sum_diff(1, input_dim_, kSetZero);
+
+   //for(int i = 0; i < seq_stride_; ++i)
+   //   tmp_sum.AddMat(1.0, out_diff.RowRange(i, 1));
+   //comps_[seq_[0]]->Backpropagate(in.RowRange(0, 1), out.RowRange(0, 1),
+   //      tmp_sum, &tmp_sum_diff);
+
+   //assert(Same(tmp_sum_diff, in_diff->RowRange(0, 1)));
+   
+   CuMatrix<BaseFloat> tmp_in_diff(in.NumRows(), input_dim_, kSetZero);
+   CuMatrix<BaseFloat> tmp_row(1, input_dim_, kUndefined);
+   for(int i = 0; i < seq_.size(); ++i){
+      comps_[seq_[i]]->Backpropagate(in.RowRange(i/seq_stride_, 1), out.RowRange(i, 1),
+            out_diff.RowRange(i, 1), &tmp_row);
+      tmp_in_diff.RowRange(i/seq_stride_, 1).AddMat(1.0, tmp_row);
+   }
+   assert(Same(*in_diff, tmp_in_diff));
 }
 
 Mux* Mux::Init(istream &is){

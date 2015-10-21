@@ -15,7 +15,7 @@ lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
 keep_lr_iters=100
 dnn1_depth=4
-dnn1_width=1024
+dnn1_width=32
 num_stream=5
 
 sigma=

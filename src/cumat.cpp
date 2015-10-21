@@ -73,3 +73,11 @@ void Sum(const vector< CuMatrix<BaseFloat> > &arr, CuMatrix<BaseFloat>* out, int
    for(int i = 1; i < N; ++i)
       out->AddMat(1.0, arr[i]);
 }
+
+bool Same(const CuMatrixBase<BaseFloat> &a, const CuMatrixBase<BaseFloat> &b, double err){
+   CuMatrix<BaseFloat> c(a.NumRows(), a.NumCols(), kUndefined);
+   c = a;
+   c.AddMat(-1, b);
+   c.ApplyPow(2);
+   return c.Sum() < err;
+}

@@ -509,12 +509,16 @@ __global__ static void _cuda_comb_back(float* mat, int rows, int cols, int strid
    const int *seqs = seq_arr + seq_stride * idx;
    const int *ids  = id_arr  + seq_stride * idx;
 
+   char mask[64] = {0};
+
    float *odata = mat + stride * idx;
 
    for(int i = 0; i < seq_stride; ++i){
+      if(mask[seqs[i]]) continue;
       float *idata = mat_arr[seqs[i]] + ids[i] * stride;
 
       for(int j = 0; j < cols; ++j)
          odata[j] += idata[j];
+      mask[seqs[i]] = 1;
    }
 }
