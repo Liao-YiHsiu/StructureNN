@@ -56,6 +56,7 @@ class Mux {
 
    private:
       BaseFloat** getVecCuMatrixPt(vector< CuMatrix<BaseFloat> > &mat_arr);
+      int32*      getVecCuMatrixStride(vector< CuMatrix<BaseFloat> > &mat_arr);
 
       int32  input_dim_, output_dim_;
 
@@ -71,6 +72,7 @@ class Mux {
       CuVectorG<int32> seq_device_;
       CuVectorG<int32> id_device_;
 
+      CuVectorG< int32 >      mat_arr_stride_device_;
       CuVectorG< BaseFloat* > mat_arr_pt_device_;
 
       int seq_stride_;

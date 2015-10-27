@@ -34,16 +34,16 @@ void cuda_combine(dim3 grid, dim3 block, float* mat, int rows, int cols, int str
 
 
 void cuda_dist_prop(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride, 
-      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr);
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr, int* mat_arr_stride);
 
 void cuda_comb_prop(dim3 grid, dim3 block, float* mat, int rows, int cols, int stride, 
-      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr);
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr, int* mat_arr_stride);
 
 void cuda_dist_back(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride, 
-      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr);
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr, int* mat_arr_stride);
 
 void cuda_comb_back(dim3 grid, dim3 block, float* mat, int rows, int cols, int stride, 
-      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr);
+      const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr, int* mat_arr_stride);
 
 typedef struct{
    int           L;            // label #

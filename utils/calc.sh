@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 echo "$0 $@"  # Print the command line for logging
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
@@ -21,13 +21,13 @@ path=$2
 
    path-fer "$1" "ark:split-score-path \"$2\" ark:/dev/null ark:- |" 
 
-   compute-wer "ark:trim-path \"$1\" ark:- | uchar-to-int32 ark:- ark:- |" \
-   "ark:split-score-path \"$2\" ark:/dev/null ark:- | trim-path ark:- ark:- | uchar-to-int32 ark:- ark:- |" 
+   compute-wer "ark:trim-path \"$1\" ark,t:- |" \
+   "ark:split-score-path \"$2\" ark:/dev/null ark:- | trim-path ark:- ark,t:- |" 
 
    echo "Calculating Error rate.(39)" 
 
    path-fer "ark:trans.sh \"$1\" ark:- |" \
       "ark:split-score-path \"$2\" ark:/dev/null ark:- | trans.sh ark:- ark:- |" 
 
-   compute-wer "ark:trans.sh \"$1\" ark:- | trim-path ark:- ark:- | uchar-to-int32 ark:- ark:- |" \
-      "ark:split-score-path \"$2\" ark:/dev/null ark:- | trans.sh ark:- ark:- | trim-path ark:- ark:- | uchar-to-int32 ark:- ark:- |" 
+   compute-wer "ark:trans.sh \"$1\" ark:- | trim-path ark:- ark,t:- |" \
+      "ark:split-score-path \"$2\" ark:/dev/null ark:- | trans.sh ark:- ark:- | trim-path ark:- ark,t:- |" 

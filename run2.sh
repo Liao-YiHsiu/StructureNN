@@ -37,7 +37,7 @@ if [ "$#" -ne 1 ]; then
    exit 1;
 fi
 
-train_tool="srnnet-train-frameshuff \
+train_tool="srnnet2-train-frameshuff \
    ${sigma:+ --sigma=$sigma} \
    ${depth:+ --depth=$depth} \
    ${nnet_ratio:+ --nnet-ratio=$nnet_ratio}" 
@@ -90,7 +90,7 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
       $lat_model ark:$dir/test.lat "$test_lattice_path" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   srnnet-score \
+   srnnet2-score \
       ${feature_transform:+ --feature-transform="$feature_transform"} \
       ark:$dir/test.ark \
       "ark:gunzip -c $test_lattice_path |" \

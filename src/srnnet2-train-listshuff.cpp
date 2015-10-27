@@ -8,7 +8,7 @@
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
 #include "util.h"
-#include "srnnet.h"
+#include "srnnet2.h"
 #include <sstream>
 #include <omp.h>
 
@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
     LockSleep(GPU_FILE);
     CuDevice::Instantiate().SelectGpuId(use_gpu);
 #endif
-    SRNnet nnet;
+    SRNnet2 nnet;
     nnet.Read(nnet_in_filename);
     nnet.SetTrainOptions(trn_opts, nnet_ratio);
 

@@ -24,7 +24,7 @@ seed=777
 learn_rate=0.004
 momentum=0
 randomizer_size=4194304
-train_tool="srnnet-train-pairshuff "
+train_tool="srnnet2-train-pairshuff "
 dnn_depth=1
 dnn_width=256
 rnn_width=64
@@ -142,10 +142,10 @@ mlp_best=$tmpdir/nnet.init
    </SRNnetProto>
 EOF
    
-   srnnet-init $mlp1_best $mlp2_best $srnn_config $mlp_best
+   srnnet2-init $mlp1_best $mlp2_best $srnn_config $mlp_best
 
 
-   srnnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
+   srnnet2-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
       "ark:gunzip -c $dev_lattice_path |" $mlp_best \
       "ark:| gzip -c > $tmpdir/dev_${iter}.tag.gz"\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
@@ -200,7 +200,7 @@ for iter in $(seq -w $max_iters); do
 
 # evaluate dev set wer.
 # ------------------------------------------------------------------------------------------------
-   srnnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
+   srnnet2-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \
       "ark:gunzip -c $dev_lattice_path |" $mlp_next\
       "ark:| gzip -c > $tmpdir/dev_${iter}.tag.gz"\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;

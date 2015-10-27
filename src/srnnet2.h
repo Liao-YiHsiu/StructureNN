@@ -17,13 +17,13 @@ using namespace std;
 using namespace kaldi;
 using namespace kaldi::nnet1;
 
-class SRNnet{
+class SRNnet2{
    public:
-      SRNnet(): rnn_init_(NULL), forw_component_(NULL), acti_component_(NULL){}
-      SRNnet(const SRNnet& other);
-      SRNnet &operator = (const SRNnet& other); // Assignment operator.
+      SRNnet2(): rnn_init_(NULL), forw_component_(NULL), acti_component_(NULL){}
+      SRNnet2(const SRNnet2& other);
+      SRNnet2 &operator = (const SRNnet2& other); // Assignment operator.
 
-      ~SRNnet(); 
+      ~SRNnet2(); 
 
    public:
       /// NOTE: labels are 1-based not 0-based

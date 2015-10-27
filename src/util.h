@@ -74,15 +74,15 @@ void propRPsi(RPsiPack *pack);
 void backRPsi(RPsiPack *pack);
 
 void dist_prop(const CuMatrixBase<BaseFloat> &mat, const int* seq_arr, int seq_stride,
-      const int* id_arr, float** mat_arr);
+      const int* id_arr, float** mat_arr, int* mat_arr_stride);
 
-void comb_prop(float** mat_arr, const int* seq_arr, int seq_stride,
+void comb_prop(float** mat_arr, int* mat_arr_stride, const int* seq_arr, int seq_stride,
       const int* id_arr, CuMatrixBase<BaseFloat> &mat);
 
 void dist_back(const CuMatrixBase<BaseFloat> &mat, const int* seq_arr, int seq_stride,
-      const int* id_arr, float** mat_arr);
+      const int* id_arr, float** mat_arr, int* mat_arr_stride);
 
-void comb_back(float** mat_arr, const int* seq_arr, int seq_stride,
+void comb_back(float** mat_arr, int* mat_arr_stride, const int* seq_arr, int seq_stride,
       const int* id_arr, CuMatrixBase<BaseFloat> &mat);
 
 

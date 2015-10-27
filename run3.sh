@@ -2,21 +2,22 @@
 source path
 
 dnn_depth=1
-dnn_width=32
-mux_width=32
+dnn_width=8
+mux_width=4
 test_lattice_N=10
-lattice_N=50
+lattice_N=16
 train_opt=
 momentum=0.9
-learn_rate=0.000002
+learn_rate=0.000001
 cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
-keep_lr_iters=100
+keep_lr_iters=1
 dnn1_depth=4
-dnn1_width=32
-num_stream=5
+dnn1_width=1024
+num_stream=8
+loss_func=ranknet
 
 sigma=
 debug=
@@ -26,6 +27,7 @@ command_line="$0 $@"
 
 . parse_options.sh || exit 1;
 
+negative_num=
 files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat nnet1"
 
 if [ "$#" -ne 1 ]; then
@@ -39,6 +41,8 @@ fi
 
 train_tool="msnnet-train-listshuff \
    ${num_stream:+ --num-stream=$num_stream} \
+   ${loss_func:+ --loss-func=$loss_func} \
+   ${negative_num:+ --negative-num=$negative_num} \
    ${sigma:+ --sigma=$sigma}" 
 
 dir=$1

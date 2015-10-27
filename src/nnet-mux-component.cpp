@@ -51,21 +51,21 @@ void Mux::Propagate(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *out)
    for(int i = 0; i < cnt_.size(); ++i){
       if(cnt_[i] != 0){
          in_buff_[i].Resize(cnt_[i], input_dim_, kUndefined);
-         assert(in_buff_[i].Stride() == in.Stride());
+         //assert(in_buff_[i].Stride() == in.Stride());
       }
    }
 
-   dist_prop(in, seq_device_.Data(), seq_stride_, id_device_.Data(), getVecCuMatrixPt(in_buff_));
+   dist_prop(in, seq_device_.Data(), seq_stride_, id_device_.Data(), getVecCuMatrixPt(in_buff_), getVecCuMatrixStride(in_buff_));
 
    out->Resize(seq_.size(), output_dim_, kUndefined);
 
    for(int i = 0; i < comps_.size(); ++i)
       if(cnt_[i] != 0){
          comps_[i]->Propagate(in_buff_[i], &out_buff_[i]);
-         assert(out_buff_[i].Stride() == out->Stride());
+         //assert(out_buff_[i].Stride() == out->Stride());
       }
 
-   comb_prop(getVecCuMatrixPt(out_buff_), seq_device_.Data(), seq_stride_, id_device_.Data(), *out);
+   comb_prop(getVecCuMatrixPt(out_buff_), getVecCuMatrixStride(out_buff_), seq_device_.Data(), seq_stride_, id_device_.Data(), *out);
 
    // check consistence
    //CuMatrix<BaseFloat> tmp_out(seq_.size(), output_dim_, kUndefined);
@@ -87,12 +87,12 @@ void Mux::Backpropagate(const CuMatrixBase<BaseFloat> &in, const CuMatrixBase<Ba
    for(int i = 0; i < cnt_.size(); ++i){
       if(cnt_[i] != 0){
          out_diff_buff_[i].Resize(cnt_[i], output_dim_, kSetZero);
-         assert(out_diff_buff_[i].Stride() == out_diff.Stride());
+        // assert(out_diff_buff_[i].Stride() == out_diff.Stride());
       }
    }
 
    dist_back(out_diff, seq_device_.Data(), seq_stride_,
-         id_device_.Data(), getVecCuMatrixPt(out_diff_buff_));
+         id_device_.Data(), getVecCuMatrixPt(out_diff_buff_), getVecCuMatrixStride(out_diff_buff_));
 
    in_diff->Resize(in.NumRows(), input_dim_, kSetZero);
 
@@ -100,10 +100,10 @@ void Mux::Backpropagate(const CuMatrixBase<BaseFloat> &in, const CuMatrixBase<Ba
       if(cnt_[i] != 0){
          comps_[i]->Backpropagate(in_buff_[i], out_buff_[i],
                out_diff_buff_[i], &in_diff_buff_[i]);
-         assert(in_diff_buff_[i].Stride() == in_diff->Stride());
+         //assert(in_diff_buff_[i].Stride() == in_diff->Stride());
       }
 
-   comb_back(getVecCuMatrixPt(in_diff_buff_), seq_device_.Data(), seq_stride_, id_device_.Data(), *in_diff);
+   comb_back(getVecCuMatrixPt(in_diff_buff_), getVecCuMatrixStride(in_diff_buff_), seq_device_.Data(), seq_stride_, id_device_.Data(), *in_diff);
 
    // check consistence...
    //CuMatrix<BaseFloat> tmp_sum(1, output_dim_, kSetZero);
@@ -116,14 +116,14 @@ void Mux::Backpropagate(const CuMatrixBase<BaseFloat> &in, const CuMatrixBase<Ba
 
    //assert(Same(tmp_sum_diff, in_diff->RowRange(0, 1)));
    
-   CuMatrix<BaseFloat> tmp_in_diff(in.NumRows(), input_dim_, kSetZero);
-   CuMatrix<BaseFloat> tmp_row(1, input_dim_, kUndefined);
-   for(int i = 0; i < seq_.size(); ++i){
-      comps_[seq_[i]]->Backpropagate(in.RowRange(i/seq_stride_, 1), out.RowRange(i, 1),
-            out_diff.RowRange(i, 1), &tmp_row);
-      tmp_in_diff.RowRange(i/seq_stride_, 1).AddMat(1.0, tmp_row);
-   }
-   assert(Same(*in_diff, tmp_in_diff));
+   //CuMatrix<BaseFloat> tmp_in_diff(in.NumRows(), input_dim_, kSetZero);
+   //CuMatrix<BaseFloat> tmp_row(1, input_dim_, kUndefined);
+   //for(int i = 0; i < seq_.size(); ++i){
+   //   comps_[seq_[i]]->Backpropagate(in.RowRange(i/seq_stride_, 1), out.RowRange(i, 1),
+   //         out_diff.RowRange(i, 1), &tmp_row);
+   //   tmp_in_diff.RowRange(i/seq_stride_, 1).AddMat(1.0, tmp_row);
+   //}
+   //assert(Same(*in_diff, tmp_in_diff));
 }
 
 Mux* Mux::Init(istream &is){
@@ -247,4 +247,13 @@ BaseFloat** Mux::getVecCuMatrixPt(vector< CuMatrix<BaseFloat> > &mat_arr){
 
    mat_arr_pt_device_ = arr;
    return mat_arr_pt_device_.Data();
+}
+
+int32* Mux::getVecCuMatrixStride(vector< CuMatrix<BaseFloat> > &mat_arr){
+   vector< int > arr(mat_arr.size());
+   for(int i = 0; i < mat_arr.size(); ++i)
+      arr[i] = mat_arr[i].Stride();
+
+   mat_arr_stride_device_ = arr;
+   return mat_arr_stride_device_.Data();
 }

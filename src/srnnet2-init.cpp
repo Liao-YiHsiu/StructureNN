@@ -6,7 +6,7 @@
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
 #include "util.h"
-#include "srnnet.h"
+#include "srnnet2.h"
 #include "kernel.h"
 #include <sstream>
 #include <pthread.h>
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
       nnet1.Read(nnet1_in_filename);
       nnet2.Read(nnet2_in_filename);
 
-      SRNnet nnet;
+      SRNnet2 nnet;
       nnet.Init(nnet1, nnet2, config_filename);
       nnet.Write(nnet_out_filename, binary);
 

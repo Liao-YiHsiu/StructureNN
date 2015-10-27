@@ -79,5 +79,5 @@ bool Same(const CuMatrixBase<BaseFloat> &a, const CuMatrixBase<BaseFloat> &b, do
    c = a;
    c.AddMat(-1, b);
    c.ApplyPow(2);
-   return c.Sum() < err;
+   return c.Sum() < err*err*a.NumRows()*a.NumCols();
 }

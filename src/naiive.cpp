@@ -8,7 +8,7 @@
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
 #include "util.h"
-#include "srnnet.h"
+#include "srnnet2.h"
 #include <sstream>
 #include <omp.h>
 

@@ -244,51 +244,51 @@ void backRPsi(RPsiPack *pack){
 }
 
 void dist_prop(const CuMatrixBase<BaseFloat> &mat, const int* seq_arr, int seq_stride,
-      const int* id_arr, float** mat_arr){
+      const int* id_arr, float** mat_arr, int* mat_arr_stride){
    Timer tim;
 
    int rows = mat.NumRows();
 
    cuda_dist_prop((rows-1)/BLOCKSIZE+1, BLOCKSIZE, getCuPointer(&mat),
-         rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr);
+         rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr, mat_arr_stride);
 
    CU_SAFE_CALL(cudaGetLastError()); 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }
 
-void comb_prop(float** mat_arr, const int* seq_arr, int seq_stride,
+void comb_prop(float** mat_arr, int* mat_arr_stride, const int* seq_arr, int seq_stride,
       const int* id_arr, CuMatrixBase<BaseFloat> &mat){
    Timer tim;
 
    int rows = mat.NumRows()/seq_stride;
 
    cuda_comb_prop((rows-1)/BLOCKSIZE+1, BLOCKSIZE, getCuPointer(&mat),
-         rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr);
+         rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr, mat_arr_stride);
 
    CU_SAFE_CALL(cudaGetLastError()); 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }
 
 void dist_back(const CuMatrixBase<BaseFloat> &mat, const int* seq_arr, int seq_stride,
-      const int* id_arr, float** mat_arr){
+      const int* id_arr, float** mat_arr, int* mat_arr_stride){
    Timer tim;
 
    int rows = mat.NumRows()/seq_stride;
 
    cuda_dist_back((rows-1)/BLOCKSIZE+1, BLOCKSIZE, getCuPointer(&mat),
-         rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr);
+         rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr, mat_arr_stride);
 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }
 
-void comb_back(float** mat_arr, const int* seq_arr, int seq_stride,
+void comb_back(float** mat_arr, int* mat_arr_stride, const int* seq_arr, int seq_stride,
       const int* id_arr, CuMatrixBase<BaseFloat> &mat){
    Timer tim;
 
    int rows = mat.NumRows();
 
    cuda_comb_back((rows-1)/BLOCKSIZE+1, BLOCKSIZE, getCuPointer(&mat),
-         rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr);
+         rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr, mat_arr_stride);
 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }

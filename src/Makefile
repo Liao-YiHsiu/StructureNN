@@ -22,10 +22,10 @@ BINFILES = post-phn acc con-svm nnet-pop lab-lda gen-lab lattice-to-vec \
 	   normalize-score-path exp-score-path log-score-path cmvn-score-path replace-feats \
 	   score-oracle score-path-point snnet-score int32-to-uchar uchar-to-int32 \
 	   snnet-train-pairshuff snnet-psi-cmvn snnet-gen-psi snnet-train-listshuff\
-	   srnnet-train-listshuff srnnet-score srnnet-init srnnet-decode srnnet-train-frameshuff\
+	   srnnet2-train-listshuff srnnet2-score srnnet2-init srnnet2-decode srnnet2-train-frameshuff\
 	   naiive msnnet-init msnnet-score msnnet-train-listshuff
 
-OBJFILES = kernel.o util.o strt.o cumat.o snnet.o bnnet.o srnnet.o nnet-mux-component.o msnnet.o
+OBJFILES = kernel.o util.o strt.o cumat.o snnet.o bnnet.o srnnet2.o nnet-mux-component.o msnnet.o
 
 TESTFILES = 
 

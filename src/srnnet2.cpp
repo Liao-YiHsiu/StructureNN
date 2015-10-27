@@ -1,6 +1,6 @@
-#include "srnnet.h"
+#include "srnnet2.h"
 
-SRNnet::SRNnet(const SRNnet &other): nnet_transf_(other.nnet_transf_), 
+SRNnet2::SRNnet2(const SRNnet2 &other): nnet_transf_(other.nnet_transf_), 
    nnet1_(other.nnet1_), nnet2_(other.nnet2_), stateMax_(other.stateMax_),
    rnn_init_(other.rnn_init_) {
 
@@ -14,7 +14,7 @@ SRNnet::SRNnet(const SRNnet &other): nnet_transf_(other.nnet_transf_),
    Check();
 }
 
-SRNnet & SRNnet::operator = (const SRNnet &other) {
+SRNnet2 & SRNnet2::operator = (const SRNnet2 &other) {
    Destroy();
 
    nnet_transf_ = other.nnet_transf_;
@@ -35,11 +35,11 @@ SRNnet & SRNnet::operator = (const SRNnet &other) {
    return *this;
 }
 
-SRNnet::~SRNnet(){
+SRNnet2::~SRNnet2(){
    Destroy();
 }
 
-void SRNnet::Propagate(const CuMatrix<BaseFloat> &in,
+void SRNnet2::Propagate(const CuMatrix<BaseFloat> &in,
       const vector<vector<uchar>* > &labels, CuMatrix<BaseFloat> *out){
    int N = labels[0]->size();
 
@@ -67,7 +67,7 @@ void SRNnet::Propagate(const CuMatrix<BaseFloat> &in,
    Sum(propagate_score_buf_, out, N);
 }
 
-void SRNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff, 
+void SRNnet2::Backpropagate(const CuMatrix<BaseFloat> &out_diff, 
       const vector<vector<uchar>* >&labels){
 
    //int L = labels.size();
@@ -122,7 +122,7 @@ void SRNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff,
 
 }
 
-void SRNnet::Propagate(const CuMatrix<BaseFloat> &in,
+void SRNnet2::Propagate(const CuMatrix<BaseFloat> &in,
       const vector<uchar> &label, int pos, CuMatrix<BaseFloat> *out){
    int N = pos + 1;
 
@@ -180,7 +180,7 @@ void SRNnet::Propagate(const CuMatrix<BaseFloat> &in,
    nnet2_.Propagate(propagate_acti_out_, out);
 }
 
-void SRNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff, 
+void SRNnet2::Backpropagate(const CuMatrix<BaseFloat> &out_diff, 
       const vector<uchar> &label, int pos, int depth){
    int N = pos+1;
 
@@ -258,7 +258,7 @@ void SRNnet::Backpropagate(const CuMatrix<BaseFloat> &out_diff,
 }
 
 
-void SRNnet::Decode(const CuMatrix<BaseFloat> &in, ScorePath::Table &table, int Nbest){
+void SRNnet2::Decode(const CuMatrix<BaseFloat> &in, ScorePath::Table &table, int Nbest){
    int N = in.NumRows();
 
    vector< vector<uchar> >  dummy_label(stateMax_);
@@ -357,19 +357,19 @@ void SRNnet::Decode(const CuMatrix<BaseFloat> &in, ScorePath::Table &table, int 
    }
 }
 
-int32 SRNnet::InputDim() const{
+int32 SRNnet2::InputDim() const{
    return nnet1_.InputDim();
 }
 
-int32 SRNnet::OutputDim() const{
+int32 SRNnet2::OutputDim() const{
    return nnet2_.OutputDim();
 }
 
-uchar SRNnet::StateMax() const{
+uchar SRNnet2::StateMax() const{
    return stateMax_;
 }
 
-int32 SRNnet::NumParams() const{
+int32 SRNnet2::NumParams() const{
    int32 n_params = 0;
 
    for(int i = 0; i < mux_components_.size(); ++i)
@@ -384,12 +384,12 @@ int32 SRNnet::NumParams() const{
 }
 
 // TODO notimplement for forw_component_ & mux_components_ yet.
-void SRNnet::SetDropoutRetention(BaseFloat r){
+void SRNnet2::SetDropoutRetention(BaseFloat r){
    nnet1_.SetDropoutRetention(r);
    nnet2_.SetDropoutRetention(r);
 }
 
-void SRNnet::Init(const Nnet& nnet1, const Nnet& nnet2, const string &config_file){
+void SRNnet2::Init(const Nnet& nnet1, const Nnet& nnet2, const string &config_file){
    nnet1_ = nnet1;
    nnet2_ = nnet2;
 
@@ -401,7 +401,7 @@ void SRNnet::Init(const Nnet& nnet1, const Nnet& nnet2, const string &config_fil
       if(conf_line == "") continue;
       KALDI_VLOG(1) << conf_line;
       istringstream(conf_line) >> ws >> token;
-      if( token == "<SRNnetProto>" || token == "</SRNnetProto>") continue;
+      if( token == "<SRNnetProto2>" || token == "</SRNnetProto2>") continue;
 
       if( token == "<MUX>"){
          while(true){
@@ -437,7 +437,7 @@ void SRNnet::Init(const Nnet& nnet1, const Nnet& nnet2, const string &config_fil
    Check();
 }
 
-void SRNnet::Read(const string &file){
+void SRNnet2::Read(const string &file){
    bool binary;
    Input in(file, &binary);
    Read(in.Stream(), binary);
@@ -445,8 +445,8 @@ void SRNnet::Read(const string &file){
    in.Close();
 }
 
-void SRNnet::Read(istream &is, bool binary){
-   ExpectToken(is, binary, "<SRNnet>");
+void SRNnet2::Read(istream &is, bool binary){
+   ExpectToken(is, binary, "<SRNnet2>");
 
    nnet1_.Read(is, binary);
    nnet2_.Read(is, binary);
@@ -462,20 +462,20 @@ void SRNnet::Read(istream &is, bool binary){
    forw_component_ = dynamic_cast<UpdatableComponent*>(Component::Read(is, binary));
    acti_component_ = Component::Read(is, binary);
    
-   ExpectToken(is, binary, "</SRNnet>");
+   ExpectToken(is, binary, "</SRNnet2>");
    Check();
 }
 
 /// Write MLP to file
-void SRNnet::Write(const string &file, bool binary) const{
+void SRNnet2::Write(const string &file, bool binary) const{
    Output out(file, binary, true);
    Write(out.Stream(), binary);
    out.Close();
 }
 
-void SRNnet::Write(ostream &os, bool binary) const{
+void SRNnet2::Write(ostream &os, bool binary) const{
    Check();
-   WriteToken(os, binary, "<SRNnet>");
+   WriteToken(os, binary, "<SRNnet2>");
    if(!binary) os << endl;
 
    nnet1_.Write(os, binary);
@@ -490,11 +490,11 @@ void SRNnet::Write(ostream &os, bool binary) const{
    forw_component_->Write(os, binary);
    acti_component_->Write(os, binary);
 
-   WriteToken(os, binary, "</SRNnet>");
+   WriteToken(os, binary, "</SRNnet2>");
    if(!binary) os << endl;
 }
 
-string SRNnet::Info() const{
+string SRNnet2::Info() const{
   ostringstream ostr;
   ostr << "stateMax " << stateMax_ << endl;
   ostr << "input-dim " << InputDim() << endl;
@@ -517,7 +517,7 @@ string SRNnet::Info() const{
   return ostr.str();
 }
 
-string SRNnet::InfoGradient() const{
+string SRNnet2::InfoGradient() const{
   ostringstream ostr;
   // gradient stats
   ostr << "### Gradient stats :\n";
@@ -543,7 +543,7 @@ string SRNnet::InfoGradient() const{
   return ostr.str();
 }
 
-string SRNnet::InfoPropagate() const{
+string SRNnet2::InfoPropagate() const{
   ostringstream ostr;
   //ostr << "### Forward propagation buffer content(phones) :\n";
   //ostr << "[0] output of <Input> " << MomentStatistics(propagate_feat_buf_) << endl;
@@ -569,7 +569,7 @@ string SRNnet::InfoPropagate() const{
   return ostr.str();
 }
 
-string SRNnet::InfoBackPropagate() const{
+string SRNnet2::InfoBackPropagate() const{
   ostringstream ostr;
   //ostr << "### Backward propagation buffer content(phones) :\n";
   //ostr << "[0] diff of <Input> " << MomentStatistics(backpropagate_all_feat_buf_) << endl;
@@ -593,7 +593,7 @@ string SRNnet::InfoBackPropagate() const{
   return ostr.str();
 }
 
-void SRNnet::Check() const{
+void SRNnet2::Check() const{
    KALDI_ASSERT(mux_components_.size() == stateMax_);
    
    for(int i = 1; i < mux_components_.size(); i++){
@@ -612,7 +612,7 @@ void SRNnet::Check() const{
    KALDI_ASSERT(nnet2_.InputDim()  == mux_components_[0]->OutputDim() );
 }
 
-void SRNnet::Destroy(){
+void SRNnet2::Destroy(){
    delete rnn_init_; rnn_init_ = NULL;
    delete forw_component_; forw_component_ = NULL;
    delete acti_component_; acti_component_ = NULL;
@@ -635,7 +635,7 @@ void SRNnet::Destroy(){
    backpropagate_feat_buf_.resize(0);
 }
 
-void SRNnet::SetTrainOptions(const NnetTrainOptions& opts, double ratio){
+void SRNnet2::SetTrainOptions(const NnetTrainOptions& opts, double ratio){
 
    nnet1_.SetTrainOptions(opts);
    nnet2_.SetTrainOptions(opts);
@@ -647,11 +647,11 @@ void SRNnet::SetTrainOptions(const NnetTrainOptions& opts, double ratio){
    forw_component_->SetTrainOptions(opts);
 }
 
-void SRNnet::SetTransform(const Nnet &nnet){
+void SRNnet2::SetTransform(const Nnet &nnet){
    nnet_transf_ = nnet;
 }
 
-void SRNnet::PropagateRPsi(const CuMatrix<BaseFloat> &in, const vector< vector<uchar>* > &labels){
+void SRNnet2::PropagateRPsi(const CuMatrix<BaseFloat> &in, const vector< vector<uchar>* > &labels){
    int N = labels[0]->size();
 
    nnet_transf_.Feedforward(in, &transf_);
@@ -676,7 +676,7 @@ void SRNnet::PropagateRPsi(const CuMatrix<BaseFloat> &in, const vector< vector<u
    RPsi(propagate_phone_buf_, labels, propagate_frame_buf_);
 }
 
-void SRNnet::RPsi(vector< CuMatrix<BaseFloat> > &propagate_phone,
+void SRNnet2::RPsi(vector< CuMatrix<BaseFloat> > &propagate_phone,
       const vector< vector<uchar>* > &labels, vector< CuMatrix<BaseFloat> > &propagate_frame){
    
    int L = labels.size();
@@ -695,7 +695,7 @@ void SRNnet::RPsi(vector< CuMatrix<BaseFloat> > &propagate_phone,
    propRPsi(&pack);
 }
 
-void SRNnet::BackRPsi(vector< CuMatrix<BaseFloat> > &backpropagate_frame,
+void SRNnet2::BackRPsi(vector< CuMatrix<BaseFloat> > &backpropagate_frame,
       const vector< vector<uchar>* > &labels, vector< CuMatrix<BaseFloat> > &backpropagate_phone){
 
    //int L = labels.size();
@@ -714,7 +714,7 @@ void SRNnet::BackRPsi(vector< CuMatrix<BaseFloat> > &backpropagate_frame,
    backRPsi(&pack);
 }
 
-void SRNnet::packRPsi(vector< CuMatrix<BaseFloat> > &phone_mat,
+void SRNnet2::packRPsi(vector< CuMatrix<BaseFloat> > &phone_mat,
       const vector< vector<uchar>* > &labels, vector< CuMatrix<BaseFloat> > &frame_mat, RPsiPack* pack){
 
    KALDI_ASSERT(pack != NULL);
@@ -769,7 +769,7 @@ void SRNnet::packRPsi(vector< CuMatrix<BaseFloat> > &phone_mat,
    pack->frame_feat        = frame_mat_pt_dev_.Data();
 }
 
-string SRNnet::Details(const Component* comp) const{
+string SRNnet2::Details(const Component* comp) const{
    ostringstream os;
 
    os << Component::TypeToMarker(comp->GetType())

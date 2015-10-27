@@ -6,7 +6,7 @@
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
 #include "util.h"
-#include "srnnet.h"
+#include "srnnet2.h"
 #include "kernel.h"
 #include <sstream>
 #include <pthread.h>
@@ -21,10 +21,10 @@ int main(int argc, char *argv[]) {
 
    try {
       string usage;
-      usage.append("Structure Recurrent Neural Network Decoding using beam search\n")
-         .append("Usage: ").append(argv[0]).append(" [options] <feature-rspecifier> <nnet-in> <score-path-wspecifier>\n")
+      usage.append("Structure Recurrent Neural Network calculate scores for all path\n")
+         .append("Usage: ").append(argv[0]).append(" [options] <feature-rspecifier> <score-path-rspecifier> <nnet-in> <score-path-wspecifier>\n")
          .append("e.g.: \n")
-         .append(" ").append(argv[0]).append(" ark:feat.ark nnet ark:path.ark \n");
+         .append(" ").append(argv[0]).append(" ark:feat.ark \"ark:lattice-to-nbest --n=1000 ark:test.lat ark:- | lattice-to-vec ark:- ark:- |\" nnet ark:path.ark \n");
 
       ParseOptions po(usage.c_str());
 
@@ -34,21 +34,22 @@ int main(int argc, char *argv[]) {
       string feature_transform;
       po.Register("feature-transform", &feature_transform, "Feature transform in front of main network (in nnet format)");
 
-      int Nbest = 100;
-      po.Register("Nbest", &Nbest, "Getting nbest results");
 
       po.Read(argc, argv);
 
-      if (po.NumArgs() != 3) {
+      if (po.NumArgs() != 4) {
          po.PrintUsage();
          exit(1);
       }
 
       string feat_rspecifier       = po.GetArg(1),
-             nnet_in_filename      = po.GetArg(2),
-             score_path_wspecifier = po.GetArg(3);
+             score_path_rspecifier = po.GetArg(2),
+             nnet_in_filename      = po.GetArg(3),
+             score_path_wspecifier = po.GetArg(4);
+
 
       ScorePathWriter                  score_path_writer(score_path_wspecifier);
+      SequentialScorePathReader        score_path_reader(score_path_rspecifier);
       SequentialBaseFloatMatrixReader  feature_reader(feat_rspecifier);
 
       //Select the GPU
@@ -58,7 +59,7 @@ int main(int argc, char *argv[]) {
       CuDevice::Instantiate().SelectGpuId(use_gpu);
 #endif
 
-      SRNnet nnet;
+      SRNnet2 nnet;
       nnet.Read(nnet_in_filename);
 
       nnet.SetDropoutRetention(1.0);
@@ -69,7 +70,7 @@ int main(int argc, char *argv[]) {
          nnet.SetTransform(nnet_transf);
       }
 
-      KALDI_LOG << "SRNNet decode " << Nbest << " best started.";
+      KALDI_LOG << "SNNet pick best started.";
 
       Timer time;
       int32 num_done = 0;
@@ -77,22 +78,43 @@ int main(int argc, char *argv[]) {
       CuMatrix<BaseFloat> nnet_out;
       Matrix<BaseFloat> nnet_out_host;
 
-      for ( ; !feature_reader.Done(); feature_reader.Next(), num_done++) {
+      for ( ; !feature_reader.Done() && !score_path_reader.Done(); 
+            feature_reader.Next(), score_path_reader.Next(), num_done++) {
+
+         assert(feature_reader.Key() == score_path_reader.Key());
 
 #if HAVE_CUDA==1
          // check the GPU is not overheated
          CuDevice::Instantiate().CheckGpuHealth();
 #endif
          CuMatrix<BaseFloat>      feat(feature_reader.Value());
-         ScorePath::Table table;
+         ScorePath::Table table = score_path_reader.Value().Value();
 
-         nnet.Decode(feat, table, Nbest);
+         vector<vector<uchar> * >      nnet_label_in;
+
+         for(int i = 0; i < table.size(); ++i){
+            nnet_label_in.push_back(&table[i].second);
+         }
+
+         //nnet.Feedforward(feat, nnet_label_in, &nnet_out);
+         nnet.Propagate(feat, nnet_label_in, &nnet_out);
+
+         nnet_out_host.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kUndefined);
+         nnet_out_host.CopyFromMat(nnet_out);
+
+         for(int i = 0; i < table.size(); ++i)
+            table[i].first = nnet_out_host(i, 0);
+
          score_path_writer.Write(feature_reader.Key(), table);
 
          if(num_done % 100 == 0){
             KALDI_LOG << "Done " << num_done;
          }
       }
+
+      // after last minibatch : show what happens in network 
+      KALDI_LOG << "###############################";
+      KALDI_LOG << nnet.InfoPropagate();
 
       // final message
       KALDI_LOG << "Done " << num_done << " files" 
