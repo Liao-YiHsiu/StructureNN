@@ -1,25 +1,22 @@
-#!/bin/bash
+#!/bin/bash -e
 source path
 
-dnn_depth=1
-dnn_width=8
-mux_width=4
 test_lattice_N=10
 lattice_N=16
 train_opt=
-momentum=0.9
-learn_rate=0.000001
+momentum=0
+learn_rate=0.00001
 cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
-keep_lr_iters=1
-dnn1_depth=4
-dnn1_width=1024
-num_stream=8
-loss_func=ranknet
+keep_lr_iters=300
+num_stream=16
+batch_size=64
+targets_delay=0
+tmpdir=$(mktemp -d)
 
-sigma=
+negative_num=
 debug=
 
 echo "$0 $@"  # Print the command line for logging
@@ -27,30 +24,42 @@ command_line="$0 $@"
 
 . parse_options.sh || exit 1;
 
-negative_num=
-files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat nnet1"
+if [ "$debug" == "true" ]; then
+   trap 'kill $(jobs -p) || true ' EXIT
+else
+   trap 'rm -rf $tmpdir; kill $(jobs -p) || true ' EXIT
+fi
 
-if [ "$#" -ne 1 ]; then
+files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat"
+
+if [ "$#" -ne 2 ]; then
    echo "Train Structure SVM with NN on a data set"
-   echo "Usage: $0 <dir> "
-   echo "eg. $0 data/simp"
+   echo "Usage: $0 <nnet_proto> <dir> "
+   echo "eg. $0 nnet.proto data/simp"
    echo ""
    echo "dir-> $files"
    exit 1;
 fi
 
-train_tool="msnnet-train-listshuff \
+train_tool="mynnet-train-lstm \
    ${num_stream:+ --num-stream=$num_stream} \
-   ${loss_func:+ --loss-func=$loss_func} \
-   ${negative_num:+ --negative-num=$negative_num} \
-   ${sigma:+ --sigma=$sigma}" 
+   ${negative_num:+ --negative-num=$negative_num}\
+   ${batch_size:+ --batch-size=$batch_size}\
+   ${targets_delay:+ --targets-delay=$targets_delay}"
 
-dir=$1
-paramId=${dnn_depth}_${dnn_width}_${mux_width}_${dnn1_depth}_${dnn1_width}_${lattice_N}_${test_lattice_N}_${learn_rate}_${acwt}_${keep_lr_iters}_${train_tool// /}
+nnet_proto=$1
+dir=$2
+
+nnet_init=$tmpdir/nnet.init
+
+mynnet-init $nnet_proto $nnet_init
+sha=`sha1sum $nnet_init | cut -b 1-6`
+
+paramId=${sha}_${lattice_N}_${test_lattice_N}_${learn_rate}_${acwt}_${keep_lr_iters}_${train_tool// /}
 
 log=log/$dir/${paramId}.log
 data=$dir/$paramId/data
-model=$dir/$paramId/nnet
+nnet=$dir/$paramId/nnet
 
 [ ! -d log/$dir ] && mkdir -p log/$dir
 [ ! -d $dir/../lab ] && mkdir -p $dir/../lab
@@ -60,8 +69,6 @@ echo "$HOSTNAME `date`" \
 
 echo "$command_line" \
 2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr " " "\n" | awk 'n < $0 {n=$0}END{print n}')
 
    #check file existence.
    for file in $files;
@@ -73,20 +80,17 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
 
    [ ! -d $dir/$paramId ] && mkdir -p $dir/$paramId
 
-   [ -f $model ] || msnnet_train.sh --cpus $cpus\
-      --dnn-depth $dnn_depth --dnn-width $dnn_width \
+   [ -f $nnet ] || mynnet_train.sh --cpus $cpus\
       --learn-rate $learn_rate --acwt $acwt \
       --momentum $momentum\
       --train-tool "$train_tool" \
       --test-lattice-N ${test_lattice_N} --lattice-N $lattice_N\
-      ${mux_width:+ --mux-width $mux_width} ${debug:+ --debug $debug} \
+      ${debug:+ --debug $debug} \
       ${keep_lr_iters:+ --keep-lr-iters $keep_lr_iters} \
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
       ${feature_transform:+ --feature-transform "$feature_transform"} \
-      ${dnn1_depth:+ --dnn1-depth $dnn1_depth} \
-      ${dnn1_width:+ --dnn1-width $dnn1_width} \
-      $dir $lat_model $model $stateMax \
+      $dir $lat_model $nnet_init $nnet \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    test_lattice_path=$dir/../lab/test.lab_${test_lattice_N}_${acwt}.gz
@@ -94,11 +98,11 @@ stateMax=$(copy-int-vector "ark:$dir/train32.lab" ark,t:-| cut -f 2- -d ' ' | tr
       $lat_model ark:$dir/test.lat "$test_lattice_path" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   msnnet-score \
+   mynnet-score \
       ${feature_transform:+ --feature-transform="$feature_transform"} \
       ark:$dir/test.ark \
       "ark:gunzip -c $test_lattice_path |" \
-      $model "ark:| gzip -c > ${data}.tag.gz"\
+      $nnet "ark:| gzip -c > ${data}.tag.gz"\
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    best-score-path "ark:gunzip -c ${data}.tag.gz |" ark:${data}.tag.1best

@@ -1,7 +1,7 @@
 # defines local computer parameters notice this file is for makefile and bash
-KALDISRC=/home/loach/kaldi/kaldi/src
-timit=/home/loach/kaldi/kaldi/egs/timit/s5/
-timit_corpus=/corpus/timit
+KALDISRC=/home_local/speech/Cluster-client-script/kaldi/src
+timit=/home/loach/kaldi/egs/timit/s5/
+timit_corpus=/share/corpus/timit/
 PATH+=:$timit/utils
 PATH+=:/home/loach/StructureNN/src
 PATH+=:/home/loach/StructureNN/utils

@@ -45,6 +45,18 @@ void cuda_dist_back(dim3 grid, dim3 block, const float* mat, int rows, int cols,
 void cuda_comb_back(dim3 grid, dim3 block, float* mat, int rows, int cols, int stride, 
       const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr, int* mat_arr_stride);
 
+void cuda_embed_prop(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_stride, float* out_mat, int out_rows, int out_stride);
+
+void cuda_embed_back(dim3 grid, dim3 block, const float* mat, int rows, int stride, int seq_stride,
+      float *out_mat, int out_rows, int out_cols, int out_stride);
+
+void cuda_blendsum_prop(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride, 
+      const int* seq_arr, int seq_size, float* out_mat, int out_rows, int out_stride);
+
+void cuda_blendsum_back(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_size, float* out_mat, int out_rows, int out_stride);
+
 typedef struct{
    int           L;            // label #
    int           T;            // utterance length

@@ -42,6 +42,21 @@ __global__ static void _cuda_dist_back(const float* mat, int rows, int cols, int
 __global__ static void _cuda_comb_back(float* mat, int rows, int cols, int stride,
       const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr, int* mat_arr_stride);
 
+__global__ static void _cuda_embed_prop(const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_stride, float* out_mat, int out_rows, int out_stride);
+
+__global__ static void _cuda_embed_back(const float* mat, int rows, int stride, int seq_stride,
+      float *out_mat, int out_rows, int out_cols, int out_stride);
+
+__global__ static void _cuda_blendsum_prop(const float* mat, int rows, int cols, int stride, 
+      const int* seq_arr, int seq_size, float* out_mat, int out_rows, int out_stride);
+
+__global__ static void _cuda_blendsum_back(const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_size, float* out_mat, int out_rows, int out_stride);
+
+
+// ----------------------------------------------------------------------------------------------------
+
 void cuda_make_obs(dim3 grid, dim3 block, const float* feats, int rows, int cols, int stride, const int* lab, float *data, int d_stride, int S){
    assert( rows < MAX_L);
    assert( S < MAX_S);
@@ -118,12 +133,35 @@ void cuda_comb_back(dim3 grid, dim3 block, float* mat, int rows, int cols, int s
    _cuda_comb_back<<<grid, block>>>(mat, rows, cols, stride, seq_arr, seq_stride, id_arr, mat_arr, mat_arr_stride);
 }
 
+void cuda_embed_prop(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_stride, float* out_mat, int out_rows, int out_stride){
+   _cuda_embed_prop<<<grid, block>>>(mat, rows, cols, stride, seq_arr, seq_stride, out_mat, out_rows, out_stride);
+}
+
+void cuda_embed_back(dim3 grid, dim3 block, const float* mat, int rows, int stride, int seq_stride,
+      float *out_mat, int out_rows, int out_cols, int out_stride){
+   _cuda_embed_back<<<grid, block>>>(mat, rows, stride, seq_stride, out_mat, out_rows, out_cols, out_stride);
+}
+
+void cuda_blendsum_prop(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride, 
+      const int* seq_arr, int seq_size, float* out_mat, int out_rows, int out_stride){
+   assert( out_rows == seq_size );
+   _cuda_blendsum_prop<<<grid, block>>>(mat, rows, cols, stride, seq_arr, seq_size, out_mat, out_rows, out_stride);
+}
+
+void cuda_blendsum_back(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_size, float* out_mat, int out_rows, int out_stride){
+   _cuda_blendsum_back<<<grid, block>>>(mat, rows, cols, stride, seq_arr, seq_size, out_mat, out_rows, out_stride);
+}
+
 __device__
 static void _load(int* tgt, const int* src, int L, int l, int s){
    for(int i = 0; i < L; i++)
       tgt[i] = src[i];
    tgt[l] = s;
 }
+
+// ----------------------------------------------------------------------------------------------------
 
 __global__
 static void _cuda_make_obs(const float* feats, int rows, int cols, int stride,
@@ -522,3 +560,65 @@ __global__ static void _cuda_comb_back(float* mat, int rows, int cols, int strid
       mask[seqs[i]] = 1;
    }
 }
+
+__global__ static void _cuda_embed_prop(const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_stride, float* out_mat, int out_rows, int out_stride){
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+   if(idx >= out_rows) return;
+
+   float *odata = out_mat + out_stride * idx;
+   const float *idata = mat + stride * (idx/seq_stride);
+
+   for(int i = 0; i < cols; ++i)
+      odata[i] = idata[i];
+
+   odata[cols + seq_arr[idx]] = 1;
+}
+
+__global__ static void _cuda_embed_back(const float* mat, int rows, int stride, int seq_stride,
+      float *out_mat, int out_rows, int out_cols, int out_stride){
+
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+   if( idx >= out_rows * out_cols) return;
+
+   int r = idx / out_cols;
+   int c = idx % out_cols;
+
+   float *odata = out_mat + out_stride * r + c;
+   const float *idata = mat + stride * (r * seq_stride) + c;
+
+   for(int i = 0; i < seq_stride; ++i){
+      *odata += idata[i * stride];
+   }
+}
+
+__global__ static void _cuda_blendsum_prop(const float* mat, int rows, int cols, int stride, 
+      const int* seq_arr, int seq_size, float* out_mat, int out_rows, int out_stride){
+
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+   if( idx >= out_rows * cols) return;
+   int r = idx / cols;
+   int c = idx % cols;
+
+   float *odata = out_mat + out_stride * r + c;
+   const float *idata = mat + stride * r + c;
+
+   for(int i = 0; i < seq_arr[r]; ++i)
+      *odata += idata[i * stride * seq_size ];
+}
+
+__global__ static void _cuda_blendsum_back(const float* mat, int rows, int cols, int stride,
+      const int* seq_arr, int seq_size, float* out_mat, int out_rows, int out_stride){
+
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+   if(idx >= rows * cols) return;
+   int r = idx / cols;
+   int c = idx % cols;
+
+   float *odata = out_mat + out_stride * r + c;
+   const float *idata = mat + stride * r + c;
+
+   for(int i = 0; i < seq_arr[r]; ++i)
+      odata[i * out_stride * seq_size] = *idata;
+}
+

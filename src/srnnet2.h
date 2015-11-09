@@ -1,5 +1,5 @@
-#ifndef SRNNET_H_
-#define SRNNET_H_
+#ifndef SRNNET2_H_
+#define SRNNET2_H_
 
 #include "nnet/nnet-nnet.h"
 #include "nnet/nnet-various.h"

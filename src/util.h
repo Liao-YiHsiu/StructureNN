@@ -85,6 +85,17 @@ void dist_back(const CuMatrixBase<BaseFloat> &mat, const int* seq_arr, int seq_s
 void comb_back(float** mat_arr, int* mat_arr_stride, const int* seq_arr, int seq_stride,
       const int* id_arr, CuMatrixBase<BaseFloat> &mat);
 
+void embed_prop(const CuMatrixBase<BaseFloat> &in, const int* seq_arr, int seq_stride, 
+      CuMatrixBase<BaseFloat> &out);
+
+void embed_back(const CuMatrixBase<BaseFloat> &out_diff, int seq_stride, 
+      CuMatrixBase<BaseFloat> &in_diff);
+
+void blendsum_prop(const CuMatrixBase<BaseFloat> &in, const int* seq_arr, int seq_size,
+      CuMatrixBase<BaseFloat> &out);
+
+void blendsum_back(const CuMatrixBase<BaseFloat> &out_diff, const int *seq_arr, int seq_size,
+      CuMatrixBase<BaseFloat> &in_diff);
 
 void LockSleep(string filename, int ms = 2000);
 

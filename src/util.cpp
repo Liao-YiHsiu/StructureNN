@@ -293,6 +293,59 @@ void comb_back(float** mat_arr, int* mat_arr_stride, const int* seq_arr, int seq
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }
 
+void embed_prop(const CuMatrixBase<BaseFloat> &in, const int* seq_arr, int seq_stride, 
+      CuMatrixBase<BaseFloat> &out){
+   Timer tim;
+
+   int rows = out.NumRows();
+
+   cuda_embed_prop((rows-1)/BLOCKSIZE+1, BLOCKSIZE,
+         getCuPointer(&in), in.NumRows(), in.NumCols(), in.Stride(),
+         seq_arr, seq_stride, 
+         getCuPointer(&out), rows, out.Stride());
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+}
+
+void embed_back(const CuMatrixBase<BaseFloat> &out_diff, int seq_stride, 
+      CuMatrixBase<BaseFloat> &in_diff){
+   Timer tim;
+
+   int threads = in_diff.NumRows() * in_diff.NumCols();
+
+   cuda_embed_back((threads-1)/BLOCKSIZE+1, BLOCKSIZE,
+         getCuPointer(&out_diff), out_diff.NumRows(), out_diff.Stride(), seq_stride,
+         getCuPointer(&in_diff), in_diff.NumRows(), in_diff.NumCols(), in_diff.Stride());
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+}
+
+void blendsum_prop(const CuMatrixBase<BaseFloat> &in, const int* seq_arr, int seq_size,
+      CuMatrixBase<BaseFloat> &out){
+   Timer tim;
+   
+   int threads = out.NumRows() * out.NumCols();
+
+   cuda_blendsum_prop((threads-1)/BLOCKSIZE+1, BLOCKSIZE,
+         getCuPointer(&in), in.NumRows(), in.NumCols(), in.Stride(),
+         seq_arr, seq_size, getCuPointer(&out), out.NumRows(), out.Stride());
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+}
+
+void blendsum_back(const CuMatrixBase<BaseFloat> &out_diff, const int *seq_arr, int seq_size,
+      CuMatrixBase<BaseFloat> &in_diff){
+   Timer tim;
+   
+   int threads = out_diff.NumRows() * out_diff.NumCols();
+
+   cuda_blendsum_back((threads-1)/BLOCKSIZE+1, BLOCKSIZE,
+         getCuPointer(&out_diff), out_diff.NumRows(), out_diff.NumCols(), out_diff.Stride(),
+         seq_arr, seq_size, getCuPointer(&in_diff), in_diff.NumRows(), in_diff.Stride());
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+}
+
 void LockSleep(string filename, int ms){
    int fd = open(filename.c_str() , O_RDWR | O_CREAT, 0666);
    assert(fd > 0);
