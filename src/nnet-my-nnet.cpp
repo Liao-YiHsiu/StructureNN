@@ -9,6 +9,8 @@
 #include "nnet-embed-component.h"
 #include "nnet-blend-component.h"
 
+#define SUBMATRIX(mat_arr, index) mat_arr[index].RowRange(0, rows_num_[index])
+
 MyNnet::MyNnet(const MyNnet& other){
    for(int i = 0; i < other.NumComponents(); ++i){
       components_.push_back(other.GetComponent(i).Copy());
@@ -57,19 +59,24 @@ void MyNnet::Propagate(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *o
 
    assert( propagate_buf_.size() == NumComponents() + 1);
 
-   propagate_buf_[0].Resize(in.NumRows(), in.NumCols(), kUndefined);
-   propagate_buf_[0].CopyFromMat(in);
+   SetBuff(in.NumRows(), labels_stride_, streamN_);
+
+   SUBMATRIX(propagate_buf_, 0).CopyFromMat(in);
 
    for(int i = 0; i < components_.size(); ++i){
-      if(components_[i]->GetType() != Component::kUnknown){
+      if(components_[i]->GetType() == Component::kLstmProjectedStreams || 
+            components_[i]->GetType() == Component::kBLstmProjectedStreams){
          components_[i]->Propagate(propagate_buf_[i], &propagate_buf_[i+1]);
+      }else if(components_[i]->GetType() != Component::kUnknown){
+         ((ComponentBuff*)(void*)components_[i])->
+            Propagate(SUBMATRIX(propagate_buf_, i), &propagate_buf_[i+1]);
       }else{
          MyComponent *mycomp = dynamic_cast<MyComponent*>(components_[i]);
-         mycomp->Propagate(propagate_buf_[i], &propagate_buf_[i+1]);
+         mycomp->Propagate(SUBMATRIX(propagate_buf_, i), &propagate_buf_[i+1]);
       }
    }
 
-   (*out) = propagate_buf_[components_.size()];
+   (*out) = SUBMATRIX(propagate_buf_, components_.size());
 }
 
 void MyNnet::Backpropagate(const CuMatrixBase<BaseFloat> &out_diff, CuMatrix<BaseFloat> *in_diff){
@@ -81,26 +88,30 @@ void MyNnet::Backpropagate(const CuMatrixBase<BaseFloat> &out_diff, CuMatrix<Bas
    assert(propagate_buf_.size() == NumComponents() + 1);
    assert(backpropagate_buf_.size() == NumComponents() + 1);
 
-   backpropagate_buf_[NumComponents()] = out_diff;
+   SUBMATRIX(backpropagate_buf_, NumComponents()).CopyFromMat(out_diff);
 
    for(int i = NumComponents()-1; i >= 0; --i){
-      if(components_[i]->GetType() != Component::kUnknown){
+      if(components_[i]->GetType() == Component::kLstmProjectedStreams || 
+            components_[i]->GetType() == Component::kBLstmProjectedStreams){
          components_[i]->Backpropagate(propagate_buf_[i], propagate_buf_[i+1],
                backpropagate_buf_[i+1], &backpropagate_buf_[i]);
+      }else if(components_[i]->GetType() != Component::kUnknown){
+         components_[i]->Backpropagate(SUBMATRIX(propagate_buf_, i), SUBMATRIX(propagate_buf_, i+1), 
+               SUBMATRIX(backpropagate_buf_, i+1), &backpropagate_buf_[i]);
       }else{
          MyComponent *mycomp = dynamic_cast<MyComponent*>(components_[i]);
-         mycomp->Backpropagate(propagate_buf_[i], propagate_buf_[i+1],
-               backpropagate_buf_[i+1], &backpropagate_buf_[i]);
+         mycomp->Backpropagate(SUBMATRIX(propagate_buf_, i), SUBMATRIX(propagate_buf_, i+1),
+               SUBMATRIX(backpropagate_buf_, i+1), &backpropagate_buf_[i]);
       }
 
       if(components_[i]->IsUpdatable()){
          UpdatableComponent *uc = dynamic_cast<UpdatableComponent*>(components_[i]);
-         uc->Update(propagate_buf_[i], backpropagate_buf_[i+1]);
+         uc->Update(SUBMATRIX(propagate_buf_, i), SUBMATRIX(backpropagate_buf_, i+1));
       }
    }
 
    if(NULL != in_diff) 
-      (*in_diff) = backpropagate_buf_[0];
+      (*in_diff) = SUBMATRIX(backpropagate_buf_, 0);
 }
 
 int32 MyNnet::OutputDim() const {
@@ -221,6 +232,7 @@ void MyNnet::ResetLstmStreams(const vector<int32> &stream_reset_flag){
          }
       }
    }
+   streamN_ = stream_reset_flag.size();
 }
 
 void MyNnet::SetSeqLengths(const vector<int32> &sequence_lengths){
@@ -254,6 +266,33 @@ void MyNnet::SetSeqLengths(const vector<int32> &sequence_lengths){
       }
 
       blend.SetSeqLengths(inflat_lengths);
+   }
+   streamN_ = sequence_lengths.size();
+}
+
+void MyNnet::SetBuff(int max_input_rows, int labels_stride, int streamN){
+   int rows = max_input_rows;
+
+   rows_num_.resize(propagate_buf_.size());
+
+   rows_num_[0] = rows;
+   resizeBuff(&propagate_buf_[0], rows, components_[0]->InputDim());
+   resizeBuff(&backpropagate_buf_[0], rows, components_[0]->InputDim());
+
+   for(int i = 0; i < components_.size(); ++i){
+      if(i == embedIdx_)
+         rows = max_input_rows * labels_stride;
+      else if(i == blendIdx_)
+         rows = streamN * labels_stride;
+
+      rows_num_[i+1] = rows;
+      resizeBuff(&propagate_buf_[i+1], rows, components_[i]->OutputDim());
+      resizeBuff(&backpropagate_buf_[i+1], rows, components_[i]->OutputDim());
+   }
+
+   for(int i = 0; i < propagate_buf_.size(); ++i){
+      propagate_buf_[i].SetZero();
+      backpropagate_buf_[i].SetZero();
    }
 }
 
@@ -293,6 +332,7 @@ void MyNnet::Read(istream &is, bool binary){
 
    propagate_buf_.resize(NumComponents() + 1);
    backpropagate_buf_.resize(NumComponents() + 1);
+
 
    // reset learn rate
    opts_.learn_rate = 0.0;
@@ -359,11 +399,11 @@ string MyNnet::InfoPropagate() const {
    ostringstream ostr;
 
    ostr << "### Forward propagation buffer content :\n";
-   ostr << "[0] output of <Input> " << MomentStatistics(propagate_buf_[0]) << endl;
+   ostr << "[0] output of <Input> " << MomentStatistics(SUBMATRIX(propagate_buf_, 0)) << endl;
    for( int i = 0; i < NumComponents(); ++i){
       ostr << "["<<i<<"] output of "
          << MyComponent::myCompToMarker(*components_[i])
-         << MomentStatistics(propagate_buf_[i+1]) << endl;
+         << MomentStatistics(SUBMATRIX(propagate_buf_, i+1)) << endl;
       if(Component::kParallelComponent == components_[i]->GetType()){
          ostr << dynamic_cast<ParallelComponent*>(components_[i])->InfoPropagate();
       }
@@ -376,11 +416,11 @@ string MyNnet::InfoBackPropagate() const {
    ostringstream ostr;
 
    ostr << "### Backward propagation buffer content :\n";
-   ostr << "[0] diff of <Input> " << MomentStatistics(backpropagate_buf_[0]) << endl;
+   ostr << "[0] diff of <Input> " << MomentStatistics(SUBMATRIX(backpropagate_buf_, 0)) << endl;
    for(int i = 0; i < NumComponents(); ++i){
       ostr << "["<<i<<"] diff-output of "
          << MyComponent::myCompToMarker(*components_[i])
-         << MomentStatistics(backpropagate_buf_[i+1]) << endl;
+         << MomentStatistics(SUBMATRIX(backpropagate_buf_, i+1)) << endl;
       if(Component::kParallelComponent == components_[i]->GetType()){
          ostr << dynamic_cast<ParallelComponent*>(components_[i])->InfoBackPropagate();
       }

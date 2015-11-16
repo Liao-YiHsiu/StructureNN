@@ -39,7 +39,6 @@ class Blend : public MyComponent{
       virtual void SetSeqLengthsFnc(const vector<int32> &seq_length){}
 
       vector<int32> seq_length_;
-      int32         max_length_;
 };
 
 class BlendSum : public Blend{

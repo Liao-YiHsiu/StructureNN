@@ -54,6 +54,8 @@ __global__ static void _cuda_blendsum_prop(const float* mat, int rows, int cols,
 __global__ static void _cuda_blendsum_back(const float* mat, int rows, int cols, int stride,
       const int* seq_arr, int seq_size, float* out_mat, int out_rows, int out_stride);
 
+__global__ static void _cuda_mem_copy(float* dst, int dst_pitch, const float* src, int src_pitch,
+     int width, int height);
 
 // ----------------------------------------------------------------------------------------------------
 
@@ -152,6 +154,11 @@ void cuda_blendsum_prop(dim3 grid, dim3 block, const float* mat, int rows, int c
 void cuda_blendsum_back(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride,
       const int* seq_arr, int seq_size, float* out_mat, int out_rows, int out_stride){
    _cuda_blendsum_back<<<grid, block>>>(mat, rows, cols, stride, seq_arr, seq_size, out_mat, out_rows, out_stride);
+}
+
+void cuda_mem_copy(dim3 grid, dim3 block, float* dst, int dst_pitch, const float* src, int src_pitch,
+     int width, int height){
+   _cuda_mem_copy<<<grid, block>>>(dst, dst_pitch, src, src_pitch, width, height);
 }
 
 __device__
@@ -622,3 +629,17 @@ __global__ static void _cuda_blendsum_back(const float* mat, int rows, int cols,
       odata[i * out_stride * seq_size] = *idata;
 }
 
+__global__ static void _cuda_mem_copy(float* dst, int dst_pitch, const float* src, int src_pitch,
+     int width, int height){
+
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+   if(idx >= width * height) return;
+
+   int w = idx % width;
+   int h = idx / width;
+
+   float       *odata = dst + dst_pitch * h + w;
+   const float *idata = src + src_pitch * h + w;
+
+   *odata = *idata;
+}

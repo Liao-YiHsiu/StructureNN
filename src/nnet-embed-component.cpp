@@ -5,9 +5,9 @@ void Embed::Propagate(const CuMatrixBase<BaseFloat> &in,
    assert(input_dim_ == in.NumCols());
    assert(in.NumRows() * seq_stride_ == seq_.size());
 
-   out->Resize(seq_.size(), output_dim_, kSetZero);
-
-   PropagateFnc(in, out);
+   resizeBuff(out, seq_.size(), output_dim_);
+   CuSubMatrix<BaseFloat> sub = out->RowRange(0, seq_.size());
+   PropagateFnc(in, &sub);
 }
 
 void Embed::Backpropagate(const CuMatrixBase<BaseFloat> &in,
@@ -19,10 +19,14 @@ void Embed::Backpropagate(const CuMatrixBase<BaseFloat> &in,
    assert(out.NumRows() == seq_.size() && out.NumCols() == output_dim_);
    assert(out_diff.NumRows() == seq_.size() && out_diff.NumCols() == output_dim_);
 
-   if(in_diff != NULL)
-      in_diff->Resize(in.NumRows(), input_dim_, kSetZero);
+   if(in_diff != NULL){
+      resizeBuff(in_diff, in.NumRows(), input_dim_);
+      CuSubMatrix<BaseFloat> sub = in_diff->RowRange(0, in.NumRows());
+      BackpropagateFnc(in, out, out_diff, &sub);
+   }else{
+      BackpropagateFnc(in, out, out_diff, NULL);
+   }
 
-   BackpropagateFnc(in, out, out_diff, in_diff);
 }
 
 void Embed::InitData(istream &is){
@@ -159,14 +163,6 @@ string EmbedMux::InfoGradient() const{
 }
 
 void EmbedMux::PropagateFnc(const CuMatrixBase<BaseFloat> &in, CuMatrixBase<BaseFloat> *out){
-
-   // clear all previous buf...
-   for(int i = 0; i < in_buff_.size(); ++i){
-      in_buff_[i].Resize(0, 0, kUndefined);
-      in_diff_buff_[i].Resize(0, 0, kUndefined);
-      out_buff_[i].Resize(0, 0, kUndefined);
-      out_diff_buff_[i].Resize(0, 0, kUndefined);
-   }
 
    for(int i = 0; i < cnt_.size(); ++i){
       if(cnt_[i] != 0){

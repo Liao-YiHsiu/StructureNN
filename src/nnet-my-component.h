@@ -86,6 +86,16 @@ class MyComponent : public UpdatableComponent{
       static MyComponent* NewMyComponentOfType(MyType type, int32 input_dim, int32 output_dim);
 };
 
+// Don't Resize Unless matrix size is too small.
+class ComponentBuff : public Component{
+   public:
+      void Propagate(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *out); 
+      void Backpropagate(const CuMatrixBase<BaseFloat> &in,
+            const CuMatrixBase<BaseFloat> &out,
+            const CuMatrixBase<BaseFloat> &out_diff,
+            CuMatrix<BaseFloat> *in_diff); 
+};
+
 #define NOT_UPDATABLE() \
       virtual bool IsUpdatable() const{ return false;} \
       virtual int32 NumParams() const{ return 0;} \

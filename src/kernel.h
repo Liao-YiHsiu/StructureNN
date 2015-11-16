@@ -57,6 +57,9 @@ void cuda_blendsum_prop(dim3 grid, dim3 block, const float* mat, int rows, int c
 void cuda_blendsum_back(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride,
       const int* seq_arr, int seq_size, float* out_mat, int out_rows, int out_stride);
 
+void cuda_mem_copy(dim3 grid, dim3 block, float* dst, int dst_pitch, const float* src, int src_pitch,
+     int width, int height);
+
 typedef struct{
    int           L;            // label #
    int           T;            // utterance length

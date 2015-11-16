@@ -129,6 +129,7 @@ mlp_best=$nnet_in
 
 rm -f $nnetdir/log
 
+min_loss=1e20
 loss=0
 halving=0
 # start training
@@ -221,6 +222,11 @@ for iter in $(seq -w $max_iters); do
    loss_prev=$loss
    
    echo -n "$iter $(printf '%.10f' $learn_rate) $loss_tr $loss_new $acc_tr $acc_new $WER " >> $nnetdir/log
+
+   if [ 1 == $(bc <<< "${loss_new/[eE]+*/*10^} < ${min_loss/[eE]+*/*10^}") ]; then
+      min_loss=$loss_new
+      cp -f $mlp_next ${nnet_out}.best
+   fi
 
    if [ 1 == $(bc <<< "${loss_new/[eE]+*/*10^} < ${loss/[eE]+*/*10^}") -o $iter -le $keep_lr_iters ]; then
       loss=$loss_new

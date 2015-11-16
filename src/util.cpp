@@ -40,6 +40,10 @@ double phone_acc(const vector<uchar>& path1, const vector<uchar>& path2, bool no
    return corr;
 }
 
+double phone_frame_acc(const vector<uchar> &path1, const vector<uchar> &path2, bool dummy){
+   return phone_acc(path1, path2, false) + frame_acc(path1, path2, true);
+}
+
 void UcharToInt32(const vector<uchar>& src_path, vector<int>& des_path){
    des_path.resize(src_path.size());
    for(int i = 0; i < src_path.size(); ++i)
@@ -207,6 +211,12 @@ void print(const CuMatrixBase<BaseFloat> &cumat, int row){
    print(tmp, row);
 }
 
+void resizeBuff(CuMatrix<BaseFloat> *mat, int rows, int cols){
+   if(mat->NumRows() < rows || mat->NumCols() != cols){
+      mat->Resize(rows, cols, kUndefined);
+   }
+}
+
 // N = # of packs_ptr, F = dimension of feats, S = max state.
 void propPsi(int N, int F, int S, int maxL, PsiPack* packs_ptr){
    Timer tim;
@@ -342,6 +352,17 @@ void blendsum_back(const CuMatrixBase<BaseFloat> &out_diff, const int *seq_arr, 
    cuda_blendsum_back((threads-1)/BLOCKSIZE+1, BLOCKSIZE,
          getCuPointer(&out_diff), out_diff.NumRows(), out_diff.NumCols(), out_diff.Stride(),
          seq_arr, seq_size, getCuPointer(&in_diff), in_diff.NumRows(), in_diff.Stride());
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+}
+
+void cuMemCopy(float* dst, int dst_pitch, const float* src, int src_pitch, int width, int height){
+   Timer tim;
+
+   int threads = width * height;
+
+   cuda_mem_copy((threads-1)/BLOCKSIZE+1, BLOCKSIZE,
+         dst, dst_pitch, src, src_pitch, width, height);
 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }

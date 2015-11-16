@@ -57,6 +57,8 @@ class MyNnet{
 
       void SetSeqLengths(const vector<int32> &sequence_lengths);
 
+      void SetBuff(int max_input_rows, int labels_stride, int streamN);
+
       void Init(const string& config_file);
       
       void Read(const string& file);
@@ -89,6 +91,8 @@ class MyNnet{
       
       vector< CuMatrix<BaseFloat> > propagate_buf_;
       vector< CuMatrix<BaseFloat> > backpropagate_buf_;
+
+      vector< int > rows_num_;
 
       NnetTrainOptions opts_;
 

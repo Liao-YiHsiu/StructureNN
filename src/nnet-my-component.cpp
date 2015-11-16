@@ -119,3 +119,42 @@ MyComponent* MyComponent::NewMyComponentOfType(MyComponent::MyType type, int32 i
    }
    return ans;
 }
+
+void ComponentBuff::Propagate(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *out){
+   // Check the dims
+   assert(input_dim_ == in.NumCols());
+
+   resizeBuff(out, in.NumRows(), output_dim_);
+   CuSubMatrix<BaseFloat> sub = out->RowRange(0, in.NumRows());
+   PropagateFnc(in, &sub);
+}
+
+void ComponentBuff::Backpropagate(const CuMatrixBase<BaseFloat> &in,
+      const CuMatrixBase<BaseFloat> &out,
+      const CuMatrixBase<BaseFloat> &out_diff,
+      CuMatrix<BaseFloat> *in_diff){
+
+   // Check the dims
+   assert(output_dim_ == out_diff.NumCols());
+
+   // Target buffer NULL : backpropagate only through components with nested nnets.
+   if (in_diff == NULL) {
+      if (GetType() == kParallelComponent ||
+            GetType() == kSentenceAveragingComponent) {
+         BackpropagateFnc(in, out, out_diff, NULL);
+      } else {
+         return;
+      }
+   } else {
+
+      resizeBuff(in_diff, out_diff.NumRows(), input_dim_);
+      CuSubMatrix<BaseFloat> sub = in_diff->RowRange(0, out_diff.NumRows());
+
+      // Asserts on the dims
+      KALDI_ASSERT((in.NumRows() == out.NumRows()) &&
+            (in.NumRows() == out_diff.NumRows()));
+      KALDI_ASSERT(out.NumCols() == out_diff.NumCols());
+      // Call the backprop implementation of the component
+      BackpropagateFnc(in, out, out_diff, &sub);
+   }
+}

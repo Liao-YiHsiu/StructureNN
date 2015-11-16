@@ -50,8 +50,8 @@ int main(int argc, char *argv[]) {
     rnd_opts.Register(&po);
     po.Register("randomize", &randomize, "Set training procedure randomized.");
 
-    string acc_func = "fac";
-    po.Register("acc-func", &acc_func, "Acuracy function : fac|pac");
+    string acc_func = "pfac";
+    po.Register("acc-func", &acc_func, "Acuracy function : fac|pac|pfac");
 
     string use_gpu="yes";
     po.Register("use-gpu", &use_gpu, "yes|no|optional, only has effect if compiled with CUDA");
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     string feature_transform;
     po.Register("feature-transform", &feature_transform, "Feature transform in front of main network (in nnet format)");
 
-    double error_margin = 0.05;
+    double error_margin = 0.02;
     po.Register("error-margin", &error_margin, "train on pairs with: |acc(x1) - acc(x2)| >= error_margin");
     double sigma = 1.0;
     po.Register("sigma", &sigma, "parameters of ranknet.");
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
     po.Register("loss-func", &loss_func, "training loss function: (listnet, listrelu, ranknet)");
 
     // lstm parameters
-    int32 num_stream = 2;
+    int32 num_stream = 8;
     po.Register("num-stream", &num_stream, "---LSTM--- BPTT multi-stream training");
     // lstm parameters
 
@@ -104,6 +104,8 @@ int main(int argc, char *argv[]) {
        acc_function = frame_acc;
     else if(acc_func == "pac")
        acc_function = phone_acc; 
+    else if(acc_func == "pfac")
+       acc_function = phone_frame_acc; 
     else{
        po.PrintUsage();
        exit(1);
@@ -153,8 +155,9 @@ int main(int argc, char *argv[]) {
     vector< Matrix<BaseFloat> >       feature_arr;
     vector< vector< vector<uchar> > > label_arr;
     vector< vector<BaseFloat> >       target_arr;
-    vector< pair< int, int >  >       length_arr;
+    vector< int >                     length_arr;
 
+    int max_length = -1;
     int num_Total = 0;
     int cols = -1; int seqs_stride = -1;
 
@@ -174,7 +177,8 @@ int main(int argc, char *argv[]) {
        assert( cols == feat.NumCols() );
 
        feature_arr.push_back(feat);
-       length_arr.push_back(make_pair(feat.NumRows(), length_arr.size()));
+       length_arr.push_back(feat.NumRows());
+       if(max_length < feat.NumRows()) max_length = feat.NumRows();
 
        target_arr.push_back(vector<BaseFloat>());
        label_arr.push_back(vector< vector<uchar> >());
@@ -207,108 +211,92 @@ int main(int argc, char *argv[]) {
     }
 
     KALDI_LOG << "All Data Loaded.";
-
-    // random shuffle
-    for(int i = 0; i < length_arr.size(); ++i){
-       int j = rand() % length_arr.size();
-       pair<int, int> tmp = length_arr[i];
-       length_arr[i] = length_arr[j];
-       length_arr[j] = tmp;
-    }
-
-    // sorting according to the length
-    sort(length_arr.begin(), length_arr.end(), by_first());
-
-    // constructing mini-batch
-    vector< vector<int> > mini_batch_idx;
-    for(int i = 0; i < length_arr.size(); ){
-       vector<int> batch;
-       for(int j = 0; j < num_stream && i < length_arr.size(); ++i, ++j){
-          batch.push_back(length_arr[i].second);
-       }
-       mini_batch_idx.push_back(batch);
-    }
-
-    // random shuffle
-    vector<int> shuffle_arr(mini_batch_idx.size());
-    for(int i = 0; i < shuffle_arr.size(); ++i)
-       shuffle_arr[i] = i;
+    
+    vector<int> shuffle_idx(length_arr.size());
+    for(int i = 0; i < length_arr.size(); ++i)
+       shuffle_idx[i] = i;
 
     if(randomize && !crossvalidate){
-       for(int i = 0; i < shuffle_arr.size(); ++i){
-          int j = rand() % shuffle_arr.size();
+       for(int i = 0; i < shuffle_idx.size(); ++i){
+          int j = rand() % shuffle_idx.size();
 
           // swap
-          int tmp = shuffle_arr[i];
-          shuffle_arr[i] = shuffle_arr[j];
-          shuffle_arr[j] = tmp;
+          int tmp = shuffle_idx[i];
+          shuffle_idx[i] = shuffle_idx[j];
+          shuffle_idx[j] = tmp;
        }
     }
 
     strt->SetAll(num_Total);
 
+    Matrix<BaseFloat>   feat_host;
+    CuMatrix<BaseFloat> nnet_in;
     CuMatrix<BaseFloat> nnet_out;
     CuMatrix<BaseFloat> nnet_out_diff;
     vector< CuMatrix<BaseFloat> > nnet_out_diff_arr(num_stream);
+    vector< CuMatrix<BaseFloat> > features(num_stream); 
+
+    nnet.SetBuff(max_length, seqs_stride, num_stream);
 
     int64 num_done = 0;
+    int   now_idx  = 0;
     
-    for(int i = 0; i < shuffle_arr.size(); ++i){
+    while(1){
        // filled in training array.
-       vector< CuMatrix<BaseFloat> >     features(num_stream); // all features
+       int streams = 0;
+       for(; streams < num_stream && now_idx < length_arr.size(); ++streams, ++now_idx){
+          const Matrix<BaseFloat> & src = feature_arr[shuffle_idx[now_idx]];
 
-       int maxT = 0; 
+          feat_host.Resize(max_length, cols, kSetZero);
+          feat_host.RowRange(0, src.NumRows()).CopyFromMat(src);
 
-       const vector<int> & mini_batch = mini_batch_idx[shuffle_arr[i]];
-
-       for(int j = 0; j < mini_batch.size(); ++j){
-          const Matrix<BaseFloat> & feat = feature_arr[mini_batch[j]];
-          if(maxT < feat.NumRows()) maxT = feat.NumRows();
-          nnet_transf.Feedforward(CuMatrix<BaseFloat>(feat), &features[j]);
+          nnet_transf.Feedforward(CuMatrix<BaseFloat>(feat_host), &features[streams]);
        }
+       if(streams == 0) break;
+
+       nnet_in.Resize(max_length * streams, features[0].NumCols() , kSetZero);
+       fillin(nnet_in, features, streams);
 
        // construct labels input
+       vector<int32> labels_in(max_length * streams * seqs_stride, 0);
+       vector<int32> seq_length(streams, 0);
 
-       CuMatrix<BaseFloat> nnet_in(maxT * num_stream, cols, kSetZero);
-       vector<int32>     labels_in(maxT * num_stream * seqs_stride, 0);
-
-       fillin(nnet_in, features, num_stream);
-#pragma omp parallel for
-       for(int l = 0; l < mini_batch.size(); ++l){
-          const vector< vector<uchar> > &label = label_arr[mini_batch[l]];
+#pragma omp for
+       for(int i = 0; i < streams; ++i){
+          //label
+          const vector< vector<uchar> > &label = label_arr[shuffle_idx[now_idx - streams + i]];
           for(int j = 0; j < label.size(); ++j)
              for(int k = 0; k < label[j].size(); ++k)
-                labels_in[ seqs_stride * num_stream * k  + seqs_stride * l + j] =
+                labels_in[ seqs_stride * streams * k  + seqs_stride * i + j] =
                    label[j][k] - 1;
+
+          seq_length[i] = label[0].size();
        }
 
        // setup nnet input
        nnet.SetLabelSeqs(labels_in, seqs_stride);
 
-       vector<int32> flag(num_stream , 1);
+       vector<int32> flag(streams , 1);
        nnet.ResetLstmStreams(flag);
-
-       vector<int32> seq_length(num_stream, 0);
-       for(int l = 0; l < mini_batch.size(); ++l)
-          seq_length[l] = label_arr[mini_batch[l]][0].size();
        nnet.SetSeqLengths(seq_length);
 
        // propagate nnet output
        nnet.Propagate(nnet_in, &nnet_out);
 
-       assert(nnet_out.NumRows() == seqs_stride * num_stream);
+       assert(nnet_out.NumRows() == seqs_stride * streams);
        nnet_out_diff.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kSetZero);
-       for(int l = 0; l < mini_batch.size(); ++l){
-          strt->Eval(target_arr[mini_batch[l]],
-                nnet_out.RowRange(l*seqs_stride, seqs_stride), &nnet_out_diff_arr[l]);
-          nnet_out_diff.RowRange(l * seqs_stride, seqs_stride).CopyFromMat(nnet_out_diff_arr[l]);
+
+       for(int i = 0; i < streams; ++i){
+          strt->Eval(target_arr[shuffle_idx[now_idx - streams + i]],
+                nnet_out.RowRange(i*seqs_stride, seqs_stride), &nnet_out_diff_arr[i]);
+          nnet_out_diff.RowRange(i*seqs_stride, seqs_stride).CopyFromMat(nnet_out_diff_arr[i]);
        }
 
        if(!crossvalidate){
           nnet.Backpropagate(nnet_out_diff, NULL);
        }
 
-       num_done += mini_batch.size() * seqs_stride;
+       num_done += streams * seqs_stride;
     }
     
     KALDI_LOG << "Done " << num_done << " label sequences.";
@@ -352,15 +340,23 @@ int main(int argc, char *argv[]) {
 void fillin(CuMatrixBase<BaseFloat> &dest, vector< CuMatrix<BaseFloat> > &src, int stream_num){
 
    for(int i = 0; i < stream_num; ++i){
-      BaseFloat *src_data = getCuPointer(&src[i]);
+      BaseFloat *src_data  = getCuPointer(&src[i]);
       BaseFloat *dest_data = getCuPointer(&dest) + dest.Stride() * i;
-      size_t dst_pitch = dest.Stride() * sizeof(BaseFloat) * stream_num;
-      size_t src_pitch = src[i].Stride() * sizeof(BaseFloat);
-      size_t width     = src[i].NumCols() * sizeof(BaseFloat);
+      size_t dst_pitch = dest.Stride() * stream_num;
+      size_t src_pitch = src[i].Stride();
+      size_t width     = src[i].NumCols();
       size_t height    = src[i].NumRows();
 
       if(height != 0)
-         CU_SAFE_CALL(cudaMemcpy2D(dest_data, dst_pitch, src_data, src_pitch,
-                  width, height, cudaMemcpyDeviceToDevice));
+         cuMemCopy(dest_data, dst_pitch, src_data, src_pitch, width, height);
    }
+
+   //check
+   //CuMatrix<BaseFloat> tmp(dest.NumRows(), dest.NumCols(), kSetZero);
+   //for(int i = 0; i < stream_num; ++i){
+   //   for(int j = 0; j < src[i].NumRows(); ++j)
+   //      tmp.Row(j*stream_num + i).CopyFromVec(src[i].Row(j));
+   //}
+
+   //assert(Same(dest, tmp));
 }

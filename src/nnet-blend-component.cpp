@@ -3,34 +3,29 @@
 void Blend::Propagate(const CuMatrixBase<BaseFloat> &in,
       CuMatrix<BaseFloat> *out){
    assert( input_dim_ == in.NumCols() );
-   assert( in.NumRows() ==  seq_length_.size() * max_length_ );
 
-   out->Resize(seq_length_.size(), output_dim_, kSetZero);
-
-   PropagateFnc(in, out);
+   resizeBuff(out, seq_length_.size(), output_dim_);
+   CuSubMatrix<BaseFloat> sub = out->RowRange(0, seq_length_.size());
+   PropagateFnc(in, &sub);
 }
 
 void Blend::Backpropagate(const CuMatrixBase<BaseFloat> &in,
       const CuMatrixBase<BaseFloat> &out,
       const CuMatrixBase<BaseFloat> &out_diff,
       CuMatrix<BaseFloat> *in_diff){
-   assert( input_dim_ == in.NumCols() && in.NumRows() == seq_length_.size() * max_length_ );
+   assert( input_dim_ == in.NumCols() );
    assert( output_dim_ == out.NumCols() && out.NumRows() == seq_length_.size() );
    assert( out_diff.NumCols() == out.NumCols() && out_diff.NumRows() == out.NumRows());
 
    if(in_diff == NULL) return;
 
-   in_diff->Resize(in.NumRows(), in.NumCols(), kSetZero);
-   BackpropagateFnc(in, out, out_diff, in_diff);
+   resizeBuff(in_diff, in.NumRows(), in.NumCols());
+   CuSubMatrix<BaseFloat> sub = in_diff->RowRange(0, in.NumRows());
+   BackpropagateFnc(in, out, out_diff, &sub);
 }
 
 
 void Blend::SetSeqLengths(const vector<int32> &seq_length){
-   max_length_ = 0;
-   for(int i = 0; i < seq_length.size(); ++i){
-      assert(seq_length[i] > 0);
-      max_length_ = seq_length[i] > max_length_ ? seq_length[i] : max_length_;
-   }
    seq_length_ = seq_length;
 
    SetSeqLengthsFnc(seq_length);

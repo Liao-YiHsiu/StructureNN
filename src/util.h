@@ -49,6 +49,7 @@ inline double log_add(double a, double b){ return a + softplus(b-a);}
 
 double frame_acc(const vector<uchar>& path1, const vector<uchar>& path2, bool norm = true);
 double phone_acc(const vector<uchar>& path1, const vector<uchar>& path2, bool norm = true);
+double phone_frame_acc(const vector<uchar>& path1, const vector<uchar>& path2, bool norm = true);
 
 int best(const vector<BaseFloat> &arr);
 
@@ -66,6 +67,7 @@ string strAfter(const string &src, const string &key);
 void print(const MatrixBase<BaseFloat> &mat, int row = -1);
 void print(const CuMatrixBase<BaseFloat> &mat, int row = -1);
 
+void resizeBuff(CuMatrix<BaseFloat> *mat, int rows, int cols);
 
 void propPsi(int N, int F, int S, int maxL, PsiPack* packs_ptr);
 void backPsi(int N, int F, int S, int maxL, PsiPack* packs_ptr);
@@ -96,6 +98,8 @@ void blendsum_prop(const CuMatrixBase<BaseFloat> &in, const int* seq_arr, int se
 
 void blendsum_back(const CuMatrixBase<BaseFloat> &out_diff, const int *seq_arr, int seq_size,
       CuMatrixBase<BaseFloat> &in_diff);
+
+void cuMemCopy(float* dst, int dst_pitch,const float* src, int src_pitch, int width, int height);
 
 void LockSleep(string filename, int ms = 2000);
 

@@ -11,8 +11,7 @@ acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
 keep_lr_iters=300
-num_stream=16
-batch_size=64
+num_stream=4
 targets_delay=0
 tmpdir=$(mktemp -d)
 
@@ -41,11 +40,9 @@ if [ "$#" -ne 2 ]; then
    exit 1;
 fi
 
-train_tool="mynnet-train-lstm \
+train_tool="mynnet-train-listshuff \
    ${num_stream:+ --num-stream=$num_stream} \
-   ${negative_num:+ --negative-num=$negative_num}\
-   ${batch_size:+ --batch-size=$batch_size}\
-   ${targets_delay:+ --targets-delay=$targets_delay}"
+   ${negative_num:+ --negative-num=$negative_num}"
 
 nnet_proto=$1
 dir=$2
@@ -109,6 +106,19 @@ echo "$command_line" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    calc.sh ark:$dir/test.lab ark:${data}.tag.1best \
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   mynnet-score \
+      ${feature_transform:+ --feature-transform="$feature_transform"} \
+      ark:$dir/test.ark \
+      "ark:gunzip -c $test_lattice_path |" \
+      ${nnet}.best "ark:| gzip -c > ${data}.best.tag.gz"\
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   best-score-path "ark:gunzip -c ${data}.best.tag.gz |" ark:${data}.best.tag.1best
+      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+   calc.sh ark:$dir/test.lab ark:${data}.best.tag.1best \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 echo "Finish Time: `date`" \
