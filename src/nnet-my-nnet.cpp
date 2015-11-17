@@ -64,10 +64,11 @@ void MyNnet::Propagate(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *o
    SUBMATRIX(propagate_buf_, 0).CopyFromMat(in);
 
    for(int i = 0; i < components_.size(); ++i){
-      if(components_[i]->GetType() == Component::kLstmProjectedStreams || 
-            components_[i]->GetType() == Component::kBLstmProjectedStreams){
-         components_[i]->Propagate(propagate_buf_[i], &propagate_buf_[i+1]);
-      }else if(components_[i]->GetType() != Component::kUnknown){
+      //if(components_[i]->GetType() == Component::kLstmProjectedStreams || 
+      //      components_[i]->GetType() == Component::kBLstmProjectedStreams){
+      //   components_[i]->Propagate(propagate_buf_[i], &propagate_buf_[i+1]);
+      //}else if(components_[i]->GetType() != Component::kUnknown){
+      if(components_[i]->GetType() != Component::kUnknown){
          ((ComponentBuff*)(void*)components_[i])->
             Propagate(SUBMATRIX(propagate_buf_, i), &propagate_buf_[i+1]);
       }else{
@@ -91,12 +92,14 @@ void MyNnet::Backpropagate(const CuMatrixBase<BaseFloat> &out_diff, CuMatrix<Bas
    SUBMATRIX(backpropagate_buf_, NumComponents()).CopyFromMat(out_diff);
 
    for(int i = NumComponents()-1; i >= 0; --i){
-      if(components_[i]->GetType() == Component::kLstmProjectedStreams || 
-            components_[i]->GetType() == Component::kBLstmProjectedStreams){
-         components_[i]->Backpropagate(propagate_buf_[i], propagate_buf_[i+1],
-               backpropagate_buf_[i+1], &backpropagate_buf_[i]);
-      }else if(components_[i]->GetType() != Component::kUnknown){
-         components_[i]->Backpropagate(SUBMATRIX(propagate_buf_, i), SUBMATRIX(propagate_buf_, i+1), 
+      //if(components_[i]->GetType() == Component::kLstmProjectedStreams || 
+      //      components_[i]->GetType() == Component::kBLstmProjectedStreams){
+      //   components_[i]->Backpropagate(propagate_buf_[i], propagate_buf_[i+1],
+      //         backpropagate_buf_[i+1], &backpropagate_buf_[i]);
+      //}else if(components_[i]->GetType() != Component::kUnknown){
+      if(components_[i]->GetType() != Component::kUnknown){
+         ((ComponentBuff*)(void*)components_[i])->
+         Backpropagate(SUBMATRIX(propagate_buf_, i), SUBMATRIX(propagate_buf_, i+1), 
                SUBMATRIX(backpropagate_buf_, i+1), &backpropagate_buf_[i]);
       }else{
          MyComponent *mycomp = dynamic_cast<MyComponent*>(components_[i]);

@@ -11,7 +11,7 @@ acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
 keep_lr_iters=300
-num_stream=4
+num_stream=8
 targets_delay=0
 tmpdir=$(mktemp -d)
 

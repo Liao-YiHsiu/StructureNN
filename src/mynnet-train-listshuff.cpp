@@ -229,7 +229,6 @@ int main(int argc, char *argv[]) {
 
     strt->SetAll(num_Total);
 
-    Matrix<BaseFloat>   feat_host;
     CuMatrix<BaseFloat> nnet_in;
     CuMatrix<BaseFloat> nnet_out;
     CuMatrix<BaseFloat> nnet_out_diff;
@@ -244,21 +243,20 @@ int main(int argc, char *argv[]) {
     while(1){
        // filled in training array.
        int streams = 0;
+       int max_T = 0;
        for(; streams < num_stream && now_idx < length_arr.size(); ++streams, ++now_idx){
           const Matrix<BaseFloat> & src = feature_arr[shuffle_idx[now_idx]];
-
-          feat_host.Resize(max_length, cols, kSetZero);
-          feat_host.RowRange(0, src.NumRows()).CopyFromMat(src);
-
-          nnet_transf.Feedforward(CuMatrix<BaseFloat>(feat_host), &features[streams]);
+          if(max_T < src.NumRows()) max_T = src.NumRows();
+          
+          nnet_transf.Feedforward(CuMatrix<BaseFloat>(src), &features[streams]);
        }
        if(streams == 0) break;
 
-       nnet_in.Resize(max_length * streams, features[0].NumCols() , kSetZero);
+       nnet_in.Resize(max_T * streams, features[0].NumCols() , kSetZero);
        fillin(nnet_in, features, streams);
 
        // construct labels input
-       vector<int32> labels_in(max_length * streams * seqs_stride, 0);
+       vector<int32> labels_in(max_T * streams * seqs_stride, 0);
        vector<int32> seq_length(streams, 0);
 
 #pragma omp for
