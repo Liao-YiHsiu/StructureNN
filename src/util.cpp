@@ -367,6 +367,30 @@ void cuMemCopy(float* dst, int dst_pitch, const float* src, int src_pitch, int w
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }
 
+void fillin(CuMatrixBase<BaseFloat> &dest, vector< CuMatrix<BaseFloat> > &src, int stream_num){
+
+   for(int i = 0; i < stream_num; ++i){
+      BaseFloat *src_data  = getCuPointer(&src[i]);
+      BaseFloat *dest_data = getCuPointer(&dest) + dest.Stride() * i;
+      size_t dst_pitch = dest.Stride() * stream_num;
+      size_t src_pitch = src[i].Stride();
+      size_t width     = src[i].NumCols();
+      size_t height    = src[i].NumRows();
+
+      if(height != 0)
+         cuMemCopy(dest_data, dst_pitch, src_data, src_pitch, width, height);
+   }
+
+   //check
+   //CuMatrix<BaseFloat> tmp(dest.NumRows(), dest.NumCols(), kSetZero);
+   //for(int i = 0; i < stream_num; ++i){
+   //   for(int j = 0; j < src[i].NumRows(); ++j)
+   //      tmp.Row(j*stream_num + i).CopyFromVec(src[i].Row(j));
+   //}
+
+   //assert(Same(dest, tmp));
+}
+
 void LockSleep(string filename, int ms){
    int fd = open(filename.c_str() , O_RDWR | O_CREAT, 0666);
    assert(fd > 0);

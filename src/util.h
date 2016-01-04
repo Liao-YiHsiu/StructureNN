@@ -101,6 +101,8 @@ void blendsum_back(const CuMatrixBase<BaseFloat> &out_diff, const int *seq_arr, 
 
 void cuMemCopy(float* dst, int dst_pitch,const float* src, int src_pitch, int width, int height);
 
+void fillin(CuMatrixBase<BaseFloat> &dest, vector< CuMatrix<BaseFloat> > &src, int stream_num);
+
 void LockSleep(string filename, int ms = 2000);
 
 template<typename T>

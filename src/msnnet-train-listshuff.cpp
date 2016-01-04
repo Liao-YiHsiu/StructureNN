@@ -20,7 +20,6 @@ typedef StdVectorRandomizer<CuMatrix<BaseFloat>* >    MatrixPtRandomizer;
 typedef StdVectorRandomizer<vector<vector<uchar> >* > LabelArrPtRandomizer;
 typedef StdVectorRandomizer<vector<BaseFloat>* >      TargetArrPtRandomizer;
 
-void fillin(CuMatrixBase<BaseFloat> &dest, vector< CuMatrix<BaseFloat> > &src, int stream_num);
 struct by_first { 
    bool operator()(pair<int, int> const &a, pair<int, int> const &b) const { 
       return a.first > b.first;
@@ -352,18 +351,3 @@ int main(int argc, char *argv[]) {
   }
 }
 
-void fillin(CuMatrixBase<BaseFloat> &dest, vector< CuMatrix<BaseFloat> > &src, int stream_num){
-
-   for(int i = 0; i < stream_num; ++i){
-      BaseFloat *src_data = getCuPointer(&src[i]);
-      BaseFloat *dest_data = getCuPointer(&dest) + dest.Stride() * i;
-      size_t dst_pitch = dest.Stride() * sizeof(BaseFloat) * stream_num;
-      size_t src_pitch = src[i].Stride() * sizeof(BaseFloat);
-      size_t width     = src[i].NumCols() * sizeof(BaseFloat);
-      size_t height    = src[i].NumRows();
-
-      if(height != 0)
-         CU_SAFE_CALL(cudaMemcpy2D(dest_data, dst_pitch, src_data, src_pitch,
-                  width, height, cudaMemcpyDeviceToDevice));
-   }
-}

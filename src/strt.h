@@ -75,6 +75,9 @@ class StrtListBase{
       void Eval(const vector<BaseFloat> &nnet_target,
             const CuMatrixBase<BaseFloat> &nnet_out, CuMatrix<BaseFloat> *diff);
 
+      void Eval(const vector<BaseFloat> &nnet_target,
+            const MatrixBase<BaseFloat> &nnet_out, Matrix<BaseFloat> *diff);
+
       string Report();
 
       static StrtListBase* getInstance(string name, double sigma = 1.0, double error = 0);
@@ -82,10 +85,10 @@ class StrtListBase{
    protected:
       virtual void calcLoss(const vector<BaseFloat> &nnet_target, 
             const vector<int> &index_t, const vector<int> &index_f,
-            const vector<BaseFloat> &relevance, BaseFloat &loss) = 0;
+            const vector<BaseFloat> &relevance, BaseFloat &loss,
+            const Matrix<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host
+            ) = 0;
 
-      Matrix<BaseFloat> nnet_out_host_;
-      Matrix<BaseFloat> diff_host_;
 
       double sigma_;
       double error_;
@@ -172,7 +175,9 @@ NEW_STRT_PAIR(StrtExp);
       protected: \
       void calcLoss(const vector<BaseFloat> &nnet_target, \
             const vector<int> &index_t, const vector<int> &index_f, \
-            const vector<BaseFloat> &relevance, BaseFloat &loss); \
+            const vector<BaseFloat> &relevance, BaseFloat &loss, \
+            const Matrix<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host \
+            ); \
 } 
 NEW_STRT_LIST(StrtListNet);
 NEW_STRT_LIST(StrtListRelu);
