@@ -9,6 +9,7 @@
 
 #include "util.h"
 #include "nnet-my-nnet.h"
+#include "mynnet-loss.h"
 #include <sstream>
 #include <omp.h>
 
@@ -83,8 +84,6 @@ int main(int argc, char *argv[]) {
       if(loss == NULL)
          po.PrintUsage();
 
-      int labelNum = nnet.GetLabelNum();
-
       KALDI_LOG << (crossvalidate?"CROSS-VALIDATION":"TRAINING") << " STARTED";
 
       // ------------------------------------------------------------
@@ -118,12 +117,12 @@ int main(int argc, char *argv[]) {
             assert( label_reader.Key() == feature_reader.Key() );
 
             const Matrix<BaseFloat> &feat  = feature_reader.Value();
-            const ScorePath::Table  &table = score_path_reader.Value();
+            const ScorePath::Table  &table = score_path_reader.Value().Value();
             const vector<uchar>     &label = label_reader.Value();
 
             if(max_T < feat.NumRows()) max_T = feat.NumRows();
 
-            nnet_transf.Feedforward(CuMatrix<BaseFloat>(feat), &feature_arr[streams]);
+            nnet_transf.Feedforward(CuMatrix<BaseFloat>(feat), &features[streams]);
 
             vector< vector<uchar> > & seqs = label_arr[streams];
 
@@ -140,7 +139,7 @@ int main(int argc, char *argv[]) {
                int max_length = 1000;
                nnet.SetBuff(max_length, seqs_stride, num_stream);
             }
-            assert(seqs_stride == seq.size());
+            assert(seqs_stride == seqs.size());
          }
 
          if(streams == 0) break;
@@ -157,14 +156,14 @@ int main(int argc, char *argv[]) {
             const vector< vector<uchar> > &label = label_arr[i];
             for(int j = 0; j < label.size(); ++j)
                for(int k = 0; k < label[j].size(); ++k)
-                  labels_in[ seqs_stride * streams * k  + seqs_stride * i + j] =
+                  label_in[ seqs_stride * streams * k  + seqs_stride * i + j] =
                      label[j][k] - 1;
 
             seq_length[i] = label[0].size();
          }
 
          // setup nnet input
-         nnet.SetLabelSeqs(labels_in, seqs_stride);
+         nnet.SetLabelSeqs(label_in, seqs_stride);
 
          vector<int32> flag(streams , 1);
          nnet.ResetLstmStreams(flag);

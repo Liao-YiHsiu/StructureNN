@@ -6,6 +6,7 @@
 #include "util/common-utils.h"
 #include "util.h"
 #include "strt.h"
+#include <boost/algorithm/string.hpp>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -16,6 +17,7 @@
 using namespace std;
 using namespace kaldi;
 using namespace kaldi::nnet1;
+using namespace boost::algorithm;
 
 class LabelLossBase{
    public:
@@ -70,7 +72,7 @@ class LabelListLoss : public LabelLossBase{
       virtual void Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, 
             CuMatrix<BaseFloat> *nnet_out_diff);
 
-      virtual void string Report() { return strt_->Report(); }
+      virtual string Report() { return strt_->Report(); }
 
    private:
       StrtListBase *strt_;
@@ -88,7 +90,7 @@ class LabelFrameLoss : public LabelLossBase{
       virtual void Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, 
             CuMatrix<BaseFloat> *nnet_out_diff);
 
-      virtual void string Report() { return xent.Report(); }
+      virtual string Report() { return xent.Report(); }
 
    private:
       Xent xent;
@@ -106,7 +108,7 @@ class LabelMultiLoss : public LabelLossBase{
       virtual void Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, 
             CuMatrix<BaseFloat> *nnet_out_diff);
 
-      virtual void string Report();
+      virtual string Report();
    private:
       vector<LabelLossBase*> loss_arr_;
 };

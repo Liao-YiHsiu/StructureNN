@@ -68,7 +68,7 @@ class StrtListBase{
          frames_progress_(0), correct_progress_(0), loss_progress_(0), ndcg_progress_(0),
          frames_N_(0) {}
 
-      ~StrtListBase() { }
+      virtual ~StrtListBase() { }
 
       void SetAll(int frames_N){frames_N_ = frames_N;}
 
@@ -86,7 +86,7 @@ class StrtListBase{
       virtual void calcLoss(const vector<BaseFloat> &nnet_target, 
             const vector<int> &index_t, const vector<int> &index_f,
             const vector<BaseFloat> &relevance, BaseFloat &loss,
-            const Matrix<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host
+            const MatrixBase<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host
             ) = 0;
 
 
@@ -176,7 +176,7 @@ NEW_STRT_PAIR(StrtExp);
       void calcLoss(const vector<BaseFloat> &nnet_target, \
             const vector<int> &index_t, const vector<int> &index_f, \
             const vector<BaseFloat> &relevance, BaseFloat &loss, \
-            const Matrix<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host \
+            const MatrixBase<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host \
             ); \
 } 
 NEW_STRT_LIST(StrtListNet);

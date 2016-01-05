@@ -3,7 +3,7 @@
 const struct LabelLossBase::my_key_value LabelLossBase::myMarkerMap[] = {
    {LabelLossBase::lList,  "<LabelListLoss>"},
    {LabelLossBase::lFrame, "<LabelFrameLoss>"},
-}
+};
 
 const char* LabelLossBase::myTypeToMarker(LabelLossBase::MyLossType t){
    int32 N = sizeof(myMarkerMap)/sizeof(myMarkerMap[0]);
@@ -19,7 +19,7 @@ LabelLossBase::MyLossType LabelLossBase::myMarkerToType(const string &s){
    transform(s_lower.begin(), s_lower.end(), s_lower.begin(), ::tolower);
    int32 N = sizeof(myMarkerMap)/sizeof(myMarkerMap[0]);
    for(int i = 0; i < N; ++i){
-      string m(myMakrerMap[i].value);
+      string m(myMarkerMap[i].value);
       string m_lower(m);
       transform(m_lower.begin(), m_lower.end(), m_lower.begin(), ::tolower);
       if( m_lower == s_lower )
@@ -52,7 +52,7 @@ LabelLossBase* LabelLossBase::Read(const string &file){
    else if(loss_arr.size() == 1)
       return loss_arr[0];
    else{
-      return new MultiLoss(loss_arr);
+      return new LabelMultiLoss(loss_arr);
    }
 }
 
@@ -106,7 +106,7 @@ void LabelListLoss::SetParam(istream &is){
       ReadToken(is, false, &token);
            if(token == "<Sigma>") ReadBasicType(is, false, &sigma);
       else if(token == "<Error>") ReadBasicType(is, false, &error);
-      else KALDI_ERROR << "Unknown token " << token << ", a typo in config?"
+      else KALDI_ERR << "Unknown token " << token << ", a typo in config?"
          << " (Sigma|Error)";
       is >> std::ws;
    }
@@ -122,6 +122,7 @@ void LabelListLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBa
    assert(nnet_out.NumCols() == 1);
    assert(nnet_out.NumRows() % L == 0);
    assert(strt_ != NULL);
+   assert(nnet_out_diff != NULL);
 
    Matrix<BaseFloat> nnet_out_host(nnet_out.NumRows(), nnet_out.NumCols(), kUndefined);
    nnet_out_host.CopyFromMat(nnet_out);
@@ -139,7 +140,7 @@ void LabelListLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBa
    }
 
    Matrix<BaseFloat> nnet_diff_mixed;
-   strt_->Eval(targets, nnet_out_mixed, nnet_diff_mixed);
+   strt_->Eval(targets, nnet_out_mixed, &nnet_diff_mixed);
 
    Matrix<BaseFloat> nnet_diff_host(nnet_out.NumRows(), nnet_out.NumCols());
    // dist error to all time frame
@@ -152,7 +153,7 @@ void LabelListLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBa
 
 // -----------------------------------------------------------------------------------------------------
 
-void LabelFrameLoss:Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, CuMatrix<BaseFloat> *nnet_out_diff){
+void LabelFrameLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, CuMatrix<BaseFloat> *nnet_out_diff){
    int L = labels.size();
    int T = labels[0].size();
 
@@ -169,14 +170,15 @@ void LabelFrameLoss:Eval(const vector< vector<uchar> > &labels, const CuMatrixBa
    incrr.push_back(make_pair(1, 1.0));
 
    Posterior targets(L * T);
+
 #pragma omp parallel for
    for(int i = 0; i < L; ++i)
       for(int j = 0; j < T; ++j){
-         targets[i + j*L] = (label[0][j] == label[i][j]) ? crr : incrr;
+         targets[i + j*L] = (labels[0][j] == labels[i][j]) ? crr : incrr;
       }
 
    CuMatrix<BaseFloat> nnet_diff;
-   xent(frm_weights, nnet_out.RowRange(0, L * T), targets, &nnet_diff);
+   xent.Eval(frm_weights, nnet_out.RowRange(0, L * T), targets, &nnet_diff);
 
    if(nnet_out_diff != NULL)
       nnet_out_diff->RowRange(0, L*T).CopyFromMat(nnet_diff);
@@ -200,7 +202,7 @@ void LabelMultiLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixB
       
       int col_width = -1;
 
-      switch(loss_arr[i]->GetType()){
+      switch(loss_arr_[i]->GetType()){
          case lList:
             col_width = 1;
             break;
@@ -215,7 +217,7 @@ void LabelMultiLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixB
       loss_arr_[i]->Eval(labels, nnet_out.ColRange(colIdx, col_width), &diff);
 
       if(nnet_out_diff != NULL){
-         nnet_out_diff.ColRange(colIdx, col_width).CopyFromMat(diff);
+         nnet_out_diff->ColRange(colIdx, col_width).CopyFromMat(diff);
       }
 
       colIdx += col_width;
@@ -225,6 +227,6 @@ void LabelMultiLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixB
 string LabelMultiLoss::Report(){
    string ret;
    for(int i = 0; i < loss_arr_.size(); ++i)
-      ret += loss_arr_[i].Report();
+      ret += loss_arr_[i]->Report();
    return ret;
 }

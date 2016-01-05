@@ -387,7 +387,7 @@ StrtListBase* StrtListBase::getInstance(string name, double sigma, double error)
 void StrtListNet::calcLoss(const vector<BaseFloat> &nnet_target,
       const vector<int> &index_t, const vector<int> &index_f,
       const vector<BaseFloat> &relevance, BaseFloat &loss,
-      const Matrix<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host){
+      const MatrixBase<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host){
    int N = nnet_out_host.NumRows();
    assert(N == index_t.size());
    assert(N == index_f.size());
@@ -421,12 +421,12 @@ void StrtListNet::calcLoss(const vector<BaseFloat> &nnet_target,
 
       diff_host->Resize(N, 1);
       for(int i = 0; i < N; ++i){
-         (*diff_host)(index_t[i], 0) = exp(nnet_out_host_(index_t[i], 0) + acc_sum_log[i]) - 1;
+         (*diff_host)(index_t[i], 0) = exp(nnet_out_host(index_t[i], 0) + acc_sum_log[i]) - 1;
       }
 
       sum = 0;
       for(int i = 0; i < N; ++i)
-         sum += diff_host(i, 0);
+         sum += (*diff_host)(i, 0);
 
       KALDI_ASSERT(KALDI_ISFINITE(sum));
    }
@@ -435,7 +435,7 @@ void StrtListNet::calcLoss(const vector<BaseFloat> &nnet_target,
 void StrtListRelu::calcLoss(const vector<BaseFloat> &nnet_target,
       const vector<int> &index_t, const vector<int> &index_f,
       const vector<BaseFloat> &relevance, BaseFloat &loss,
-      const Matrix<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host){
+      const MatrixBase<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host){
 
    int N = nnet_out_host.NumRows();
    assert(N == index_t.size());
@@ -463,7 +463,7 @@ void StrtListRelu::calcLoss(const vector<BaseFloat> &nnet_target,
    if(diff_host != NULL){
       diff_host->Resize(N, 1);
       for(int i = 0; i < N; ++i){
-         diff_host->(i, 0) = diff_tmp[i];
+         (*diff_host)(i, 0) = diff_tmp[i];
       }
    }
    
@@ -472,7 +472,7 @@ void StrtListRelu::calcLoss(const vector<BaseFloat> &nnet_target,
 void StrtRankNet::calcLoss(const vector<BaseFloat> &nnet_target,
       const vector<int> &index_t, const vector<int> &index_f,
       const vector<BaseFloat> &relevance, BaseFloat &loss,
-      const Matrix<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host){
+      const MatrixBase<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host){
    int N = nnet_out_host.NumRows();
    assert(N == index_t.size());
    assert(N == index_f.size());
@@ -529,7 +529,7 @@ void StrtRankNet::calcLoss(const vector<BaseFloat> &nnet_target,
 void StrtLambdaRank::calcLoss(const vector<BaseFloat> &nnet_target,
       const vector<int> &index_t, const vector<int> &index_f,
       const vector<BaseFloat> &relevance, BaseFloat &loss,
-      const Matrix<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host){
+      const MatrixBase<BaseFloat> &nnet_out_host, Matrix<BaseFloat> *diff_host){
 
    int N = nnet_out_host.NumRows();
    assert(N == index_t.size());
