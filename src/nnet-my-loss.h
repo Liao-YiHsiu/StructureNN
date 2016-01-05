@@ -4,6 +4,7 @@
 #include "nnet/nnet-nnet.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
+#include "nnet/nnet-activation.h"
 #include "util.h"
 #include "strt.h"
 #include <boost/algorithm/string.hpp>
@@ -80,7 +81,7 @@ class LabelListLoss : public LabelLossBase{
 
 class LabelFrameLoss : public LabelLossBase{
    public:
-      LabelFrameLoss() {}
+      LabelFrameLoss():softmax(2,2){}
       virtual ~LabelFrameLoss() {}
 
       virtual MyLossType GetType() { return lFrame; }
@@ -94,6 +95,7 @@ class LabelFrameLoss : public LabelLossBase{
 
    private:
       Xent xent;
+      Softmax softmax;
 };
 
 class LabelMultiLoss : public LabelLossBase{

@@ -29,7 +29,7 @@ acwt=0.2
 train_opt=
 cpus=$(nproc)
 feature_transform=
-lattice_source="rand" # both, best, rand
+lattice_source="both" # both, best, rand
 tmpdir=$(mktemp -d)
 debug=
 shuffle_batch_size=512
@@ -51,18 +51,19 @@ train_tool="$train_tool "
 
 files="train.lab dev.lab test.lab train.ark dev.ark test.ark train.lat dev.lat test.lat"
 
-if [ "$#" -ne 4 ]; then
+if [ "$#" -ne 5 ]; then
    echo "Perform structure DNN training"
-   echo "Usage: $0 <dir> <lattice_model> <nnet_in> <nnet_out>"
-   echo "eg. $0 data/nn_post lat_model.in nnet.in nnet.out"
+   echo "Usage: $0 <dir> <lattice_model> <loss-func> <nnet_in> <nnet_out>"
+   echo "eg. $0 data/nn_post lat_model.in loss.conf nnet.in nnet.out"
    echo ""
    exit 1;
 fi
 
 dir=$1
 lat_model=$2
-nnet_in=$3
-nnet_out=$4
+loss_func=$3
+nnet_in=$4
+nnet_out=$5
 
 nnetdir=$(cd `dirname $nnet_out`; pwd)
 
@@ -175,16 +176,16 @@ for iter in $(seq -w $max_iters); do
 
    $train_tool \
       --learn-rate=$learn_rate --momentum=$momentum --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
-      --verbose=$verbose --binary=true --randomizer-seed=$seed \
+      --verbose=$verbose --binary=true \
       ${feature_transform:+ --feature-transform="$feature_transform"} \
       ${train_opt:+ "$train_opt"} \
       "ark:shuffle-ark --rand-seed=$seed --batch-size=$shuffle_batch_size $train_ark ark:- |" \
       "ark:shuffle-lab --rand-seed=$seed --batch-size=$shuffle_batch_size $train_lab ark:- |" \
       "$combined_score_path shuffle-score-path --rand-seed=$seed --batch-size=$shuffle_batch_size ark:- ark:- |" \
-      $mlp_best $mlp_next \
+      $loss_func $mlp_best $mlp_next \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   loss_tr=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
+   loss_tr=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $2; }')
    acc_tr=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{ print $3; }')
    echo -n "TRAIN AVG.LOSS $(printf "%.4f" $loss_tr), "
 
@@ -193,13 +194,12 @@ for iter in $(seq -w $max_iters); do
    # CROSS VALIDATION
    $cross_tool \
       --verbose=$verbose --binary=true \
-      --randomize=true \
       ${feature_transform:+ --feature-transform="$feature_transform"} \
-      "$cv_ark" "$cv_lab" "$combined_score_path_dev" $mlp_next \
+      "$cv_ark" "$cv_lab" "$combined_score_path_dev" $loss_func $mlp_next \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    #loss_new=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{print 100 - $3}')
-   loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $4; }')
+   loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $2; }')
    acc_new=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{ print $3; }')
    echo -n "CROSSVAL AVG.LOSS $(printf "%.4f" $loss_new), "
 

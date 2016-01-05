@@ -1,0 +1,6 @@
+<MyNnetProto>
+<EmbedSimple> <InputDim> 1969 <OutputDim> 2017 <LabelNum> 48
+<LstmProjectedStreams> <InputDim> 2017 <OutputDim> 32 <CellDim> 64 <ParamScale> 0.010000 <ClipGradient> 5.000000
+<AffineTransform> <InputDim> 32 <OutputDim> 2 <BiasMean> 0.0 <BiasRange> 0.0 <ParamStddev> 0.040000
+<SoftMax> <InputDim> 2 <OutputDim> 2
+</MyNnetProto>

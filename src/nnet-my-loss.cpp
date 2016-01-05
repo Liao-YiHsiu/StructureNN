@@ -1,4 +1,4 @@
-#include "mynnet-loss.h"
+#include "nnet-my-loss.h"
 
 const struct LabelLossBase::my_key_value LabelLossBase::myMarkerMap[] = {
    {LabelLossBase::lList,  "<LabelListLoss>"},
@@ -44,7 +44,7 @@ LabelLossBase* LabelLossBase::Read(const string &file){
       if(conf_line == "") continue;
       KALDI_VLOG(1) << conf_line;
 
-      loss_arr.push_back(GetInstance(conf_line));
+      loss_arr.push_back(GetInstance(conf_line + "\n"));
    }
 
    if(loss_arr.size() == 0)
@@ -112,6 +112,7 @@ void LabelListLoss::SetParam(istream &is){
    }
 
    strt_ = StrtListBase::getInstance(strt_type, sigma, error);
+   assert(strt_ != NULL);
 }
 
 void LabelListLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, CuMatrix<BaseFloat> *nnet_out_diff){
@@ -148,6 +149,7 @@ void LabelListLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBa
       for(int i = 0; i < L; ++i)
          nnet_diff_host(i + j*L, 0) = nnet_diff_mixed(i, 0);
 
+   nnet_out_diff->Resize(nnet_out.NumRows(), nnet_out.NumCols());
    nnet_out_diff->CopyFromMat(nnet_diff_host);
 }
 
@@ -159,6 +161,7 @@ void LabelFrameLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixB
 
    assert(nnet_out.NumCols() == 2);
    assert(nnet_out.NumRows() % L == 0);
+   assert(nnet_out_diff != NULL);
 
    Vector<BaseFloat> frm_weights(L * T);
    frm_weights.Set(1);
@@ -177,11 +180,18 @@ void LabelFrameLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixB
          targets[i + j*L] = (labels[0][j] == labels[i][j]) ? crr : incrr;
       }
 
-   CuMatrix<BaseFloat> nnet_diff;
-   xent.Eval(frm_weights, nnet_out.RowRange(0, L * T), targets, &nnet_diff);
+   CuMatrix<BaseFloat> soft_out(L*T, 2);
+   softmax.Propagate(nnet_out.RowRange(0, L*T), &soft_out);
 
-   if(nnet_out_diff != NULL)
-      nnet_out_diff->RowRange(0, L*T).CopyFromMat(nnet_diff);
+   CuMatrix<BaseFloat> soft_diff;
+   xent.Eval(frm_weights, soft_out, targets, &soft_diff);
+
+   CuMatrix<BaseFloat> nnet_diff;
+   softmax.Backpropagate(nnet_out.RowRange(0, L*T), soft_out,
+         soft_diff, &nnet_diff);
+
+   nnet_out_diff->Resize(nnet_out.NumRows(), nnet_out.NumCols());
+   nnet_out_diff->RowRange(0, L*T).CopyFromMat(nnet_diff);
 }
 
 // -----------------------------------------------------------------------------------------------------

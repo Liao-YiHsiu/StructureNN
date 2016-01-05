@@ -23,7 +23,11 @@ class MyComponent : public UpdatableComponent{
          mEmbedMux,
 
          mBlend = 0x0200,
-         mBlendSum
+         mBlendSum,
+
+         mActiv = 0x0300,
+         mReLU,
+
       } MyType;
 
       struct my_key_value{

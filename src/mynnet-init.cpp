@@ -31,6 +31,9 @@ int main(int argc, char *argv[]) {
       bool binary = true;
       po.Register("binary", &binary, "Write model in binary mode");
 
+      int seed = 777;
+      po.Register("seed", &seed, "Random seed for initialization");
+
       po.Read(argc, argv);
 
       if (po.NumArgs() != 2) {
@@ -40,6 +43,8 @@ int main(int argc, char *argv[]) {
 
       string config_filename   = po.GetArg(1),
              nnet_out_filename = po.GetArg(2);
+
+      srand(seed);
 
       MyNnet nnet;
       nnet.Init(config_filename);

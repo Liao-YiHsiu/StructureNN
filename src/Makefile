@@ -27,7 +27,8 @@ BINFILES = post-phn acc con-svm nnet-pop lab-lda gen-lab lattice-to-vec \
 	   shuffle-ark shuffle-score-path shuffle-lab mynnet-train-utt
 
 OBJFILES = kernel.o util.o strt.o cumat.o snnet.o bnnet.o srnnet2.o nnet-my-component.o \
-	   nnet-embed-component.o nnet-blend-component.o nnet-my-nnet.o mynnet-loss.o
+	   nnet-embed-component.o nnet-blend-component.o nnet-my-nnet.o nnet-my-loss.o \
+	   nnet-activ-component.o
 
 TESTFILES = 
 

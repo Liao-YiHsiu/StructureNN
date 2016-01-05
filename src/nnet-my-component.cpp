@@ -2,11 +2,13 @@
 
 #include "nnet-embed-component.h"
 #include "nnet-blend-component.h"
+#include "nnet-activ-component.h"
 
 const struct MyComponent::my_key_value MyComponent::myMarkerMap[] = {
    {MyComponent::mEmbedSimple, "<EmbedSimple>"},
    {MyComponent::mEmbedMux, "<EmbedMux>"},
-   {MyComponent::mBlendSum, "<BlendSum>"}
+   {MyComponent::mBlendSum, "<BlendSum>"},
+   {MyComponent::mReLU, "<ReLU>"}
 };
 
 const char* MyComponent::myTypeToMarker(MyComponent::MyType t){
@@ -113,6 +115,9 @@ MyComponent* MyComponent::NewMyComponentOfType(MyComponent::MyType type, int32 i
          break;
       case mBlendSum:
          ans = new BlendSum(input_dim, output_dim);
+         break;
+      case mReLU:
+         ans = new ReLU(input_dim, output_dim);
          break;
       default:
          assert(false);

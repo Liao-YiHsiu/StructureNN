@@ -1,0 +1,10 @@
+<MyNnetProto>
+<AffineTransform> <InputDim> 40 <OutputDim> 1024 <BiasMean> -2.000000 <BiasRange> 4.000000 <ParamStddev> 0.043805 <MaxNorm> 0.000000
+<ReLU> <InputDim> 1024 <OutputDim> 1024
+<AffineTransform> <InputDim> 1024 <OutputDim> 1024 <BiasMean> 0.000000 <BiasRange> 0.000000 <ParamStddev> 0.109375 <LearnRateCoef> 1.000000 <BiasLearnRateCoef> 0.100000
+<ReLU> <InputDim> 1024 <OutputDim> 1024
+<EmbedSimple> <InputDim> 1024 <OutputDim> 1072 <LabelNum> 48 
+<LstmProjectedStreams> <InputDim> 1072 <OutputDim> 64 <CellDim> 256 <ParamScale> 0.010000 <ClipGradient> 5.000000
+<AffineTransform> <InputDim> 64 <OutputDim> 2 <BiasMean> 0.0 <BiasRange> 0.0 <ParamStddev> 0.040000
+<SoftMax> <InputDim> 2 <OutputDim> 2
+</MyNnetProto>
