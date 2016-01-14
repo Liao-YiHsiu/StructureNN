@@ -34,6 +34,7 @@ LabelLossBase* LabelLossBase::Read(const string &file){
    istream &is = in.Stream();
 
    vector<LabelLossBase*> loss_arr;
+   vector<BaseFloat>      loss_weight;
    string conf_line, token;
 
    while(!is.eof()){
@@ -43,8 +44,18 @@ LabelLossBase* LabelLossBase::Read(const string &file){
 
       if(conf_line == "") continue;
       KALDI_VLOG(1) << conf_line;
+      
+
+      BaseFloat weight = 1.0;
+      istringstream tis(conf_line + "\n");
+      ReadToken(tis, false, &token);
+      if(token == "<weight>"){
+         ReadBasicType(tis, false, &weight);
+         getline(tis, conf_line);
+      }
 
       loss_arr.push_back(GetInstance(conf_line + "\n"));
+      loss_weight.push_back(weight);
    }
 
    if(loss_arr.size() == 0)
@@ -52,7 +63,7 @@ LabelLossBase* LabelLossBase::Read(const string &file){
    else if(loss_arr.size() == 1)
       return loss_arr[0];
    else{
-      return new LabelMultiLoss(loss_arr);
+      return new LabelMultiLoss(loss_arr, loss_weight);
    }
 }
 
@@ -227,6 +238,7 @@ void LabelMultiLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixB
       loss_arr_[i]->Eval(labels, nnet_out.ColRange(colIdx, col_width), &diff);
 
       if(nnet_out_diff != NULL){
+         diff.Scale(loss_weight_[i]);
          nnet_out_diff->ColRange(colIdx, col_width).CopyFromMat(diff);
       }
 

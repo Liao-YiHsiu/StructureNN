@@ -100,7 +100,8 @@ class LabelFrameLoss : public LabelLossBase{
 
 class LabelMultiLoss : public LabelLossBase{
    public:
-      LabelMultiLoss(vector<LabelLossBase*> loss_arr) : loss_arr_(loss_arr) {}
+      LabelMultiLoss(vector<LabelLossBase*> loss_arr, vector<BaseFloat> loss_weight) :
+         loss_arr_(loss_arr), loss_weight_(loss_weight) {}
       virtual ~LabelMultiLoss();
 
       virtual MyLossType GetType() { return lMulti; }
@@ -113,6 +114,7 @@ class LabelMultiLoss : public LabelLossBase{
       virtual string Report();
    private:
       vector<LabelLossBase*> loss_arr_;
+      vector<BaseFloat>      loss_weight_;
 };
 
 #endif

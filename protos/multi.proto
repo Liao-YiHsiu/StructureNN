@@ -1,5 +1,6 @@
 <MyNnetProto>
-<EmbedSimple> <InputDim> 40 <OutputDim> 88 <LabelNum> 48 
-<LstmProjectedStreams> <InputDim> 88 <OutputDim> 256 <CellDim> 256 <ParamScale> 0.010000 <ClipGradient> 5.000000
-<AffineTransform> <InputDim> 256 <OutputDim> 3 <BiasMean> 0.0 <BiasRange> 0.0 <ParamStddev> 0.040000
+<EmbedSimple> <InputDim> 49 <OutputDim> 97 <LabelNum> 48 
+<LstmProjectedStreams> <InputDim> 97 <OutputDim> 512 <CellDim> 800 <ParamScale> 0.010000 <ClipGradient> 5.000000
+<LstmProjectedStreams> <InputDim> 512 <OutputDim> 512 <CellDim> 800 <ParamScale> 0.010000 <ClipGradient> 5.000000
+<AffineTransform> <InputDim> 512 <OutputDim> 3 <BiasMean> 0.0 <BiasRange> 0.0 <ParamStddev> 0.040000
 </MyNnetProto>

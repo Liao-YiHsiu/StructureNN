@@ -29,7 +29,7 @@ acwt=0.2
 train_opt=
 cpus=$(nproc)
 feature_transform=
-lattice_source="both" # both, best, rand
+lattice_source="rand" # both, best, rand
 tmpdir=$(mktemp -d)
 debug=
 shuffle_batch_size=512
@@ -185,8 +185,8 @@ for iter in $(seq -w $max_iters); do
       $loss_func $mlp_best $mlp_next \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
-   loss_tr=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $2; }')
-   acc_tr=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{ print $3; }')
+   loss_tr=$(cat $log | grep "AvgLoss:" | tail -n 1 | sed -e 's/^.*AvgLoss://g'| awk '{ print $1; }')
+   acc_tr=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | sed -e 's/^.*FRAME_ACCURACY >> //g' | awk '{ print $1; }')
    echo -n "TRAIN AVG.LOSS $(printf "%.4f" $loss_tr), "
 
    log=$tmpdir/log/iter${iter}.cv.log; hostname>$log
@@ -199,8 +199,8 @@ for iter in $(seq -w $max_iters); do
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    #loss_new=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{print 100 - $3}')
-   loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | awk '{ print $2; }')
-   acc_new=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{ print $3; }')
+   loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | sed -e 's/^.*AvgLoss://g'| awk '{ print $1; }')
+   acc_new=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | sed -e 's/^.*FRAME_ACCURACY >> //g' | awk '{ print $1; }')
    echo -n "CROSSVAL AVG.LOSS $(printf "%.4f" $loss_new), "
 
 # evaluate dev set wer.

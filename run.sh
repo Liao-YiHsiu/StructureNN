@@ -2,10 +2,10 @@
 source path
 
 test_lattice_N=10
-lattice_N=50
+lattice_N=20
 train_opt=
 momentum=0.9
-learn_rate=0.000001
+learn_rate=0.0000001
 cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
@@ -50,7 +50,7 @@ dir=$3
 nnet_init=$tmpdir/nnet.init
 
 mynnet-init --seed=$seed $nnet_proto $nnet_init
-sha=`sha1sum $nnet_init | cut -b 1-6`
+sha=`(cat $nnet_init; cat $loss_func)|sha1sum| cut -b 1-6`
 
 paramId=${sha}_${lattice_N}_${test_lattice_N}_${learn_rate}_${acwt}_${keep_lr_iters}_${train_tool// /}
 

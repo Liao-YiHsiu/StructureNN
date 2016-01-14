@@ -9,7 +9,7 @@
 
 #include "util.h"
 #include "nnet-my-nnet.h"
-#include "mynnet-loss.h"
+#include "nnet-my-loss.h"
 #include <sstream>
 #include <omp.h>
 
@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
          .append("Use feature, label and path to train the neural net. \n")
          .append("Usage: ").append(argv[0]).append(" [options] <feature-rspecifier> <label-rspecifier> <score-path-rspecifier> <loss-func-file> <nnet-in> [<nnet-out>]\n")
          .append("e.g.: \n")
-         .append(" ").append(argv[0]).append(" ark:feat.ark ark:lab.ark \"ark:lattice-to-vec ark:1.lat ark:- |\" nnet.init nnet.iter1\n");
+         .append(" ").append(argv[0]).append(" ark:feat.ark ark:lab.ark \"ark:lattice-to-vec ark:1.lat ark:- |\" loss.conf nnet.init nnet.iter1\n");
 
       ParseOptions po(usage.c_str());
 
@@ -101,13 +101,13 @@ int main(int argc, char *argv[]) {
       int seqs_stride = -1;
       int num_done = 0;
 
+
       while(1){
 
          vector< CuMatrix<BaseFloat> >     features(num_stream);
          vector< vector< vector<uchar> > > label_arr(num_stream);
          int streams = 0;
-         int max_T = 0;
-         
+         int max_length = 0;
 
          for(; streams < num_stream &&
                !feature_reader.Done() && !score_path_reader.Done() && !label_reader.Done();
@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
             const ScorePath::Table  &table = score_path_reader.Value().Value();
             const vector<uchar>     &label = label_reader.Value();
 
-            if(max_T < feat.NumRows()) max_T = feat.NumRows();
+            if(max_length < label.size()) max_length = label.size();
 
             nnet_transf.Feedforward(CuMatrix<BaseFloat>(feat), &features[streams]);
 
@@ -135,19 +135,18 @@ int main(int argc, char *argv[]) {
 
             if(seqs_stride < 0){
                seqs_stride = seqs.size();
-
-               int max_length = 1000;
-               nnet.SetBuff(max_length, seqs_stride, num_stream);
             }
             assert(seqs_stride == seqs.size());
+            assert(feat.NumRows() == label.size());
+
          }
 
          if(streams == 0) break;
 
-         nnet_in.Resize(max_T * streams, features[0].NumCols(), kSetZero);
+         nnet_in.Resize(max_length * streams, features[0].NumCols(), kSetZero);
          fillin(nnet_in, features, streams);
 
-         vector<int32> label_in(max_T * streams * seqs_stride, 0);
+         vector<int32> label_in(max_length * streams * seqs_stride, 0);
          vector<int32> seq_length(streams, 0);
 
          // re-arrange label index
@@ -172,13 +171,13 @@ int main(int argc, char *argv[]) {
          // propagate nnet output
          nnet.Propagate(nnet_in, &nnet_out);
 
-         assert(nnet_out.NumRows() == max_T * seqs_stride * streams);
+         assert(nnet_out.NumRows() == max_length * seqs_stride * streams);
          nnet_out_diff.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kSetZero);
 
          for(int i = 0; i < streams; ++i){
             loss->Eval(label_arr[i],
-                  nnet_out.RowRange(i*max_T*seqs_stride, max_T*seqs_stride), &nnet_out_diff_arr[i]);
-            nnet_out_diff.RowRange(i*max_T*seqs_stride, max_T*seqs_stride).CopyFromMat(nnet_out_diff_arr[i]);
+                  nnet_out.RowRange(i*max_length*seqs_stride, max_length*seqs_stride), &nnet_out_diff_arr[i]);
+            nnet_out_diff.RowRange(i*max_length*seqs_stride, max_length*seqs_stride).CopyFromMat(nnet_out_diff_arr[i]);
          }
 
          if(!crossvalidate){
