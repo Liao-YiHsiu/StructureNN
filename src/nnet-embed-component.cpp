@@ -351,7 +351,7 @@ void EmbedMux::SetTrainOptions(const NnetTrainOptions &opts){
 BaseFloat** EmbedMux::getVecCuMatrixPt(vector< CuMatrix<BaseFloat> > &mat_arr){
    vector< BaseFloat* > arr(mat_arr.size());
    for(int i = 0; i < mat_arr.size(); ++i)
-      arr[i] = getCuPointer(&mat_arr[i]);
+      arr[i] = mat_arr[i].Data();
 
    mat_arr_pt_device_ = arr;
    return mat_arr_pt_device_.Data();

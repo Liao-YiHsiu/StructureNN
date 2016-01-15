@@ -28,6 +28,9 @@ class MyComponent : public UpdatableComponent{
          mActiv = 0x0300,
          mReLU,
 
+         mLayer = 0x0400,
+         mLSTM,
+
       } MyType;
 
       struct my_key_value{

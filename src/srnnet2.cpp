@@ -741,7 +741,7 @@ void SRNnet2::packRPsi(vector< CuMatrix<BaseFloat> > &phone_mat,
    phone_mat_pt_.resize(P);
    for(int i = 0; i < P; ++i){
       KALDI_ASSERT(phone_mat_stride == phone_mat[i].Stride());
-      phone_mat_pt_[i] = getCuPointer(&phone_mat[i]);
+      phone_mat_pt_[i] = phone_mat[i].Data();
    }
 
    phone_mat_pt_dev_.Resize(P);
@@ -752,7 +752,7 @@ void SRNnet2::packRPsi(vector< CuMatrix<BaseFloat> > &phone_mat,
    frame_mat_pt_.resize(T);
    for(int i = 0; i < T; ++i){
       KALDI_ASSERT(frame_mat_stride == frame_mat[i].Stride());
-      frame_mat_pt_[i] = getCuPointer(&frame_mat[i]);
+      frame_mat_pt_[i] = frame_mat[i].Data();
    }
 
    frame_mat_pt_dev_.Resize(T);

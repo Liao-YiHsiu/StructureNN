@@ -13,13 +13,6 @@ using namespace std;
 using namespace kaldi;
 using namespace kaldi::nnet1;
 
-// get GPU memory pointer in a dirty way.
-template<typename Real>
-Real* getCuPointer(CuMatrixBase<Real> *matrix);
-
-template<typename Real>
-const Real* getCuPointer(const CuMatrixBase<Real> *matrix);
-
 void VecToMat(const vector< CuMatrix<BaseFloat> > &arr, CuMatrix<BaseFloat> &mat, int N = -1);
 void RepMat(const CuMatrix<BaseFloat> &src, CuMatrix<BaseFloat> &dest, int N = -1);
 
@@ -34,12 +27,12 @@ void Sum(const vector< CuMatrix<BaseFloat> > &arr, CuMatrix<BaseFloat>* out, int
 
 bool Same(const CuMatrixBase<BaseFloat> &a, const CuMatrixBase<BaseFloat> &b, double err = 1e-8);
 
-
+// add some buffer into it.
 // it's a general purpose vector
 template<typename T>
 class CuVectorG{
    public:
-      CuVectorG(int dim = 0):data_(0), dim_(0){ Resize(dim); }
+      CuVectorG(int dim = 0):data_(0), dim_(0), dim_r_(0){ Resize(dim); }
       CuVectorG(const vector<T> &arr): data_(0), dim_(0){ Resize(arr.size()); CopyFromVec(arr); }
       CuVectorG(const CuVectorG &cuv);
 
@@ -61,7 +54,8 @@ class CuVectorG{
 
    private:
       T*   data_; 
-      int  dim_;
+      int  dim_;   // looked data dimension.
+      int  dim_r_; // real data dimension.
 };
 
 // it's a general purpose matrix
@@ -95,28 +89,53 @@ class CuMatrixG{
       CuVectorG<T> vec_;
 };
 
-// ---------------------------------------------------------------------------------------------
-// |                                  template class functions                                 |
-// ---------------------------------------------------------------------------------------------
-
+// wrapper like CuMatrix with buffered mem
 template<typename Real>
 class myCuMatrix : public CuMatrixBase<Real>{
    public:
-      Real* Data(){return CuMatrixBase<Real>::Data();}
-      const Real* Data()const {return CuMatrixBase<Real>::Data();}
+      myCuMatrix(): num_cols_r_(0), num_rows_r_(0) {}
+      
+      myCuMatrix(MatrixIndexT rows, MatrixIndexT cols,
+            MatrixResizeType resize_type = kSetZero): num_cols_r_(0), num_rows_r_(0){
+         Resize(rows, cols, resize_type);
+      }
+
+      myCuMatrix(const myCuMatrix<Real> &other, 
+            MatrixTransposeType trans = kNoTrans);
+
+      myCuMatrix<Real> &operator = (const CuMatrixBase<Real> &other){
+         this->Resize(other.NumRows(), other.NumCols(), kUndefined);
+         this->CopyFromMat(other);
+         return *this;
+      }
+
+      myCuMatrix<Real> &operator = (const CuMatrix<Real> &other){
+         this->Resize(other.NumRows(), other.NumCols(), kUndefined);
+         this->CopyFromMat(other);
+         return *this;
+      }
+
+      myCuMatrix<Real> &operator = (const MatrixBase<Real> &other){
+         this->Resize(other.NumRows(), other.NumCols(), kUndefined);
+         this->CopyFromMat(other);
+         return *this;
+      }
+
+      void Resize(MatrixIndexT rows, MatrixIndexT cols,
+            MatrixResizeType resize_type = kSetZero);
+
+      ~myCuMatrix() { Destroy(); }
+
+   private:
+      void Destroy();
+
+      MatrixIndexT num_cols_r_;
+      MatrixIndexT num_rows_r_;
 };
 
-template<typename Real>
-Real* getCuPointer(CuMatrixBase<Real> *matrix){
-   myCuMatrix<Real>* mat_ptr = (myCuMatrix<Real>*)(void*)matrix;
-   return mat_ptr->Data();
-}
-
-template<typename Real>
-const Real* getCuPointer(const CuMatrixBase<Real> *matrix){
-   const myCuMatrix<Real>* mat_ptr = (const myCuMatrix<Real>*)(const void*)matrix;
-   return mat_ptr->Data();
-}
+// ---------------------------------------------------------------------------------------------
+// |                                  template class functions                                 |
+// ---------------------------------------------------------------------------------------------
 
 template<typename T>
 CuVectorG<T>::CuVectorG(const CuVectorG &cuv){
@@ -165,10 +184,15 @@ void CuVectorG<T>::CopyToVec(vector<T> &des)const{
 
 template<typename T>
 void CuVectorG<T>::Resize(int dim){
-   if( dim_ == dim ) return; // don't set zeros
+   // don't set zeros
+   if( dim <= dim_r_ ){
+      dim_ = dim;
+      return; 
+   }
 
    Destroy();
    dim_ = dim;
+   dim_r_ = dim;
    if(dim == 0) return;
 
    Timer tim;
@@ -270,4 +294,103 @@ void CuMatrixG<T>::Resize(int rows, int cols){
    cols_ = cols;
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }
+
+// ============================== myCuMatrix ==============================
+
+template<typename Real>
+myCuMatrix<Real>::myCuMatrix(const myCuMatrix<Real> &other,
+      MatrixTransposeType trans): num_cols_r_(0), num_rows_r_(0) {
+   if (trans == kNoTrans)
+      this->Resize(other.NumRows(), other.NumCols(), kUndefined);
+   else
+      this->Resize(other.NumCols(), other.NumRows(), kUndefined);
+   this->CopyFromMat(other, trans);
+}
+
+template<typename Real>
+void myCuMatrix<Real>::Resize(MatrixIndexT rows, MatrixIndexT cols,
+      MatrixResizeType resize_type){
+   // This code does not currently support the other resize_type options.
+   KALDI_ASSERT(resize_type == kSetZero || resize_type == kUndefined);
+   if (rows * cols == 0) KALDI_ASSERT(rows == 0 && cols == 0);
+
+   // buffered size...
+   if (this->num_rows_r_ >= rows && this->num_cols_r_ >= cols) {
+      this->num_rows_ = rows;
+      this->num_cols_ = cols;
+      if (resize_type == kSetZero) this->SetZero();
+      return;
+   }
+
+   // resize ...
+   if (this->num_rows_r_ != 0)
+      this->Destroy();
+#if HAVE_CUDA == 1
+   if (CuDevice::Instantiate().Enabled()) {
+      Timer tim;
+      MatrixIndexT row_bytes = cols * sizeof(Real);
+      size_t pitch;
+      this->data_ = static_cast<Real*>(CuDevice::Instantiate().MallocPitch(
+               row_bytes, rows, &pitch));
+      this->num_rows_ = rows;
+      this->num_cols_ = cols;
+      this->num_rows_r_ = rows;
+      this->num_cols_r_ = cols;
+      this->stride_ = pitch / sizeof(Real);
+      if (resize_type == kSetZero) this->SetZero();
+      CuDevice::Instantiate().AccuProfile("CuMatrix::Resize", tim.Elapsed());
+   }else
+#endif
+  { // Let the initializer of Matrix<Real> handle the allocation,
+    // and then just do Swap which will switch the pointers.
+    // This wastes a few instructions but is simple to code.
+     MatrixIndexT skip;
+     MatrixIndexT real_cols;
+     size_t size;
+     void *data;  // aligned memory block
+     void *temp;  // memory block to be really freed
+
+     // compute the size of skip and real cols
+     skip = ((16 / sizeof(Real)) - cols % (16 / sizeof(Real)))
+        % (16 / sizeof(Real));
+     real_cols = cols + skip;
+     size = static_cast<size_t>(rows) * static_cast<size_t>(real_cols)
+        * sizeof(Real);
+
+     // allocate the memory and set the right dimensions and parameters
+     if (NULL != (data = KALDI_MEMALIGN(16, size, &temp))) {
+        this->data_        = static_cast<Real *> (data);
+        this->num_rows_      = rows;
+        this->num_cols_      = cols;
+        this->stride_  = real_cols;
+     } else {
+        throw std::bad_alloc();
+     }
+  }
+   this->num_rows_r_ = this->num_rows_r_;
+   this->num_cols_r_ = this->num_cols_r_;
+}
+
+template<typename Real>
+void myCuMatrix<Real>::Destroy(){
+#if HAVE_CUDA == 1
+   if (CuDevice::Instantiate().Enabled()) {
+      if (this->data_ != NULL) {
+         Timer tim;
+         CuDevice::Instantiate().Free(this->data_);
+         CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+      }
+   } else 
+#endif
+   {
+      if (this->data_ != NULL) KALDI_MEMALIGN_FREE(this->data_);
+   }
+   this->data_ = NULL;
+   this->num_rows_ = 0;
+   this->num_cols_ = 0;
+   this->num_rows_r_ = 0;
+   this->num_cols_r_ = 0;
+   this->stride_ = 0;
+}
+
 #endif

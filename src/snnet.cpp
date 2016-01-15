@@ -419,9 +419,9 @@ int SNnet::packPsi(vector<CuMatrix<BaseFloat> > &feats, const vector<vector<ucha
       PsiPack &p = packs_[i];
       p.L           = labels[i]->size();
       p.lab         = labelbuf_device_.Data() + i * labelbuf_cols_;
-      p.feat        = feats.size() == 1 ? getCuPointer(&feats[0]): getCuPointer(&feats[i]);
+      p.feat        = feats.size() == 1 ? feats[0].Data(): feats[i].Data();
       p.feat_stride = feats.size() == 1 ? feats[0].Stride(): feats[i].Stride();
-      p.psi_feat    = getCuPointer(&psi_feats) + i * psi_feats.Stride();
+      p.psi_feat    = psi_feats.Data() + i * psi_feats.Stride();
    }
 
    packs_dev.CopyFromVec(packs_);

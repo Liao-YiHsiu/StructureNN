@@ -259,7 +259,7 @@ void dist_prop(const CuMatrixBase<BaseFloat> &mat, const int* seq_arr, int seq_s
 
    int rows = mat.NumRows();
 
-   cuda_dist_prop((rows-1)/BLOCKSIZE+1, BLOCKSIZE, getCuPointer(&mat),
+   cuda_dist_prop((rows-1)/BLOCKSIZE+1, BLOCKSIZE, mat.Data(),
          rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr, mat_arr_stride);
 
    CU_SAFE_CALL(cudaGetLastError()); 
@@ -272,7 +272,7 @@ void comb_prop(float** mat_arr, int* mat_arr_stride, const int* seq_arr, int seq
 
    int rows = mat.NumRows()/seq_stride;
 
-   cuda_comb_prop((rows-1)/BLOCKSIZE+1, BLOCKSIZE, getCuPointer(&mat),
+   cuda_comb_prop((rows-1)/BLOCKSIZE+1, BLOCKSIZE, mat.Data(),
          rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr, mat_arr_stride);
 
    CU_SAFE_CALL(cudaGetLastError()); 
@@ -285,7 +285,7 @@ void dist_back(const CuMatrixBase<BaseFloat> &mat, const int* seq_arr, int seq_s
 
    int rows = mat.NumRows()/seq_stride;
 
-   cuda_dist_back((rows-1)/BLOCKSIZE+1, BLOCKSIZE, getCuPointer(&mat),
+   cuda_dist_back((rows-1)/BLOCKSIZE+1, BLOCKSIZE, mat.Data(),
          rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr, mat_arr_stride);
 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
@@ -297,7 +297,7 @@ void comb_back(float** mat_arr, int* mat_arr_stride, const int* seq_arr, int seq
 
    int rows = mat.NumRows();
 
-   cuda_comb_back((rows-1)/BLOCKSIZE+1, BLOCKSIZE, getCuPointer(&mat),
+   cuda_comb_back((rows-1)/BLOCKSIZE+1, BLOCKSIZE, mat.Data(),
          rows, mat.NumCols(), mat.Stride(), seq_arr, seq_stride, id_arr, mat_arr, mat_arr_stride);
 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
@@ -310,9 +310,9 @@ void embed_prop(const CuMatrixBase<BaseFloat> &in, const int* seq_arr, int seq_s
    int rows = out.NumRows();
 
    cuda_embed_prop((rows-1)/BLOCKSIZE+1, BLOCKSIZE,
-         getCuPointer(&in), in.NumRows(), in.NumCols(), in.Stride(),
+         in.Data(), in.NumRows(), in.NumCols(), in.Stride(),
          seq_arr, seq_stride, 
-         getCuPointer(&out), rows, out.Stride());
+         out.Data(), rows, out.Stride());
 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }
@@ -324,8 +324,8 @@ void embed_back(const CuMatrixBase<BaseFloat> &out_diff, int seq_stride,
    int threads = in_diff.NumRows() * in_diff.NumCols();
 
    cuda_embed_back((threads-1)/BLOCKSIZE+1, BLOCKSIZE,
-         getCuPointer(&out_diff), out_diff.NumRows(), out_diff.Stride(), seq_stride,
-         getCuPointer(&in_diff), in_diff.NumRows(), in_diff.NumCols(), in_diff.Stride());
+         out_diff.Data(), out_diff.NumRows(), out_diff.Stride(), seq_stride,
+         in_diff.Data(), in_diff.NumRows(), in_diff.NumCols(), in_diff.Stride());
 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }
@@ -337,8 +337,8 @@ void blendsum_prop(const CuMatrixBase<BaseFloat> &in, const int* seq_arr, int se
    int threads = out.NumRows() * out.NumCols();
 
    cuda_blendsum_prop((threads-1)/BLOCKSIZE+1, BLOCKSIZE,
-         getCuPointer(&in), in.NumRows(), in.NumCols(), in.Stride(),
-         seq_arr, seq_size, getCuPointer(&out), out.NumRows(), out.Stride());
+         in.Data(), in.NumRows(), in.NumCols(), in.Stride(),
+         seq_arr, seq_size, out.Data(), out.NumRows(), out.Stride());
 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }
@@ -350,8 +350,8 @@ void blendsum_back(const CuMatrixBase<BaseFloat> &out_diff, const int *seq_arr, 
    int threads = out_diff.NumRows() * out_diff.NumCols();
 
    cuda_blendsum_back((threads-1)/BLOCKSIZE+1, BLOCKSIZE,
-         getCuPointer(&out_diff), out_diff.NumRows(), out_diff.NumCols(), out_diff.Stride(),
-         seq_arr, seq_size, getCuPointer(&in_diff), in_diff.NumRows(), in_diff.Stride());
+         out_diff.Data(), out_diff.NumRows(), out_diff.NumCols(), out_diff.Stride(),
+         seq_arr, seq_size, in_diff.Data(), in_diff.NumRows(), in_diff.Stride());
 
    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
 }
@@ -370,8 +370,8 @@ void cuMemCopy(float* dst, int dst_pitch, const float* src, int src_pitch, int w
 void fillin(CuMatrixBase<BaseFloat> &dest, vector< CuMatrix<BaseFloat> > &src, int stream_num){
 
    for(int i = 0; i < stream_num; ++i){
-      BaseFloat *src_data  = getCuPointer(&src[i]);
-      BaseFloat *dest_data = getCuPointer(&dest) + dest.Stride() * i;
+      BaseFloat *src_data  = src[i].Data();
+      BaseFloat *dest_data = dest.Data() + dest.Stride() * i;
       size_t dst_pitch = dest.Stride() * stream_num;
       size_t src_pitch = src[i].Stride();
       size_t width     = src[i].NumCols();
