@@ -9,8 +9,3 @@ cd $DIR/../data/nnetraw
 [ -e test.ark  ]   || ln -sf ../raw_feature/test.ark  test.ark
 [ -e nnet1     ]   || nnet-pop --num=2 $timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.nnet nnet1
 [ -e transf.nnet ] || ln -sf $timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.feature_transform transf.nnet
-
-for file in $(ls ..);
-do
-   [ -f ../$file ] && [ ! -e $file ] && ln -sf ../$file $file
-done

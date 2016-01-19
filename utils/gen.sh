@@ -62,5 +62,6 @@ done
 # generate features.
 for file in $DIR/gen_*.sh;
 do
+   echo $file
    $file
 done
