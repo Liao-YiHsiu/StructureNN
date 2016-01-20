@@ -1,18 +1,10 @@
-#include "nnet/nnet-trnopts.h"
-#include "nnet/nnet-nnet.h"
-#include "nnet/nnet-loss.h"
-#include "nnet/nnet-randomizer.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
-#include "base/timer.h"
-#include "cudamatrix/cu-device.h"
-#include "util.h"
-#include <sstream>
-#include <fstream>
+#include "my-utils/util.h"
+#include "score-path/score-path.h"
 
 using namespace std;
 using namespace kaldi;
-using namespace kaldi::nnet1;
 
 int main(int argc, char *argv[]) {
   

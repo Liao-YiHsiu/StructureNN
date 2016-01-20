@@ -6,7 +6,8 @@
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "matrix/kaldi-matrix.h"
-#include "util.h"
+#include "score-path/score-path.h"
+#include "my-utils/util.h"
 
 using namespace std;
 using namespace kaldi;

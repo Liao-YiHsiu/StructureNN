@@ -3,7 +3,8 @@
 #include "fstext/fstext-lib.h"
 #include "lat/kaldi-lattice.h"
 #include "lat/lattice-functions.h"
-#include "util.h"
+#include "score-path/score-path.h"
+#include "my-utils/util.h"
 
 using namespace std;
 using namespace fst;

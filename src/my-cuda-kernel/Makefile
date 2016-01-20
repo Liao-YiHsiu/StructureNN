@@ -16,7 +16,7 @@ LDLIBS += $(CUDA_LDLIBS) -lpthread
 
 BINFILES = 
 
-OBJFILES = kernel.o 
+OBJFILES = kernel.o kernel-func.o
 
 TESTFILES = 
 

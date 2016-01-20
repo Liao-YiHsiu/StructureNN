@@ -1,16 +1,7 @@
-#include "nnet/nnet-trnopts.h"
-#include "nnet/nnet-nnet.h"
-#include "nnet/nnet-loss.h"
-#include "nnet/nnet-randomizer.h"
-#include "nnet/nnet-randomizer.cc"  // for template class
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
-#include "base/timer.h"
-#include "cudamatrix/cu-device.h"
-#include "util.h"
-#include "srnnet2.h"
-#include <sstream>
-#include <omp.h>
+#include "my-utils/util.h"
+#include "score-path/score-path.h"
 
 using namespace std;
 using namespace kaldi;

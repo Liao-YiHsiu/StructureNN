@@ -1,47 +1,22 @@
-#ifndef _UTIL_H
-#define _UTIL_H
-#include "nnet/nnet-trnopts.h"
-#include "nnet/nnet-nnet.h"
-#include "nnet/nnet-loss.h"
-#include "nnet/nnet-randomizer.h"
+#ifndef _MY_UTIL_H_
+#define _MY_UTIL_H_
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
-#include "base/timer.h"
-#include "cudamatrix/cu-device.h"
+#include "cudamatrix/cu-matrix.h"
 #include "util/edit-distance.h"
-#include "kernel.h"
-#include "cumat.h"
-#include "strt.h"
-#include <sstream>
-#include <iterator>
-#include <map>
+#include "my-utils/type.h"
+
 #include <string>
-#include <math.h>
-#include <float.h>
-#include <stdio.h>
+#include <vector>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/file.h>
-#include <stdlib.h>
 
 #define BUFSIZE 4096
 #define GPU_FILE "/tmp/gpu_lock"
 
-using namespace std;
 using namespace kaldi;
-using namespace kaldi::nnet1;
-
-typedef unsigned char uchar;
-template<class VALUE, class T> class ValueVectorPair;
-
-typedef ValueVectorPair<BaseFloat, uchar> ScorePath;
-
-typedef SequentialTableReader<KaldiObjectHolder<ScorePath> > SequentialScorePathReader;
-typedef TableWriter<KaldiObjectHolder<ScorePath> >           ScorePathWriter;
-
-typedef SequentialTableReader<BasicVectorHolder<uchar> >     SequentialUcharVectorReader;
-typedef RandomAccessTableReader<BasicVectorHolder<uchar> >   RandomAccessUcharVectorReader;
-typedef TableWriter<BasicVectorHolder<uchar> >               UcharVectorWriter;
+using namespace std;
 
 inline double sigmoid(double x){ return 1/(1+exp(-x)); }
 inline double softplus(double x){ return x > 0 ? x + softplus(-x) : log(1+exp(x)); }
@@ -57,7 +32,6 @@ void trim_path(const vector<uchar>& scr_path, vector<uchar>& des_path);
 void UcharToInt32(const vector<uchar>& src_path, vector<int>& des_path);
 void Int32ToUchar(const vector<int>& src_path, vector<uchar>& des_path);
 
-
 void getPhone(const string &key, const string &timit, map<string, int> &phMap, vector<uchar> &phIdx);
 void readPhMap(const string path, const string id_path, map<string, int> &phMap);
 string execute(const string &cmd);
@@ -69,111 +43,9 @@ void print(const CuMatrixBase<BaseFloat> &mat, int row = -1);
 
 void resizeBuff(CuMatrix<BaseFloat> *mat, int rows, int cols);
 
-void propPsi(int N, int F, int S, int maxL, PsiPack* packs_ptr);
-void backPsi(int N, int F, int S, int maxL, PsiPack* packs_ptr);
-
-void propRPsi(RPsiPack *pack);
-void backRPsi(RPsiPack *pack);
-
-void dist_prop(const CuMatrixBase<BaseFloat> &mat, const int* seq_arr, int seq_stride,
-      const int* id_arr, float** mat_arr, int* mat_arr_stride);
-
-void comb_prop(float** mat_arr, int* mat_arr_stride, const int* seq_arr, int seq_stride,
-      const int* id_arr, CuMatrixBase<BaseFloat> &mat);
-
-void dist_back(const CuMatrixBase<BaseFloat> &mat, const int* seq_arr, int seq_stride,
-      const int* id_arr, float** mat_arr, int* mat_arr_stride);
-
-void comb_back(float** mat_arr, int* mat_arr_stride, const int* seq_arr, int seq_stride,
-      const int* id_arr, CuMatrixBase<BaseFloat> &mat);
-
-void embed_prop(const CuMatrixBase<BaseFloat> &in, const int* seq_arr, int seq_stride, 
-      CuMatrixBase<BaseFloat> &out);
-
-void embed_back(const CuMatrixBase<BaseFloat> &out_diff, int seq_stride, 
-      CuMatrixBase<BaseFloat> &in_diff);
-
-void blendsum_prop(const CuMatrixBase<BaseFloat> &in, const int* seq_arr, int seq_size,
-      CuMatrixBase<BaseFloat> &out);
-
-void blendsum_back(const CuMatrixBase<BaseFloat> &out_diff, const int *seq_arr, int seq_size,
-      CuMatrixBase<BaseFloat> &in_diff);
-
-void cuMemCopy(float* dst, int dst_pitch,const float* src, int src_pitch, int width, int height);
-
-void fillin(CuMatrixBase<BaseFloat> &dest, vector< CuMatrix<BaseFloat> > &src, int stream_num);
-
 void LockSleep(string filename, int ms = 2000);
 
 template<typename T>
 void VecToVecRef(vector<T>& src, vector<T*> &dest);
-
-template<class V, class T> class ValueVectorPair{
-   public:
-      friend class ValueVectorPair<float, int>;
-      typedef vector< pair < V, vector<T> > > Table;
-
-      ValueVectorPair(){}
-      ValueVectorPair(const Table& value): val(value){}
-
-      void Write(ostream &os, bool binary) const;
-      void Read(istream &is, bool binary);
-
-      const Table& Value() const{ return val; }
-      Table& Value(){ return val; }
-
-   private:
-      Table val;
-};
-
-// ---------------------------------------------------------------------------------------------
-// |                                  template class functions                                 |
-// ---------------------------------------------------------------------------------------------
-
-
-template<class V, class T>
-void ValueVectorPair<V, T>::Write(ostream &os, bool binary) const{
-   try{
-      int vecsz = static_cast<int>(val.size());
-      KALDI_ASSERT((size_t)vecsz == val.size());
-
-      if(binary){
-         os.write(reinterpret_cast<const char *>(&vecsz), sizeof(vecsz));
-      }else{
-         os << vecsz << " " ;
-      }
-
-      for(int i = 0; i < val.size(); ++i){
-         WriteBasicType(os, binary, val[i].first);
-         WriteIntegerVector(os, binary, val[i].second);
-      }
-   } catch(const std::exception &e) {
-      std::cerr << e.what();
-      exit(-1);
-   }
-}
-
-template<class V, class T>
-void ValueVectorPair<V, T>::Read(istream &is, bool binary){
-   int vecsz;
-   if(binary){
-      is.read(reinterpret_cast<char *>(&vecsz), sizeof(vecsz));
-   }else{
-      is >> vecsz >> std::ws;
-   }
-
-   val.resize(vecsz);
-   for(int i = 0; i < vecsz; ++i){
-      ReadBasicType(is, binary, &val[i].first);
-      ReadIntegerVector(is, binary, &val[i].second);
-   }
-}
-
-template<typename T>
-void VecToVecRef(vector<T>& src, vector<T*> &dest){
-   dest.resize(src.size());
-   for(int i = 0; i < src.size(); ++i)
-      dest[i] = &src[i];
-}
 
 #endif

@@ -1,8 +1,3 @@
-#include <iostream>
-#include <fstream>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "matrix/kaldi-matrix.h"
@@ -10,7 +5,7 @@
 #include "tree/context-dep.h"
 #include "tree/clusterable-classes.h"
 #include "util/text-utils.h"
-#include "util.h"
+#include "my-utils/util.h"
 
 using namespace std;
 using namespace kaldi;
