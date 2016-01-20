@@ -1,16 +1,30 @@
 #!/bin/bash
 
 max=-1
-log=""
+thres=6000
 
 for file in data/*/*/log ;
 do
    stamp=$(stat -c %Y $file)
    if [[ $stamp -gt $max ]];then
       max=$stamp
-      log=$file
    fi
 done
 
-echo $log
-./utils/plot.sh $log
+log_list=""
+max=$((max - thres))
+
+for file in data/*/*/log ;
+do
+   stamp=$(stat -c %Y $file)
+   if [[ $stamp -gt $max ]];then
+      log_list="$log_list $file"
+   fi
+done
+
+for file in $log_list;
+do
+   echo $file
+   ./utils/plot.sh $file
+   read "pause"
+done

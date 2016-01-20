@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "my-cuda-kernel/kernel.h"
 #include <assert.h>
 #define MAX_L 1024
 #define MAX_S 64
@@ -43,7 +43,7 @@ __global__ static void _cuda_comb_back(float* mat, int rows, int cols, int strid
       const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr, int* mat_arr_stride);
 
 __global__ static void _cuda_embed_prop(const float* mat, int rows, int cols, int stride,
-      const int* seq_arr, int seq_stride, float* out_mat, int out_rows, int out_stride);
+      const uchar* seq_arr, int seq_stride, float* out_mat, int out_rows, int out_stride);
 
 __global__ static void _cuda_embed_back(const float* mat, int rows, int stride, int seq_stride,
       float *out_mat, int out_rows, int out_cols, int out_stride);
@@ -136,7 +136,7 @@ void cuda_comb_back(dim3 grid, dim3 block, float* mat, int rows, int cols, int s
 }
 
 void cuda_embed_prop(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride,
-      const int* seq_arr, int seq_stride, float* out_mat, int out_rows, int out_stride){
+      const uchar* seq_arr, int seq_stride, float* out_mat, int out_rows, int out_stride){
    _cuda_embed_prop<<<grid, block>>>(mat, rows, cols, stride, seq_arr, seq_stride, out_mat, out_rows, out_stride);
 }
 
@@ -569,7 +569,7 @@ __global__ static void _cuda_comb_back(float* mat, int rows, int cols, int strid
 }
 
 __global__ static void _cuda_embed_prop(const float* mat, int rows, int cols, int stride,
-      const int* seq_arr, int seq_stride, float* out_mat, int out_rows, int out_stride){
+      const uchar* seq_arr, int seq_stride, float* out_mat, int out_rows, int out_stride){
    int idx = blockIdx.x * blockDim.x + threadIdx.x;
    if(idx >= out_rows) return;
 

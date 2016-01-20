@@ -1,6 +1,8 @@
 #ifndef MY_KERNEL
 #define MY_KERNEL
 
+#include "my-utils/type.h"
+
 #define BLOCKSIZE 64 
 
 typedef struct{
@@ -46,7 +48,7 @@ void cuda_comb_back(dim3 grid, dim3 block, float* mat, int rows, int cols, int s
       const int* seq_arr, int seq_stride, const int* id_arr, float** mat_arr, int* mat_arr_stride);
 
 void cuda_embed_prop(dim3 grid, dim3 block, const float* mat, int rows, int cols, int stride,
-      const int* seq_arr, int seq_stride, float* out_mat, int out_rows, int out_stride);
+      const uchar* seq_arr, int seq_stride, float* out_mat, int out_rows, int out_stride);
 
 void cuda_embed_back(dim3 grid, dim3 block, const float* mat, int rows, int stride, int seq_stride,
       float *out_mat, int out_rows, int out_cols, int out_stride);

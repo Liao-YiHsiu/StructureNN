@@ -4,5 +4,5 @@
 <ReLU> <InputDim> 256 <OutputDim> 256 
 <AffineTransform> <InputDim> 256 <OutputDim> 256 <BiasMean> 0.0 <BiasRange> 0.0 <ParamStddev> 0.010000
 <ReLU> <InputDim> 256 <OutputDim> 256
-<mLSTM> <InputDim> 256 <OutputDim> 1 <CellDim> 256 <ParamScale> 0.010000 <ClipGradient> 5.000000
+<LstmProjectedStreams> <InputDim> 256 <OutputDim> 1 <CellDim> 256 <ParamScale> 0.010000 <ClipGradient> 5.000000
 </MyNnetProto>

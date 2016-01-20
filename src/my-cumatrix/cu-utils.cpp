@@ -1,4 +1,4 @@
-#include "cumat.h"
+#include "my-cumatrix/cu-utils.h"
 
 void VecToMat(const vector< CuMatrix<BaseFloat> > &arr, CuMatrix<BaseFloat> &mat, int N){
    int Rows = 0;
