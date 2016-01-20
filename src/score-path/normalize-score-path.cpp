@@ -2,7 +2,7 @@
 #include "util/common-utils.h"
 #include <math.h>
 #include <cfloat>
-#include "util.h"
+#include "score-path/score-path.h"
 
 using namespace std;
 using namespace kaldi;
