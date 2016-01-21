@@ -5,8 +5,11 @@
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "nnet/nnet-activation.h"
-#include "util.h"
-#include "strt.h"
+#include "nnet/nnet-loss.h"
+
+#include "my-utils/util.h"
+#include "my-nnet/nnet-loss-strt.h"
+
 #include <boost/algorithm/string.hpp>
 #include <iostream>
 #include <string>

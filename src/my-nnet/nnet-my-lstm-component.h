@@ -22,7 +22,8 @@
 #ifndef _MYNNET_LSTM_PROJECTED_STREAMS_H_
 #define _MYNNET_LSTM_PROJECTED_STREAMS_H_
 
-#include "nnet-my-component.h"
+#include "my-nnet/nnet-my-component.h"
+#include "nnet/nnet-utils.h"
 
 /*************************************
  * x: input neuron
@@ -36,9 +37,6 @@
  * r: recurrent projection neuron
  * y: output neuron of LSTMP
  *************************************/
-
-using namespace kaldi;
-using namespace kaldi::nnet1;
 
 class myLSTM : public MyComponent {
    public:
@@ -56,10 +54,10 @@ class myLSTM : public MyComponent {
       { }
 
       // override... for MyComponent
-      virtual MyType myGetType() const { return mLSTM; }
+      virtual MyType GetType() const { return mLSTM; }
       //ComponentType GetType() const { return k; }
 
-      Component* Copy() const { return new myLSTM(*this); }
+      MyComponent* Copy() const { return new myLSTM(*this); }
 
       static void InitMatParam(CuMatrix<BaseFloat> &m, float scale) {
          m.SetRandUniform();  // uniform in [0, 1]
@@ -600,82 +598,83 @@ class myLSTM : public MyComponent {
             std::cerr << "peephole_o_c_corr_ " << peephole_o_c_corr_;
          }
       }
-
-      void Update(const CuMatrixBase<BaseFloat> &input, const CuMatrixBase<BaseFloat> &diff) {
-         const BaseFloat lr  = opts_.learn_rate;
-
-         w_gifo_x_.AddMat(-lr, w_gifo_x_corr_);
-         w_gifo_r_.AddMat(-lr, w_gifo_r_corr_);
-         bias_.AddVec(-lr, bias_corr_, 1.0);
-
-         peephole_i_c_.AddVec(-lr, peephole_i_c_corr_, 1.0);
-         peephole_f_c_.AddVec(-lr, peephole_f_c_corr_, 1.0);
-         peephole_o_c_.AddVec(-lr, peephole_o_c_corr_, 1.0);
-
-         w_r_m_.AddMat(-lr, w_r_m_corr_);
-
-         //    /*
-         //      Here we deal with the famous "vanishing & exploding difficulties" in RNN learning.
-         //
-         //      *For gradients vanishing*
-         //      LSTM architecture introduces linear CEC as the "error bridge" across long time distance
-         //      solving vanishing problem.
-         //
-         //      *For gradients exploding*
-         //      LSTM is still vulnerable to gradients explosing in BPTT(with large weight & deep time expension).
-         //      To prevent this, we tried L2 regularization, which didn't work well
-         //
-         //      Our approach is a *modified* version of Max Norm Regularization:
-         //      For each nonlinear neuron,
-         //      1. fan-in weights & bias model a seperation hyper-plane: W x + b = 0
-         //      2. squashing function models a differentiable nonlinear slope around this hyper-plane.
-         //
-         //      Conventional max norm regularization scale W to keep its L2 norm bounded,
-         //      As a modification, we scale down large (W & b) *simultaneously*, this:
-         //      1. keeps all fan-in weights small, prevents gradients from exploding during backward-pass.
-         //      2. keeps the location of the hyper-plane unchanged, so we don't wipe out already learned knowledge.
-         //      3. shrinks the "normal" of the hyper-plane, smooths the nonlinear slope, improves generalization.
-         //      4. makes the network *well-conditioned* (weights are constrained in a reasonible range).
-         //
-         //      We've observed faster convergence and performance gain by doing this.
-         //    */
-         //
-         //    int DEBUG = 0;
-         //    BaseFloat max_norm = 1.0;   // weights with large L2 norm may cause exploding in deep BPTT expensions
-         //                  // TODO: move this config to opts_
-         //    CuMatrix<BaseFloat> L2_gifo_x(w_gifo_x_);
-         //    CuMatrix<BaseFloat> L2_gifo_r(w_gifo_r_);
-         //    L2_gifo_x.MulElements(w_gifo_x_);
-         //    L2_gifo_r.MulElements(w_gifo_r_);
-         //
-         //    CuVector<BaseFloat> L2_norm_gifo(L2_gifo_x.NumRows());
-         //    L2_norm_gifo.AddColSumMat(1.0, L2_gifo_x, 0.0);
-         //    L2_norm_gifo.AddColSumMat(1.0, L2_gifo_r, 1.0);
-         //    L2_norm_gifo.Range(1*ncell_, ncell_).AddVecVec(1.0, peephole_i_c_, peephole_i_c_, 1.0);
-         //    L2_norm_gifo.Range(2*ncell_, ncell_).AddVecVec(1.0, peephole_f_c_, peephole_f_c_, 1.0);
-         //    L2_norm_gifo.Range(3*ncell_, ncell_).AddVecVec(1.0, peephole_o_c_, peephole_o_c_, 1.0);
-         //    L2_norm_gifo.ApplyPow(0.5);
-         //
-         //    CuVector<BaseFloat> shrink(L2_norm_gifo);
-         //    shrink.Scale(1.0/max_norm);
-         //    shrink.ApplyFloor(1.0);
-         //    shrink.InvertElements();
-         //
-         //    w_gifo_x_.MulRowsVec(shrink);
-         //    w_gifo_r_.MulRowsVec(shrink);
-         //    bias_.MulElements(shrink);
-         //
-         //    peephole_i_c_.MulElements(shrink.Range(1*ncell_, ncell_));
-         //    peephole_f_c_.MulElements(shrink.Range(2*ncell_, ncell_));
-         //    peephole_o_c_.MulElements(shrink.Range(3*ncell_, ncell_));
-         //
-         //    if (DEBUG) {
-         //      if (shrink.Min() < 0.95) {   // we dont want too many trivial logs here
-         //        std::cerr << "gifo shrinking coefs: " << shrink;
-         //      }
-         //    }
-         //
-      }
+//
+//      void Update(const CuMatrixBase<BaseFloat> &input, const CuMatrixBase<BaseFloat> &diff) {
+//         const BaseFloat lr  = opts_.learn_rate;
+//
+//         w_gifo_x_.AddMat(-lr, w_gifo_x_corr_);
+//         w_gifo_r_.AddMat(-lr, w_gifo_r_corr_);
+//         bias_.AddVec(-lr, bias_corr_, 1.0);
+//
+//         peephole_i_c_.AddVec(-lr, peephole_i_c_corr_, 1.0);
+//         peephole_f_c_.AddVec(-lr, peephole_f_c_corr_, 1.0);
+//         peephole_o_c_.AddVec(-lr, peephole_o_c_corr_, 1.0);
+//
+//         w_r_m_.AddMat(-lr, w_r_m_corr_);
+//
+//         //    /*
+//         //      Here we deal with the famous "vanishing & exploding difficulties" in RNN learning.
+//         //
+//         //      *For gradients vanishing*
+//         //      LSTM architecture introduces linear CEC as the "error bridge" across long time distance
+//         //      solving vanishing problem.
+//         //
+//         //      *For gradients exploding*
+//         //      LSTM is still vulnerable to gradients explosing in BPTT(with large weight & deep time expension).
+//         //      To prevent this, we tried L2 regularization, which didn't work well
+//         //
+//         //      Our approach is a *modified* version of Max Norm Regularization:
+//         //      For each nonlinear neuron,
+//         //      1. fan-in weights & bias model a seperation hyper-plane: W x + b = 0
+//         //      2. squashing function models a differentiable nonlinear slope around this hyper-plane.
+//         //
+//         //      Conventional max norm regularization scale W to keep its L2 norm bounded,
+//         //      As a modification, we scale down large (W & b) *simultaneously*, this:
+//         //      1. keeps all fan-in weights small, prevents gradients from exploding during backward-pass.
+//         //      2. keeps the location of the hyper-plane unchanged, so we don't wipe out already learned knowledge.
+//         //      3. shrinks the "normal" of the hyper-plane, smooths the nonlinear slope, improves generalization.
+//         //      4. makes the network *well-conditioned* (weights are constrained in a reasonible range).
+//         //
+//         //      We've observed faster convergence and performance gain by doing this.
+//         //    */
+//         //
+//         //    int DEBUG = 0;
+//         //    BaseFloat max_norm = 1.0;   // weights with large L2 norm may cause exploding in deep BPTT expensions
+//         //                  // TODO: move this config to opts_
+//         //    CuMatrix<BaseFloat> L2_gifo_x(w_gifo_x_);
+//         //    CuMatrix<BaseFloat> L2_gifo_r(w_gifo_r_);
+//         //    L2_gifo_x.MulElements(w_gifo_x_);
+//         //    L2_gifo_r.MulElements(w_gifo_r_);
+//         //
+//         //    CuVector<BaseFloat> L2_norm_gifo(L2_gifo_x.NumRows());
+//         //    L2_norm_gifo.AddColSumMat(1.0, L2_gifo_x, 0.0);
+//         //    L2_norm_gifo.AddColSumMat(1.0, L2_gifo_r, 1.0);
+//         //    L2_norm_gifo.Range(1*ncell_, ncell_).AddVecVec(1.0, peephole_i_c_, peephole_i_c_, 1.0);
+//         //    L2_norm_gifo.Range(2*ncell_, ncell_).AddVecVec(1.0, peephole_f_c_, peephole_f_c_, 1.0);
+//         //    L2_norm_gifo.Range(3*ncell_, ncell_).AddVecVec(1.0, peephole_o_c_, peephole_o_c_, 1.0);
+//         //    L2_norm_gifo.ApplyPow(0.5);
+//         //
+//         //    CuVector<BaseFloat> shrink(L2_norm_gifo);
+//         //    shrink.Scale(1.0/max_norm);
+//         //    shrink.ApplyFloor(1.0);
+//         //    shrink.InvertElements();
+//         //
+//         //    w_gifo_x_.MulRowsVec(shrink);
+//         //    w_gifo_r_.MulRowsVec(shrink);
+//         //    bias_.MulElements(shrink);
+//         //
+//         //    peephole_i_c_.MulElements(shrink.Range(1*ncell_, ncell_));
+//         //    peephole_f_c_.MulElements(shrink.Range(2*ncell_, ncell_));
+//         //    peephole_o_c_.MulElements(shrink.Range(3*ncell_, ncell_));
+//         //
+//         //    if (DEBUG) {
+//         //      if (shrink.Min() < 0.95) {   // we dont want too many trivial logs here
+//         //        std::cerr << "gifo shrinking coefs: " << shrink;
+//         //      }
+//         //    }
+//         //
+//      }
+//
 
    private:
       // dims
@@ -719,11 +718,72 @@ class myLSTM : public MyComponent {
       CuMatrix<BaseFloat> w_r_m_corr_;
 
       // propagate buffer: output of [g, i, f, o, c, h, m, r]
-      myCuMatrix<BaseFloat> propagate_buf_;
+      MyCuMatrix<BaseFloat> propagate_buf_;
 
       // back-propagate buffer: diff-input of [g, i, f, o, c, h, m, r]
-      myCuMatrix<BaseFloat> backpropagate_buf_;
+      MyCuMatrix<BaseFloat> backpropagate_buf_;
 
+      // for multi-batch...
+   public:
+      // only accumulate results.
+      void Update(const CuMatrixBase<BaseFloat> &input, const CuMatrixBase<BaseFloat> &diff) {
+         // initialize
+         if(w_gifo_x_acc_.NumRows() == 0){ 
+            w_gifo_x_acc_ = w_gifo_x_corr_;
+            w_gifo_r_acc_ = w_gifo_r_corr_;
+            bias_acc_     = bias_corr_;
+
+            peephole_i_c_acc_ = peephole_i_c_corr_;
+            peephole_f_c_acc_ = peephole_f_c_corr_;
+            peephole_o_c_acc_ = peephole_o_c_corr_;
+
+            w_r_m_acc_ = w_r_m_corr_;
+
+         // accumulate
+         }else{
+            w_gifo_x_acc_.AddMat(1.0, w_gifo_x_corr_);
+            w_gifo_r_acc_.AddMat(1.0, w_gifo_r_corr_);
+            bias_acc_.AddVec(1.0, bias_corr_, 1.0);
+
+            peephole_i_c_acc_.AddVec(1.0, peephole_i_c_corr_, 1.0);
+            peephole_f_c_acc_.AddVec(1.0, peephole_f_c_corr_, 1.0);
+            peephole_o_c_acc_.AddVec(1.0, peephole_o_c_corr_, 1.0);
+
+            w_r_m_acc_.AddMat(1.0, w_r_m_corr_);
+         }
+      }
+
+      void Update(){
+         const BaseFloat lr  = opts_.learn_rate;
+
+         w_gifo_x_.AddMat(-lr, w_gifo_x_acc_);
+         w_gifo_r_.AddMat(-lr, w_gifo_r_acc_);
+         bias_.AddVec(-lr, bias_acc_, 1.0);
+
+         peephole_i_c_.AddVec(-lr, peephole_i_c_acc_, 1.0);
+         peephole_f_c_.AddVec(-lr, peephole_f_c_acc_, 1.0);
+         peephole_o_c_.AddVec(-lr, peephole_o_c_acc_, 1.0);
+
+         w_r_m_.AddMat(-lr, w_r_m_acc_);
+
+         // clear accumulate cache
+         w_gifo_x_acc_.SetZero();
+         w_gifo_r_acc_.SetZero();
+         bias_acc_.SetZero();
+         peephole_i_c_acc_.SetZero();
+         peephole_f_c_acc_.SetZero();
+         peephole_o_c_acc_.SetZero();
+         w_r_m_acc_.SetZero();
+      }
+
+   private:
+      CuMatrix<BaseFloat> w_gifo_x_acc_;
+      CuMatrix<BaseFloat> w_gifo_r_acc_;
+      CuVector<BaseFloat> bias_acc_;
+      CuVector<BaseFloat> peephole_i_c_acc_;
+      CuVector<BaseFloat> peephole_f_c_acc_;
+      CuVector<BaseFloat> peephole_o_c_acc_;
+      CuMatrix<BaseFloat> w_r_m_acc_;
 };
 
 #endif

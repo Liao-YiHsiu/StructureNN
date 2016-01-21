@@ -1,59 +1,50 @@
-#include "nnet-my-component.h"
+#include "my-nnet/nnet-my-component.h"
 
-#include "nnet-embed-component.h"
-#include "nnet-blend-component.h"
-#include "nnet-activ-component.h"
-#include "nnet-my-lstm-component.h"
+#include "my-nnet/nnet-embed-component.h"
+#include "my-nnet/nnet-blend-component.h"
+#include "my-nnet/nnet-activ-component.h"
+#include "my-nnet/nnet-my-lstm-component.h"
+#include "my-nnet/nnet-my-affine-component.h"
 
-const struct MyComponent::my_key_value MyComponent::myMarkerMap[] = {
+const struct MyComponent::key_value MyComponent::MarkerMap[] = {
    {MyComponent::mEmbedSimple, "<EmbedSimple>"},
-   {MyComponent::mEmbedMux, "<EmbedMux>"},
    {MyComponent::mBlendSum, "<BlendSum>"},
-   {MyComponent::mReLU, "<ReLU>"},
-   {MyComponent::mLSTM, "<mLSTM>"}
+   {MyComponent::mReLU, "<mReLU>"},
+   {MyComponent::mLSTM, "<mLSTM>"},
+   {MyComponent::mAffine, "<mAffine>"}
 };
 
-const char* MyComponent::myTypeToMarker(MyComponent::MyType t){
-   int32 N = sizeof(myMarkerMap)/sizeof(myMarkerMap[0]);
+const char* MyComponent::TypeToMarker(MyComponent::MyType t){
+   int32 N = sizeof(MarkerMap)/sizeof(MarkerMap[0]);
    for(int i = 0; i < N; ++i)
-      if( myMarkerMap[i].key == t)
-         return myMarkerMap[i].value;
+      if( MarkerMap[i].key == t)
+         return MarkerMap[i].value;
    assert(false);
    return NULL;
 }
 
-MyComponent::MyType MyComponent::myMarkerToType(const string &s){
+MyComponent::MyType MyComponent::MarkerToType(const string &s){
    string s_lower(s);
    transform(s_lower.begin(), s_lower.end(), s_lower.begin(), ::tolower);
-   int32 N = sizeof(myMarkerMap)/sizeof(myMarkerMap[0]);
+   int32 N = sizeof(MarkerMap)/sizeof(MarkerMap[0]);
    for(int i = 0; i < N; ++i){
-      string m(myMarkerMap[i].value);
+      string m(MarkerMap[i].value);
       string m_lower(m);
       transform(m_lower.begin(), m_lower.end(), m_lower.begin(), ::tolower);
       if( m_lower == s_lower )
-         return myMarkerMap[i].key;
+         return MarkerMap[i].key;
    }
    return mUnknown;
 }
 
-const char* MyComponent::myCompToMarker(const Component &comp){
-   if(comp.GetType() == Component::kUnknown){
-      const MyComponent& mycomp = dynamic_cast<const MyComponent&>(comp);
-      return MyComponent::myTypeToMarker(mycomp.myGetType());
-   }else{
-      return Component::TypeToMarker(comp.GetType());
-   }
-}
-
-Component* MyComponent::Init(const string &conf_line){
+MyComponent* MyComponent::Init(const string &conf_line){
    istringstream is(conf_line);
    string component_type_string;
    int32 input_dim, output_dim;
 
    ReadToken(is, false, &component_type_string);
-   MyComponent::MyType mtype = myMarkerToType(component_type_string);
-
-   if(mtype == mUnknown) return Component::Init(conf_line);
+   MyComponent::MyType mtype = MarkerToType(component_type_string);
+   assert(mtype != mUnknown);
    
    ExpectToken(is, false, "<InputDim>");
    ReadBasicType(is, false, &input_dim);
@@ -66,7 +57,7 @@ Component* MyComponent::Init(const string &conf_line){
    return ans;
 }
 
-Component* MyComponent::Read(istream &is, bool binary){
+MyComponent* MyComponent::Read(istream &is, bool binary){
    int32 dim_out, dim_in;
    string token;
    
@@ -85,11 +76,7 @@ Component* MyComponent::Read(istream &is, bool binary){
       return NULL;
    }
 
-   MyComponent::MyType mtype = myMarkerToType(token);
-   if(mtype == MyComponent::mUnknown){
-      is.seekg(pos);
-      return Component::Read(is, binary);
-   }
+   MyComponent::MyType mtype = MarkerToType(token);
 
    ReadBasicType(is, binary, &dim_out);
    ReadBasicType(is, binary, &dim_in);
@@ -99,7 +86,7 @@ Component* MyComponent::Read(istream &is, bool binary){
 }
 
 void MyComponent::Write(ostream &os, bool binary) const{
-   WriteToken(os, binary, myTypeToMarker(myGetType()));
+   WriteToken(os, binary, TypeToMarker(GetType()));
    WriteBasicType(os, binary, OutputDim());
    WriteBasicType(os, binary, InputDim());
    if(!binary) os << "\n";
@@ -112,17 +99,17 @@ MyComponent* MyComponent::NewMyComponentOfType(MyComponent::MyType type, int32 i
       case mEmbedSimple:
          ans = new EmbedSimple(input_dim, output_dim);
          break;
-      case mEmbedMux:
-         ans = new EmbedMux(input_dim, output_dim);
-         break;
       case mBlendSum:
          ans = new BlendSum(input_dim, output_dim);
          break;
       case mReLU:
-         ans = new ReLU(input_dim, output_dim);
+         ans = new myReLU(input_dim, output_dim);
          break;
       case mLSTM:
          ans = new myLSTM(input_dim, output_dim);
+         break;
+      case mAffine:
+         ans = new myAffine(input_dim, output_dim);
          break;
       default:
          assert(false);
@@ -130,41 +117,3 @@ MyComponent* MyComponent::NewMyComponentOfType(MyComponent::MyType type, int32 i
    return ans;
 }
 
-void ComponentBuff::Propagate(const CuMatrixBase<BaseFloat> &in, CuMatrix<BaseFloat> *out){
-   // Check the dims
-   assert(input_dim_ == in.NumCols());
-
-   resizeBuff(out, in.NumRows(), output_dim_);
-   CuSubMatrix<BaseFloat> sub = out->RowRange(0, in.NumRows());
-   PropagateFnc(in, &sub);
-}
-
-void ComponentBuff::Backpropagate(const CuMatrixBase<BaseFloat> &in,
-      const CuMatrixBase<BaseFloat> &out,
-      const CuMatrixBase<BaseFloat> &out_diff,
-      CuMatrix<BaseFloat> *in_diff){
-
-   // Check the dims
-   assert(output_dim_ == out_diff.NumCols());
-
-   // Target buffer NULL : backpropagate only through components with nested nnets.
-   if (in_diff == NULL) {
-      if (GetType() == kParallelComponent ||
-            GetType() == kSentenceAveragingComponent) {
-         BackpropagateFnc(in, out, out_diff, NULL);
-      } else {
-         return;
-      }
-   } else {
-
-      resizeBuff(in_diff, out_diff.NumRows(), input_dim_);
-      CuSubMatrix<BaseFloat> sub = in_diff->RowRange(0, out_diff.NumRows());
-
-      // Asserts on the dims
-      KALDI_ASSERT((in.NumRows() == out.NumRows()) &&
-            (in.NumRows() == out_diff.NumRows()));
-      KALDI_ASSERT(out.NumCols() == out_diff.NumCols());
-      // Call the backprop implementation of the component
-      BackpropagateFnc(in, out, out_diff, &sub);
-   }
-}

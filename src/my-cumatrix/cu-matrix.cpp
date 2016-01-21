@@ -41,7 +41,7 @@ void MyCuMatrix<Real>::Resize(MatrixIndexT rows, MatrixIndexT cols,
       this->num_cols_r_ = cols;
       this->stride_ = pitch / sizeof(Real);
       if (resize_type == kSetZero) this->SetZero();
-      CuDevice::Instantiate().AccuProfile("CuMatrix::Resize", tim.Elapsed());
+      CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
    }else
 #endif
   { // Let the initializer of Matrix<Real> handle the allocation,

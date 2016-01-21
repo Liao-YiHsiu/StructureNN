@@ -5,9 +5,9 @@
 #include "nnet/nnet-utils.h"
 #include "cudamatrix/cu-math.h"
 #include "util/text-utils.h"
-#include "util.h"
 
-#include "nnet-my-component.h"
+#include "my-utils/util.h"
+#include "my-nnet/nnet-my-component.h"
 
 #include <algorithm>
 #include <sstream>
@@ -20,29 +20,38 @@ class Activ : public MyComponent{
          MyComponent(input_dim, output_dim){} 
       virtual ~Activ() {}
 
+      NOT_UPDATABLE();
       virtual void InitData(istream &is) {}
       virtual void ReadData(istream &is, bool binary){}
       virtual void WriteData(ostream &os, bool binary) const {}
 };
 
-class ReLU : public Activ{
+class myReLU : public Activ{
    public:
-      ReLU(int32 input_dim, int32 output_dim):
+      myReLU(int32 input_dim, int32 output_dim):
          Activ(input_dim, output_dim){}
-      virtual ~ReLU() {}
+      virtual ~myReLU() {}
 
-      Component* Copy() const;
+      MyComponent* Copy() const { return new myReLU(input_dim_, output_dim_); }
 
-      MyType myGetType() const { return mReLU; }
+      MyType GetType() const { return mReLU; }
 
       NOT_UPDATABLE();
 
    protected:
       void PropagateFnc(const CuMatrixBase<BaseFloat> &in,
-            CuMatrixBase<BaseFloat> *out);
+            CuMatrixBase<BaseFloat> *out){
+         out->CopyFromMat(in);
+         out->ApplyFloor(0.0);
+      }
+
       void BackpropagateFnc(const CuMatrixBase<BaseFloat> &in,
             const CuMatrixBase<BaseFloat> &out,
             const CuMatrixBase<BaseFloat> &out_diff,
-            CuMatrixBase<BaseFloat> *in_diff);
+            CuMatrixBase<BaseFloat> *in_diff){
+         in_diff->CopyFromMat(out);
+         in_diff->ApplyHeaviside();
+         in_diff->MulElements(out_diff);
+      }
 };
 #endif

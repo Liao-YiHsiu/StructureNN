@@ -1,15 +1,16 @@
-#ifndef _STRT_H_
-#define _STRT_H_
+#ifndef _NNET_LOSS_STRT_H_
+#define _NNET_LOSS_STRT_H_
 
 #include "nnet/nnet-nnet.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
-#include "util.h"
+#include "my-utils/util.h"
 #include <iostream>
 #include <string>
 #include <vector>
 #include <iterator>
 #include <sstream>
+#include <float.h>
 #include <algorithm>
 
 using namespace std;

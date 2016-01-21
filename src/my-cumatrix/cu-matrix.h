@@ -1,16 +1,12 @@
 #ifndef _MY_CU_MATRIX_H_
 #define _MY_CU_MATRIX_H_
 
-#include "nnet/nnet-nnet.h"
+#include "cudamatrix/cu-matrix.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
-#include <iostream>
-#include <string>
-#include <vector>
 
 using namespace std;
 using namespace kaldi;
-using namespace kaldi::nnet1;
 
 // wrapper like CuMatrix with buffered mem
 template<typename Real>
@@ -33,6 +29,12 @@ class MyCuMatrix : public CuMatrixBase<Real>{
       }
 
       MyCuMatrix<Real> &operator = (const CuMatrix<Real> &other){
+         this->Resize(other.NumRows(), other.NumCols(), kUndefined);
+         this->CopyFromMat(other);
+         return *this;
+      }
+
+      MyCuMatrix<Real> &operator = (const MyCuMatrix<Real> &other){
          this->Resize(other.NumRows(), other.NumCols(), kUndefined);
          this->CopyFromMat(other);
          return *this;

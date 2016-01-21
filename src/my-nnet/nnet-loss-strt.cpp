@@ -1,4 +1,4 @@
-#include "strt.h"
+#include "my-nnet/nnet-loss-strt.h"
 
 StrtBase::StrtBase(bool pair, double error): pair_(pair), error_(error),
          frames_progress_(0), correct_progress_(0), loss_progress_(0),

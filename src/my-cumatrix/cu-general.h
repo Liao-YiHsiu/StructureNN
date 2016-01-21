@@ -1,17 +1,14 @@
 #ifndef _MY_CU_GENERAL_H_
 #define _MY_CU_GENERAL_H_
 
-#include "nnet/nnet-nnet.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
+#include "cudamatrix/cu-matrix.h"
 #include "my-utils/type.h"
-#include <iostream>
-#include <string>
 #include <vector>
 
 using namespace std;
 using namespace kaldi;
-using namespace kaldi::nnet1;
 
 // add some buffer into it.
 // it's a general purpose vector
