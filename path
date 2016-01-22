@@ -1,7 +1,9 @@
 # defines local computer parameters notice this file is for makefile and bash
-KALDISRC=/home/loach/kaldi/kaldi/src
-timit=/home/loach/kaldi/kaldi/egs/timit/s5/
-timit_corpus=/corpus/timit
+KALDISRC=/home_local/loach/kaldi-trunk/src
+timit=/home_local/loach/kaldi-trunk/egs/timit/s5/
+timit_corpus=/share/corpus/timit
 PATH+=:$timit/utils
-PATH+=:/home/loach/StructureNN/src
 PATH+=:/home/loach/StructureNN/utils
+PATH+=:/home/loach/StructureNN/src/my-nnetbin
+PATH+=:/home/loach/StructureNN/src/my-utils
+PATH+=:/home/loach/StructureNN/src/score-path
