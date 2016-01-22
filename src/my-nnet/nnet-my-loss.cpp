@@ -126,7 +126,7 @@ void LabelListLoss::SetParam(istream &is){
    assert(strt_ != NULL);
 }
 
-void LabelListLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, CuMatrix<BaseFloat> *nnet_out_diff){
+void LabelListLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff){
 
    int L = labels.size();
    int T = labels[0].size();
@@ -166,7 +166,7 @@ void LabelListLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBa
 
 // -----------------------------------------------------------------------------------------------------
 
-void LabelFrameLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, CuMatrix<BaseFloat> *nnet_out_diff){
+void LabelFrameLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff){
    int L = labels.size();
    int T = labels[0].size();
 
@@ -213,7 +213,7 @@ LabelMultiLoss::~LabelMultiLoss(){
    loss_arr_.resize(0);
 }
 
-void LabelMultiLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, CuMatrix<BaseFloat> *nnet_out_diff){
+void LabelMultiLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff){
 
    if(nnet_out_diff != NULL)
       nnet_out_diff->Resize(nnet_out.NumRows(), nnet_out.NumCols());
@@ -234,7 +234,7 @@ void LabelMultiLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixB
             assert(false);
       }
 
-      CuMatrix<BaseFloat> diff;
+      MyCuMatrix<BaseFloat> diff;
       loss_arr_[i]->Eval(labels, nnet_out.ColRange(colIdx, col_width), &diff);
 
       if(nnet_out_diff != NULL){

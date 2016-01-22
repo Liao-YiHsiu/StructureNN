@@ -1,13 +1,10 @@
 #KALDISRC=/home/loach/kaldi/kaldi-trunk/src
 include ../../path
 
-O3: CXXFLAGS += -O3 -fopenmp
-O3: NVCCFLAGS += -O3
-O3: all
+include ../config
 
 #all: CXXFLAGS += -std=c++11
 all: $(LIBFILE)
-EXTRA_CXXFLAGS = -Wno-sign-compare
 include $(KALDISRC)/kaldi.mk
 
 CXXFLAGS += -I$(KALDISRC) -I..

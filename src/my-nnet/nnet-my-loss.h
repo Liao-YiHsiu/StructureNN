@@ -7,6 +7,7 @@
 #include "nnet/nnet-activation.h"
 #include "nnet/nnet-loss.h"
 
+#include "my-cumatrix/cu-matrix.h"
 #include "my-utils/util.h"
 #include "my-nnet/nnet-loss-strt.h"
 
