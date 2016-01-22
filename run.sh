@@ -2,16 +2,16 @@
 source path
 
 test_lattice_N=10
-lattice_N=20
+lattice_N=100
 train_opt=
 momentum=0.9
-learn_rate=0.0000004
+learn_rate=0.00004
 cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
 keep_lr_iters=300
-num_stream=4
+num_stream=256
 seed=777
 tmpdir=$(mktemp -d)
 
@@ -40,7 +40,7 @@ if [ "$#" -ne 3 ]; then
    exit 1;
 fi
 
-train_tool="mynnet-train-utt \
+train_tool="mynnet-train-single-utt \
    ${num_stream:+ --num-stream=$num_stream} "
 
 nnet_proto=$1

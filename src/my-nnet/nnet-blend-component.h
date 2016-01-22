@@ -19,20 +19,20 @@ class Blend : public MyComponent{
          MyComponent(input_dim, output_dim){ assert(input_dim == output_dim); }
       virtual ~Blend() {}
 
-      bool IsBlend() const { return true; }
+      virtual bool IsBlend() const { return true; }
 
-      void Propagate(const CuMatrixBase<BaseFloat> &in,
-            CuMatrix<BaseFloat> *out){
+      virtual void Propagate(const CuMatrixBase<BaseFloat> &in,
+            MyCuMatrix<BaseFloat> *out){
          assert( input_dim_ == in.NumCols() );
 
          out->Resize(seq_length_.size(), output_dim_);
          PropagateFnc(in, out);
       }
 
-      void Backpropagate(const CuMatrixBase<BaseFloat> &in,
+      virtual void Backpropagate(const CuMatrixBase<BaseFloat> &in,
             const CuMatrixBase<BaseFloat> &out,
             const CuMatrixBase<BaseFloat> &out_diff,
-            CuMatrix<BaseFloat> *in_diff){
+            MyCuMatrix<BaseFloat> *in_diff){
          assert( input_dim_ == in.NumCols() );
          assert( output_dim_ == out.NumCols() && out.NumRows() == seq_length_.size() );
          assert( out_diff.NumCols() == out.NumCols() && out_diff.NumRows() == out.NumRows());

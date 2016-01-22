@@ -1,2 +1,4 @@
 NVCCFLAGS += -O3
 EXTRA_CXXFLAGS = -Wno-sign-compare -O3 -fopenmp
+#EXTRA_CXXFLAGS = -Wno-sign-compare -g
+#NVCCFLAGS += -g -G

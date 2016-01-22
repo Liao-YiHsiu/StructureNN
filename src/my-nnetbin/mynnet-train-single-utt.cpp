@@ -158,9 +158,9 @@ int main(int argc, char *argv[]) {
          }
 
          // report the speed
-         if ((num_done+1)%100 == 0) {
+         if ((num_done+1)%500 == 0) {
             double time_now = time.Elapsed();
-            KALDI_VLOG(1) << "After " << num_done << " utterances: time elapsed = "
+            KALDI_VLOG(1) << "After " << num_done+1 << " utterances: time elapsed = "
                << time_now/60 << " min.";
          }
       }
