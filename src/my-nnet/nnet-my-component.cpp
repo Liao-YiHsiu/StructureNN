@@ -37,6 +37,32 @@ MyComponent::MyType MyComponent::MarkerToType(const string &s){
    return mUnknown;
 }
 
+inline void MyComponent::Propagate(const CuMatrixBase<BaseFloat> &in,
+      MyCuMatrix<BaseFloat> *out){
+   assert( input_dim_ == in.NumCols() );
+
+   out->Resize(in.NumRows(), output_dim_, kSetZero);
+   PropagateFnc(in, out);
+}
+
+void MyComponent::Backpropagate(const CuMatrixBase<BaseFloat> &in,
+      const CuMatrixBase<BaseFloat> &out,
+      const CuMatrixBase<BaseFloat> &out_diff,
+      MyCuMatrix<BaseFloat> *in_diff){
+
+   assert(output_dim_ == out_diff.NumCols());
+   assert((in.NumRows() == out.NumRows()) &&
+         (in.NumRows() == out_diff.NumRows()) &&
+         (out.NumCols() == out_diff.NumCols()));
+
+   if(in_diff != NULL){
+      in_diff->Resize(out_diff.NumRows(), input_dim_);
+      BackpropagateFnc(in, out, out_diff, in_diff);
+   }else{
+      BackpropagateFnc(in, out, out_diff, NULL);
+   }
+}
+
 MyComponent* MyComponent::Init(const string &conf_line){
    istringstream is(conf_line);
    string component_type_string;

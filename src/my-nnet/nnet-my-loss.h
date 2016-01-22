@@ -54,7 +54,7 @@ class LabelLossBase{
       virtual MyLossType GetType() = 0;
 
       virtual void Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, 
-            CuMatrix<BaseFloat> *nnet_out_diff) = 0;
+            MyCuMatrix<BaseFloat> *nnet_out_diff) = 0;
 
       virtual string Report() { return ""; }
 
@@ -74,7 +74,7 @@ class LabelListLoss : public LabelLossBase{
       virtual void SetParam(istream &is);
 
       virtual void Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, 
-            CuMatrix<BaseFloat> *nnet_out_diff);
+            MyCuMatrix<BaseFloat> *nnet_out_diff);
 
       virtual string Report() { return strt_->Report(); }
 
@@ -92,7 +92,7 @@ class LabelFrameLoss : public LabelLossBase{
       virtual void SetParam(istream &is) {}
 
       virtual void Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, 
-            CuMatrix<BaseFloat> *nnet_out_diff);
+            MyCuMatrix<BaseFloat> *nnet_out_diff);
 
       virtual string Report() { return xent.Report(); }
 
@@ -112,7 +112,7 @@ class LabelMultiLoss : public LabelLossBase{
       virtual void SetParam(istream &is) {}
 
       virtual void Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, 
-            CuMatrix<BaseFloat> *nnet_out_diff);
+            MyCuMatrix<BaseFloat> *nnet_out_diff);
 
       virtual string Report();
    private:

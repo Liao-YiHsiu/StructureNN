@@ -19,9 +19,9 @@ class Embed : public MyComponent{
 
       virtual ~Embed() {}
 
-      bool IsEmbed() const{ return true;}
+      virtual bool IsEmbed() const{ return true;}
 
-      void Propagate(const CuMatrixBase<BaseFloat> &in, 
+      virtual void Propagate(const CuMatrixBase<BaseFloat> &in, 
             MyCuMatrix<BaseFloat> *out){
          assert(input_dim_ == in.NumCols());
          assert(in.NumRows() * seq_stride_ == seq_.size());
@@ -30,7 +30,7 @@ class Embed : public MyComponent{
          PropagateFnc(in, out);
       }
 
-      void Backpropagate(const CuMatrixBase<BaseFloat> &in,
+      virtual void Backpropagate(const CuMatrixBase<BaseFloat> &in,
             const CuMatrixBase<BaseFloat> &out,
             const CuMatrixBase<BaseFloat> &out_diff,
             MyCuMatrix<BaseFloat> *in_diff){

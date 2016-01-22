@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <assert.h>
 
 using namespace std;
 using namespace kaldi;
@@ -119,6 +120,7 @@ class MyComponent {
       NnetTrainOptions opts_;
       //</UpdatableComponent>
 };
+
 
 #define NOT_UPDATABLE() \
       virtual bool IsUpdatable() const{ return false;} \

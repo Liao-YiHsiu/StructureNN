@@ -7,9 +7,9 @@
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
 
-#include "util.h"
-#include "nnet-my-nnet.h"
-#include "nnet-my-loss.h"
+#include "my-nnet/nnet-my-nnet.h"
+#include "my-nnet/nnet-my-loss.h"
+#include "score-path/score-path.h"
 #include <sstream>
 #include <omp.h>
 
@@ -92,9 +92,9 @@ int main(int argc, char *argv[]) {
       SequentialUcharVectorReader       label_reader(label_rspecifier);
 
       CuMatrix<BaseFloat> nnet_in;
-      CuMatrix<BaseFloat> nnet_out;
-      CuMatrix<BaseFloat> nnet_out_diff;
-      vector< CuMatrix<BaseFloat> > nnet_out_diff_arr(num_stream);
+      MyCuMatrix<BaseFloat> nnet_out;
+      MyCuMatrix<BaseFloat> nnet_out_diff;
+      vector< MyCuMatrix<BaseFloat> > nnet_out_diff_arr(num_stream);
       vector< CuMatrix<BaseFloat> > features(num_stream);
 
       Timer time;
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
          nnet_in.Resize(max_length * streams, features[0].NumCols(), kSetZero);
          fillin(nnet_in, features, streams);
 
-         vector<int32> label_in(max_length * streams * seqs_stride, 0);
+         vector<uchar> label_in(max_length * streams * seqs_stride, 0);
          vector<int32> seq_length(streams, 0);
 
          // re-arrange label index

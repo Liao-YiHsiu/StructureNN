@@ -1,7 +1,7 @@
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "nnet/nnet-nnet.h"
-#include "nnet-my-nnet.h"
+#include "my-nnet/nnet-my-nnet.h"
 
 using namespace kaldi;
 using namespace kaldi::nnet1;

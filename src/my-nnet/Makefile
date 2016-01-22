@@ -16,7 +16,7 @@ LDLIBS += $(CUDA_LDLIBS) -lpthread
 
 BINFILES = 
 
-OBJFILES = nnet-my-component.o nnet-loss-strt.o nnet-my-loss.o nnet-my-nnet.o
+OBJFILES = nnet-my-nnet.o nnet-loss-strt.o nnet-my-loss.o nnet-my-component.o 
 
 TESTFILES = 
 

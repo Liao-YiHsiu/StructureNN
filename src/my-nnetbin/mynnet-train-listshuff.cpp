@@ -7,8 +7,10 @@
 #include "util/common-utils.h"
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
-#include "util.h"
-#include "nnet-my-nnet.h"
+
+#include "my-nnet/nnet-my-nnet.h"
+#include "score-path/score-path.h"
+#include "my-nnet/nnet-my-loss.h"
 #include <sstream>
 #include <omp.h>
 
@@ -229,12 +231,10 @@ int main(int argc, char *argv[]) {
     strt->SetAll(num_Total);
 
     CuMatrix<BaseFloat> nnet_in;
-    CuMatrix<BaseFloat> nnet_out;
+    MyCuMatrix<BaseFloat> nnet_out;
     CuMatrix<BaseFloat> nnet_out_diff;
     vector< CuMatrix<BaseFloat> > nnet_out_diff_arr(num_stream);
     vector< CuMatrix<BaseFloat> > features(num_stream); 
-
-    nnet.SetBuff(max_length, seqs_stride, num_stream);
 
     int64 num_done = 0;
     int   now_idx  = 0;
@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
        fillin(nnet_in, features, streams);
 
        // construct labels input
-       vector<int32> labels_in(max_T * streams * seqs_stride, 0);
+       vector<uchar> labels_in(max_T * streams * seqs_stride, 0);
        vector<int32> seq_length(streams, 0);
 
 #pragma omp for

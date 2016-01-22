@@ -55,4 +55,5 @@ ifeq ($(CUDA), true)
 endif
 
 %.o : %.cu 
-	$(CUDATKDIR)/bin/nvcc -g -G $(NVCCFLAGS) -c $< -o $@ $(CUDA_INCLUDE) $(CUDA_FLAGS) $(CUDA_ARCH) -I$(KALDISRC) -I..
+	$(CUDATKDIR)/bin/nvcc $(NVCCFLAGS) -c $< -o $@ $(CUDA_INCLUDE) $(CUDA_FLAGS) $(CUDA_ARCH) -I$(KALDISRC) -I..
+#	$(CUDATKDIR)/bin/nvcc -g -G $(NVCCFLAGS) -c $< -o $@ $(CUDA_INCLUDE) $(CUDA_FLAGS) $(CUDA_ARCH) -I$(KALDISRC) -I..

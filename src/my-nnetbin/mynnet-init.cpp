@@ -1,21 +1,10 @@
-#include "nnet/nnet-trnopts.h"
-#include "nnet/nnet-nnet.h"
-#include "nnet/nnet-loss.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
-#include "base/timer.h"
-#include "cudamatrix/cu-device.h"
-#include "util.h"
-#include "kernel.h"
-#include "nnet-my-nnet.h"
-#include <sstream>
-#include <pthread.h>
 
-
+#include "my-nnet/nnet-my-nnet.h"
 
 using namespace std;
 using namespace kaldi;
-using namespace kaldi::nnet1;
 
 int main(int argc, char *argv[]) {
 

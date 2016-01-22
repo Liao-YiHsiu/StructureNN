@@ -206,14 +206,14 @@ void MyNnet::GetParams(Vector<BaseFloat> *weights) const{
    assert(pos == NumParams());
 }
 
-//void MyNnet::SetDropoutRetention(BaseFloat r){
+void MyNnet::SetDropoutRetention(BaseFloat r){
 //   for(int i = 0; i < components_.size(); ++i){
 //      if(components_[i]->GetType() == Component::kDropout){
 //         Dropout& comp = dynamic_cast<Dropout&>(*components_[i]);
 //         comp.SetDropoutRetention(r);
 //      }
 //   }
-//}
+}
 
 void MyNnet::ResetLstmStreams(const vector<int32> &stream_reset_flag){
    vector<int32> inflat_flag;

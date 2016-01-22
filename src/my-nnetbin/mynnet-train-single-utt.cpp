@@ -7,9 +7,9 @@
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
 
-#include "util.h"
-#include "nnet-my-nnet.h"
-#include "nnet-my-loss.h"
+#include "my-nnet/nnet-my-nnet.h"
+#include "my-nnet/nnet-my-loss.h"
+#include "score-path/score-path.h"
 #include <sstream>
 #include <omp.h>
 
@@ -91,11 +91,11 @@ int main(int argc, char *argv[]) {
       SequentialBaseFloatMatrixReader   feature_reader(feat_rspecifier);
       SequentialUcharVectorReader       label_reader(label_rspecifier);
 
-      CuMatrix<BaseFloat> transf_in;
+      MyCuMatrix<BaseFloat> transf_in;
 
       CuMatrix<BaseFloat> nnet_in;
-      CuMatrix<BaseFloat> nnet_out;
-      CuMatrix<BaseFloat> nnet_out_diff;
+      MyCuMatrix<BaseFloat> nnet_out;
+      MyCuMatrix<BaseFloat> nnet_out_diff;
 
       vector<int32> flag(1 , 1);
       vector<int32> seqs_length(1, 0);
@@ -131,8 +131,9 @@ int main(int argc, char *argv[]) {
                seqs_in[ seqs_stride * j  + i] = labels_eval[i][j] - 1;
          }
 
+         transf_in.Resize(feat.NumRows(), feat.NumCols());
          transf_in.CopyFromMat(feat);
-         nnet_transf.Feedforward(trasf_in, &nnet_in);
+         nnet_transf.Feedforward(transf_in, &nnet_in);
 
          // setup nnet input
          nnet.SetLabelSeqs(seqs_in, seqs_stride);
@@ -151,7 +152,7 @@ int main(int argc, char *argv[]) {
 
          if(!crossvalidate){
             nnet.Backpropagate(nnet_out_diff, NULL);
-            if((num_done + 1) % num_streams == 0){
+            if((num_done + 1) % num_stream == 0){
                nnet.Update();
             }
          }
@@ -165,7 +166,7 @@ int main(int argc, char *argv[]) {
       }
 
       // last batch
-      if(!crossvalidate && num_done % num_streams != 0){
+      if(!crossvalidate && num_done % num_stream != 0){
          nnet.Update();
       }
 

@@ -37,8 +37,6 @@ void MyCuMatrix<Real>::Resize(MatrixIndexT rows, MatrixIndexT cols,
                row_bytes, rows, &pitch));
       this->num_rows_ = rows;
       this->num_cols_ = cols;
-      this->num_rows_r_ = rows;
-      this->num_cols_r_ = cols;
       this->stride_ = pitch / sizeof(Real);
       if (resize_type == kSetZero) this->SetZero();
       CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
@@ -70,8 +68,8 @@ void MyCuMatrix<Real>::Resize(MatrixIndexT rows, MatrixIndexT cols,
         throw std::bad_alloc();
      }
   }
-   this->num_rows_r_ = this->num_rows_r_;
-   this->num_cols_r_ = this->num_cols_r_;
+   this->num_rows_r_ = rows;
+   this->num_cols_r_ = cols;
 }
 
 template<typename Real>

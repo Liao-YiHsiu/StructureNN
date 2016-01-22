@@ -62,7 +62,7 @@ class MyNnet{
       void GetParams(Vector<BaseFloat> *weight) const;
 
       // for Dropout
-      //void SetDropoutRetention(BaseFloat r);
+      void SetDropoutRetention(BaseFloat r);
 
       // LSTM
       void ResetLstmStreams(const vector<int32> &stream_reset_flag);

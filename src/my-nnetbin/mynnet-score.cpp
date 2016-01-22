@@ -5,9 +5,9 @@
 #include "util/common-utils.h"
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
-#include "util.h"
-#include "kernel.h"
-#include "nnet-my-nnet.h"
+
+#include "my-nnet/nnet-my-nnet.h"
+#include "score-path/score-path.h"
 #include <sstream>
 #include <pthread.h>
 
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
       int32 num_done = 0;
 
       CuMatrix<BaseFloat> nnet_in;
-      CuMatrix<BaseFloat> nnet_out;
+      MyCuMatrix<BaseFloat> nnet_out;
       Matrix<BaseFloat> nnet_out_host;
 
       for ( ; !feature_reader.Done() && !score_path_reader.Done(); 
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
          ScorePath::Table    table = score_path_reader.Value().Value();
          int T = feat.NumRows();
 
-         vector<int32> label_seq(table.size() * T);
+         vector<uchar> label_seq(table.size() * T);
 
          for(int i = 0; i < table.size(); ++i){
             const vector<uchar> &arr = table[i].second;
