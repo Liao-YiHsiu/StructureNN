@@ -5,13 +5,13 @@ test_lattice_N=10
 lattice_N=100
 train_opt=
 momentum=0.9
-learn_rate=0.00004
+learn_rate=0.00001
 cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
 keep_lr_iters=300
-num_stream=256
+num_stream=128
 seed=777
 tmpdir=$(mktemp -d)
 
@@ -76,6 +76,8 @@ echo "$command_line" \
    [ -f $dir/transf.nnet ] && feature_transform=$dir/transf.nnet
 
    [ ! -d $dir/$paramId ] && mkdir -p $dir/$paramId
+
+   [ -f ${nnet}.best ] && [ ! -f $nnet ] cp ${nnet}.best ${nnet}
 
    [ -f $nnet ] || mynnet_train.sh --cpus $cpus\
       --learn-rate $learn_rate --acwt $acwt \

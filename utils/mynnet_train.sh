@@ -130,7 +130,7 @@ mlp_best=$nnet_in
 
 rm -f $nnetdir/log
 
-min_loss=1e20
+min_loss=1000000000000000000000000000
 loss=0
 halving=0
 # start training
@@ -200,6 +200,7 @@ for iter in $(seq -w $max_iters); do
 
    #loss_new=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | awk '{print 100 - $3}')
    loss_new=$(cat $log | grep "AvgLoss:" | tail -n 1 | sed -e 's/^.*AvgLoss://g'| awk '{ print $1; }')
+   loss_new=$(bc <<< `echo $loss_new | sed -e 's/[eE]+*/\\*10\\^/'` )
    acc_new=$(cat $log | grep "FRAME_ACCURACY" | tail -n 1 | sed -e 's/^.*FRAME_ACCURACY >> //g' | awk '{ print $1; }')
    echo -n "CROSSVAL AVG.LOSS $(printf "%.4f" $loss_new), "
 
@@ -223,12 +224,12 @@ for iter in $(seq -w $max_iters); do
    
    echo -n "$iter $(printf '%.10f' $learn_rate) $loss_tr $loss_new $acc_tr $acc_new $WER " >> $nnetdir/log
 
-   if [ 1 == $(bc <<< "${loss_new/[eE]+*/*10^} < ${min_loss/[eE]+*/*10^}") ]; then
+   if [ 1 == $(bc <<< "$loss_new < $min_loss") ]; then
       min_loss=$loss_new
       cp -f $mlp_next ${nnet_out}.best
    fi
 
-   if [ 1 == $(bc <<< "${loss_new/[eE]+*/*10^} < ${loss/[eE]+*/*10^}") -o $iter -le $keep_lr_iters ]; then
+   if [ 1 == $(bc <<< "$loss_new < $loss") -o $iter -le $keep_lr_iters ]; then
       loss=$loss_new
       mlp_best=$tmpdir/nnet/nnet.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}
       echo "accept" >> $nnetdir/log
@@ -247,8 +248,8 @@ for iter in $(seq -w $max_iters); do
    [ $iter -le $keep_lr_iters ] && continue 
 
    # stopping criterion
-   rel_impr=$(bc <<< "scale=10; (${loss_prev/[eE]+*/*10^}-${loss/[eE]+*/*10^})/${loss_prev/[eE]+*/*10^}")
-   if [ 1 == $halving -a 1 == $(bc <<< "${rel_impr/[eE]+*/*10^} < ${end_halving_impr/[eE]+*/*10^}") ]; then
+   rel_impr=$(bc <<< "scale=10; ($loss_prev-$loss)/$loss_prev")
+   if [ 1 == $halving -a 1 == $(bc <<< "$rel_impr < $end_halving_impr") ]; then
      if [[ "$min_iters" != "" ]]; then
        if [ $min_iters -gt $iter ]; then
          echo we were supposed to finish, but we continue as min_iters : $min_iters
@@ -260,7 +261,7 @@ for iter in $(seq -w $max_iters); do
    fi
 
    # start annealing when improvement is low
-   if [ 1 == $(bc <<< "${rel_impr/[eE]+*/*10^} < ${start_halving_impr/[eE]+*/*10^}") ]; then
+   if [ 1 == $(bc <<< "$rel_impr < $start_halving_impr") ]; then
      halving=1
    fi
    
