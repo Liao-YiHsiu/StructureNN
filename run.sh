@@ -77,7 +77,7 @@ echo "$command_line" \
 
    [ ! -d $dir/$paramId ] && mkdir -p $dir/$paramId
 
-   [ -f ${nnet}.best ] && [ ! -f $nnet ] cp ${nnet}.best ${nnet}
+   [ -f ${nnet}.best ] && [ ! -f $nnet ] && nnet=${nnet}.best
 
    [ -f $nnet ] || mynnet_train.sh --cpus $cpus\
       --learn-rate $learn_rate --acwt $acwt \
@@ -108,19 +108,6 @@ echo "$command_line" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    calc.sh ark:$dir/test.lab ark:${data}.tag.1best \
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   mynnet-score \
-      ${feature_transform:+ --feature-transform="$feature_transform"} \
-      ark:$dir/test.ark \
-      "ark:gunzip -c $test_lattice_path |" \
-      ${nnet}.best "ark:| gzip -c > ${data}.best.tag.gz"\
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   best-score-path "ark:gunzip -c ${data}.best.tag.gz |" ark:${data}.best.tag.1best
-      2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
-
-   calc.sh ark:$dir/test.lab ark:${data}.best.tag.1best \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 echo "Finish Time: `date`" \
