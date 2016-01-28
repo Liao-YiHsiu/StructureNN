@@ -78,6 +78,8 @@ int main(int argc, char *argv[]) {
       MyCuMatrix<BaseFloat> nnet_out;
       Matrix<BaseFloat> nnet_out_host;
 
+      int table_size = -1;
+
       for ( ; !feature_reader.Done() && !score_path_reader.Done(); 
             feature_reader.Next(), score_path_reader.Next(), num_done++) {
 
@@ -90,8 +92,10 @@ int main(int argc, char *argv[]) {
          CuMatrix<BaseFloat> feat(feature_reader.Value());
          ScorePath::Table    table = score_path_reader.Value().Value();
          int T = feat.NumRows();
+         if(table_size == -1) table_size = table.size();
+         assert(table_size >= table.size());
 
-         vector<uchar> label_seq(table.size() * T);
+         vector<uchar> label_seq(table_size * T, 0);
 
          for(int i = 0; i < table.size(); ++i){
             const vector<uchar> &arr = table[i].second;
@@ -103,14 +107,14 @@ int main(int argc, char *argv[]) {
          vector<int32> reset_flag(1, 1);
          vector<int32> seq_length(1, T);
 
-         nnet.SetLabelSeqs(label_seq, table.size());
+         nnet.SetLabelSeqs(label_seq, table_size);
          nnet.ResetLstmStreams(reset_flag);
          nnet.SetSeqLengths(seq_length);
 
          nnet_transf.Feedforward(feat, &nnet_in);
          nnet.Propagate(nnet_in, &nnet_out);
 
-         assert(nnet_out.NumRows() == table.size());
+         assert(nnet_out.NumRows() == table_size);
 
          nnet_out_host.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kUndefined);
          nnet_out_host.CopyFromMat(nnet_out);

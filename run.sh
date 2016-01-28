@@ -6,11 +6,13 @@ lattice_N=100
 train_opt=
 momentum=0.9
 learn_rate=0.00001
+start_halving_impr=0.000005
+end_halving_impr=0.00000005
 cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
-keep_lr_iters=300
+keep_lr_iters=1
 num_stream=128
 seed=777
 tmpdir=$(mktemp -d)
@@ -52,7 +54,7 @@ nnet_init=$tmpdir/nnet.init
 mynnet-init --seed=$seed $nnet_proto $nnet_init
 sha=`(cat $nnet_init; cat $loss_func)|sha1sum| cut -b 1-6`
 
-paramId=${sha}_${lattice_N}_${test_lattice_N}_${learn_rate}_${acwt}_${keep_lr_iters}_${train_tool// /}
+paramId=${sha}_${lattice_N}_${learn_rate}_${acwt}_${keep_lr_iters}_${train_tool// /}
 
 log=log/$dir/${paramId}.log
 data=$dir/$paramId/data
@@ -83,7 +85,9 @@ echo "$command_line" \
       --learn-rate $learn_rate --acwt $acwt \
       --momentum $momentum\
       --train-tool "$train_tool" \
-      --test-lattice-N ${test_lattice_N} --lattice-N $lattice_N\
+      --test-lattice-N ${lattice_N} --lattice-N $lattice_N\
+      ${start_halving_impr:+ --start-halving-impr $start_halving_impr} \
+      ${end_halving_impr:+ --end-halving-impr $end_halving_impr} \
       ${debug:+ --debug $debug} ${seed:+ --seed $seed} \
       ${keep_lr_iters:+ --keep-lr-iters $keep_lr_iters} \
       ${train_opt:+ --train-opt "$train_opt"} \
