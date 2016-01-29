@@ -115,6 +115,8 @@ else
    exit -1;
 fi
 
+combined_score_path_dev="ark:gunzip -c $dev_lattice_path |"
+
 mlp_best=$nnet_in
 
    mynnet-score ${feature_transform:+ --feature-transform="$feature_transform"} "$cv_ark" \

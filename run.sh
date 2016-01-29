@@ -4,8 +4,8 @@ source path
 test_lattice_N=10
 lattice_N=100
 train_opt=
-momentum=0.9
-learn_rate=0.0001
+momentum=0.5
+learn_rate=0.00001
 start_halving_impr=0.000005
 end_halving_impr=0.00000005
 cpus=$(nproc)
