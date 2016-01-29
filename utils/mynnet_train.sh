@@ -32,7 +32,7 @@ feature_transform=
 lattice_source="rand" # both, best, rand
 tmpdir=$(mktemp -d)
 debug=
-shuffle_batch_size=512
+shuffle_batch_size=-1 #full shuffling
 
 # End configuration.
 

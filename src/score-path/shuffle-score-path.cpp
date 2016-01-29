@@ -35,19 +35,19 @@ int main(int argc, char *argv[]) {
     SequentialScorePathReader reader(rspecifier);  
     ScorePathWriter           writer(wspecifier);
 
-    vector<string>    keys(batch_size); 
-    vector<ScorePath> values(batch_size);
 
     int num_done = 0;
     srand(rand_seed);
     while(1){
        int num;
+       vector<string>    keys;
+       vector<ScorePath> values;
 
        // filled in randomizer
-       for(num = 0; num < batch_size && !reader.Done();
+       for(num = 0; (num < batch_size || batch_size < 0) && !reader.Done();
              ++num, reader.Next()){
-          keys[num]   = reader.Key();
-          values[num] = reader.Value();
+          keys.push_back(reader.Key());
+          values.push_back(reader.Value());
        }
 
        if(num == 0)break;
