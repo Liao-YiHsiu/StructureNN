@@ -17,3 +17,4 @@ score-path:
 my-utils: score-path
 my-nnet: my-cuda-kernel my-cumatrix my-utils
 my-nnetbin: my-nnet score-path my-cumatrix
+bin: my-nnetbin my-utils score-path

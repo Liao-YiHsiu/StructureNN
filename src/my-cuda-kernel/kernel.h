@@ -3,7 +3,7 @@
 
 #include "my-utils/type.h"
 
-#define BLOCKSIZE 64 
+#define BLOCKSIZE 256
 
 typedef struct{
    int           L;
@@ -78,5 +78,13 @@ typedef struct{
 
 void cuda_prop_rpsi(dim3 grid, dim3 block, RPsiPack *pack);
 void cuda_back_rpsi(dim3 grid, dim3 block, size_t shared_mem, RPsiPack *pack);
+
+void cuda_weighted_sum(dim3 grid, dim3 block, float* out_data, int rows, int cols, int out_stride,
+      float** in_arr, int in_size, const int* in_stride, const float* att_data, int att_stride);
+
+void cuda_back_weighted_sum(dim3 grid, dim3 block, float** in_diff_arr, int in_size, int rows, int cols, const int* in_diff_stride, const float* out_diff, int out_diff_stride, const float* att, int att_stride);
+
+void cuda_back_weighted_att(dim3 grid, dim3 block, float* att_diff, int rows, int cols, int in_size, int att_stride,
+      const float* out_diff, int out_diff_stride, float** in_arr, const int* in_stride);
 
 #endif

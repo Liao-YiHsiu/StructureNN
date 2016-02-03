@@ -173,3 +173,46 @@ void fillin(CuMatrixBase<BaseFloat> &dest, vector< CuMatrix<BaseFloat> > &src, i
 
    //assert(Same(dest, tmp));
 }
+
+void weighted_sum(CuMatrixBase<BaseFloat> &out,
+      CuVectorG<BaseFloat*> &in_data_arr, const CuVectorG<int32> &in_stride_arr, 
+      const CuMatrixBase<BaseFloat> &att){
+   Timer tim;
+   
+   int rows = out.NumRows();
+   int cols = out.NumCols();
+   int threads = rows * cols;
+
+   cuda_weighted_sum((threads-1)/BLOCKSIZE+1, BLOCKSIZE,
+         out.Data(), rows, cols, out.Stride(), 
+         in_data_arr.Data(), in_data_arr.Dim(),
+         in_stride_arr.Data(), att.Data(), att.Stride());
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+}
+
+void back_weighted_sum(CuVectorG<BaseFloat*> &in_diff_arr, const CuVectorG<int32> &in_diff_stride,
+      CuMatrixBase<BaseFloat> &att_diff,
+      const CuMatrixBase<BaseFloat> &out_diff,
+      CuVectorG<BaseFloat*> &in_arr, const CuVectorG<int32> &in_stride,
+      const CuMatrixBase<BaseFloat> &att){
+
+   Timer tim;
+   
+   int rows = out_diff.NumRows();
+   int cols = out_diff.NumCols();
+   int threads = rows * cols;
+
+   cuda_back_weighted_sum((threads-1)/BLOCKSIZE+1, BLOCKSIZE,
+         in_diff_arr.Data(), in_diff_arr.Dim(), rows, cols, in_diff_stride.Data(),
+         out_diff.Data(), out_diff.Stride(),
+         att.Data(), att.Stride());
+
+   threads = rows * in_diff_arr.Dim();
+   cuda_back_weighted_att((threads-1)/BLOCKSIZE+1, BLOCKSIZE,
+         att_diff.Data(), rows, cols, in_diff_arr.Dim(), att_diff.Stride(), 
+         out_diff.Data(), out_diff.Stride(), in_arr.Data(), in_stride.Data());
+
+   CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+}
+

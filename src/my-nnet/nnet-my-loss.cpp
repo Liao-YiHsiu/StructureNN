@@ -101,29 +101,21 @@ LabelLossBase* LabelLossBase::NewMyLossOfType(MyLossType type){
 
 // ------------------------------------------------------------------------------------------------
 
-LabelListLoss::~LabelListLoss(){
-   if(strt_)
-      delete strt_;
-   strt_ = NULL;
-}
-
 void LabelListLoss::SetParam(istream &is){
-   string strt_type, token;
+   string type, token;
 
-   double sigma = 1.0, error = 0;
-   ReadToken(is, false, &strt_type);
+   ReadToken(is, false, &type);
+   assert(type == "listnet");
 
    while(!is.eof()){
       ReadToken(is, false, &token);
-           if(token == "<Sigma>") ReadBasicType(is, false, &sigma);
-      else if(token == "<Error>") ReadBasicType(is, false, &error);
+           if(token == "<Temp>")  ReadBasicType(is, false, &temp_);
       else KALDI_ERR << "Unknown token " << token << ", a typo in config?"
-         << " (Sigma|Error)";
-      is >> std::ws;
+         << " (Temp)";
+      is >> ws;
    }
 
-   strt_ = StrtListBase::getInstance(strt_type, sigma, error);
-   assert(strt_ != NULL);
+   assert(temp_ > 0);
 }
 
 void LabelListLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff){
@@ -133,35 +125,120 @@ void LabelListLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBa
 
    assert(nnet_out.NumCols() == 1);
    assert(nnet_out.NumRows() % L == 0);
-   assert(strt_ != NULL);
    assert(nnet_out_diff != NULL);
 
    Matrix<BaseFloat> nnet_out_host(nnet_out.NumRows(), nnet_out.NumCols(), kUndefined);
    nnet_out_host.CopyFromMat(nnet_out);
 
-   vector<BaseFloat> targets(L);
+   //vector<BaseFloat> targets(L);
    // sum up over all time frame
-   Matrix<BaseFloat> nnet_out_mixed(L, 1);
+   Vector<BaseFloat> nnet_out_mixed(L);
+   Vector<BaseFloat> targets(L);
+   double max_t = -FLT_MAX, max_n = -FLT_MAX;
+   int    max_t_id = -1, max_n_id = -1;
 
 #pragma omp parallel for
    for(int i = 0; i < L; ++i){
-      targets[i] = phone_frame_acc(labels[0], labels[i]);
+      targets(i) = phone_frame_acc(labels[0], labels[i]);
 
       for(int j = 0; j < T; ++j)
-         nnet_out_mixed(i, 0) += nnet_out_host(i + j*L, 0);
-   }
+         nnet_out_mixed(i) += nnet_out_host(i + j*L, 0);
 
-   Matrix<BaseFloat> nnet_diff_mixed;
-   strt_->Eval(targets, nnet_out_mixed, &nnet_diff_mixed);
+      targets(i) *= temp_;
+      nnet_out_mixed(i) *= temp_;
+
+      if(max_t < targets(i)){
+         max_t_id = i;
+         max_t = targets(i);
+      }
+      if(max_n < nnet_out_mixed(i)){
+         max_n_id = i;
+         max_n = nnet_out_mixed(i);
+      }
+   }
+   targets.ApplySoftMax();
+   nnet_out_mixed.ApplySoftMax();
+
+   // <differential>
+   // Cross entropy
+   Vector<BaseFloat> nnet_diff_mixed(L);
+
+   // cross-entropy + softmax
+   nnet_diff_mixed = nnet_out_mixed;
+   nnet_diff_mixed.AddVec(-1.0, targets);
 
    Matrix<BaseFloat> nnet_diff_host(nnet_out.NumRows(), nnet_out.NumCols());
    // dist error to all time frame
    for(int j = 0; j < T; ++j)
       for(int i = 0; i < L; ++i)
-         nnet_diff_host(i + j*L, 0) = nnet_diff_mixed(i, 0);
+         nnet_diff_host(i + j*L, 0) = nnet_diff_mixed(i);
 
    nnet_out_diff->Resize(nnet_out.NumRows(), nnet_out.NumCols());
    nnet_out_diff->CopyFromMat(nnet_diff_host);
+   // </differential>
+
+   double correct = (max_n_id == max_t_id)?1:0; 
+
+   Vector<BaseFloat> xentropy_aux;
+   // calculate cross_entropy (in GPU),
+   xentropy_aux = nnet_out_mixed; // y
+   xentropy_aux.Add(1e-20); // avoid log(0)
+   xentropy_aux.ApplyLog(); // log(y)
+   xentropy_aux.MulElements(targets); // t*log(y)
+   double cross_entropy = -xentropy_aux.Sum();
+
+   Vector<BaseFloat> entropy_aux;
+   // caluculate entropy (in GPU),
+   entropy_aux = targets; // t
+   entropy_aux.Add(1e-20); // avoid log(0)
+   entropy_aux.ApplyLog(); // log(t)
+   entropy_aux.MulElements(targets); // t*log(t)
+   double entropy = -entropy_aux.Sum();
+
+   KALDI_ASSERT(KALDI_ISFINITE(cross_entropy));
+   KALDI_ASSERT(KALDI_ISFINITE(entropy));
+
+   loss_    += cross_entropy;
+   entropy_ += entropy;
+   correct_ += correct;
+   frames_  += 1;
+
+   // progressive loss reporting
+   {
+      static const int32 progress_step = 200;
+      frames_progress_ += 1;
+      loss_progress_ += cross_entropy;
+      entropy_progress_ += entropy;
+      if (frames_progress_ > progress_step) {
+         KALDI_VLOG(1) << "ProgressLoss[last " 
+            << static_cast<int>(frames_progress_/200) << "h of " 
+            << static_cast<int>(frames_/200) << "h]: " 
+            << (loss_progress_-entropy_progress_)/frames_progress_ << " (ListNet)";
+         // store
+         loss_vec_.push_back((loss_progress_-entropy_progress_)/frames_progress_);
+         // reset
+         frames_progress_ = 0;
+         loss_progress_ = 0.0;
+         entropy_progress_ = 0.0;
+      }
+   }
+}
+
+string LabelListLoss::Report(){
+   ostringstream oss;
+   oss << "AvgLoss: " << (loss_-entropy_)/frames_ << " (Xent), "
+      << "[AvgXent " << loss_/frames_ 
+      << ", AvgTargetEnt " << entropy_/frames_ 
+      << ", frames " << frames_ << "]" << endl;
+   if (loss_vec_.size() > 0) {
+      oss << "progress: [";
+      copy(loss_vec_.begin(),loss_vec_.end(),ostream_iterator<float>(oss," "));
+      oss << "]" << endl;
+   }
+   if (correct_ >= 0.0) {
+      oss << "FRAME_ACCURACY >> " << 100.0*correct_/frames_ << "% <<" << endl;
+   }
+   return oss.str(); 
 }
 
 // -----------------------------------------------------------------------------------------------------

@@ -81,3 +81,13 @@ bool Same(const CuMatrixBase<BaseFloat> &a, const CuMatrixBase<BaseFloat> &b, do
    c.ApplyPow(2);
    return c.Sum() < err*err*a.NumRows()*a.NumCols();
 }
+
+void getCuData(vector< MyCuMatrix<BaseFloat> > &in_arr, vector<BaseFloat*> &ptr_arr, vector<int32> &stride_arr){
+   ptr_arr.resize(in_arr.size());
+   stride_arr.resize(in_arr.size());
+
+   for(int i = 0; i < in_arr.size(); ++i){
+      ptr_arr[i] = in_arr[i].Data();
+      stride_arr[i] = in_arr[i].Stride();
+   }
+}

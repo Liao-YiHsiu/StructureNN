@@ -70,6 +70,7 @@ class MyNnet{
       // BSLTM
       void SetSeqLengths(const vector<int32> &sequence_lengths);
 
+      void Init(istream &is);
       void Init(const string& config_file);
       
       void Read(const string& file);
@@ -98,7 +99,7 @@ class MyNnet{
          return opts_;
       }
 
-   private:
+   protected:
 
       vector<MyComponent*> components_;
       

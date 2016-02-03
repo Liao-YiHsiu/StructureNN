@@ -57,6 +57,14 @@ __global__ static void _cuda_blendsum_back(const float* mat, int rows, int cols,
 __global__ static void _cuda_mem_copy(float* dst, int dst_pitch, const float* src, int src_pitch,
      int width, int height);
 
+__global__ static void _cuda_weighted_sum(float* out_data, int rows, int cols, int out_stride,
+      float** in_arr, int in_size, const int* in_stride, const float* att_data, int att_stride);
+
+
+__global__ static void _cuda_back_weighted_sum(float** in_diff_arr, int in_size, int rows, int cols, const int* in_diff_stride, const float* out_diff, int out_diff_stride, const float* att, int att_stride);
+
+__global__ static void _cuda_back_weighted_att(float* att_diff, int rows, int cols, int in_size, int att_stride, const float* out_diff, int out_diff_stride, float** in_arr, const int* in_stride);
+
 // ----------------------------------------------------------------------------------------------------
 
 void cuda_make_obs(dim3 grid, dim3 block, const float* feats, int rows, int cols, int stride, const int* lab, float *data, int d_stride, int S){
@@ -159,6 +167,19 @@ void cuda_blendsum_back(dim3 grid, dim3 block, const float* mat, int rows, int c
 void cuda_mem_copy(dim3 grid, dim3 block, float* dst, int dst_pitch, const float* src, int src_pitch,
      int width, int height){
    _cuda_mem_copy<<<grid, block>>>(dst, dst_pitch, src, src_pitch, width, height);
+}
+
+void cuda_weighted_sum(dim3 grid, dim3 block, float* out_data, int rows, int cols, int out_stride,
+      float** in_arr, int in_size, const int* in_stride, const float* att_data, int att_stride){
+   _cuda_weighted_sum<<<grid, block>>>(out_data, rows, cols, out_stride, in_arr, in_size, in_stride, att_data, att_stride);
+}
+
+void cuda_back_weighted_sum(dim3 grid, dim3 block, float** in_diff_arr, int in_size, int rows, int cols, const int* in_diff_stride, const float* out_diff, int out_diff_stride, const float* att, int att_stride){
+   _cuda_back_weighted_sum<<<grid, block>>>(in_diff_arr, in_size, rows, cols, in_diff_stride, out_diff, out_diff_stride, att, att_stride);
+}
+
+void cuda_back_weighted_att(dim3 grid, dim3 block, float* att_diff, int rows, int cols, int in_size, int att_stride, const float* out_diff, int out_diff_stride, float** in_arr, const int* in_stride){
+   _cuda_back_weighted_att<<<grid, block>>>(att_diff, rows, cols, in_size, att_stride, out_diff, out_diff_stride, in_arr, in_stride);
 }
 
 __device__
@@ -642,4 +663,60 @@ __global__ static void _cuda_mem_copy(float* dst, int dst_pitch, const float* sr
    const float *idata = src + src_pitch * h + w;
 
    *odata = *idata;
+}
+
+__global__ static void _cuda_weighted_sum(float* out_data, int rows, int cols, int out_stride,
+      float** in_arr, int in_size, const int* in_stride, const float* att_data, int att_stride){
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+   if(idx >= rows * cols) return;
+
+   int r = idx / cols;
+   int c = idx % cols;
+
+   float       *odata   = out_data + r * out_stride + c;
+   const float *weights = att_data + r * att_stride;
+
+   float sum = 0;
+
+   for(int i = 0; i < in_size; ++i){
+      const float *idata = in_arr[i] + in_stride[i] * r + c;
+      sum += weights[i] * (*idata);
+   }
+
+   *odata = sum;
+}
+
+__global__ static void _cuda_back_weighted_sum(float** in_diff_arr, int in_size, int rows, int cols, const int* in_diff_stride, const float* out_diff, int out_diff_stride, const float* att, int att_stride){
+
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+   if(idx >= rows * cols) return;
+
+   int r = idx / cols;
+   int c = idx % cols;
+
+   const float idata    = *(out_diff + r * out_diff_stride + c);
+   const float *weights = att + r * att_stride;
+
+   for(int i = 0; i < in_size; ++i){
+      float *odata = in_diff_arr[i] + in_diff_stride[i] * r + c;
+      *odata = weights[i] * idata;
+   }
+}
+
+__global__ static void _cuda_back_weighted_att(float* att_diff, int rows, int cols, int in_size, int att_stride, const float* out_diff, int out_diff_stride, float** in_arr, const int* in_stride){
+   int idx = blockIdx.x * blockDim.x + threadIdx.x;
+   if(idx >= rows * in_size) return;
+
+   int r = idx / in_size;
+   int c = idx % in_size;
+
+   const float* idata1 = out_diff + r * out_diff_stride;
+   const float* idata2 = in_arr[c] + r * in_stride[c];
+
+   float sum = 0;
+   for(int i = 0; i < cols; ++i){
+      sum += idata1[i] * idata2[i];
+   }
+
+   *(att_diff + att_stride*r + c) = sum;
 }

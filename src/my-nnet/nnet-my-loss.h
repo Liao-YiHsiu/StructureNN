@@ -67,8 +67,10 @@ class LabelLossBase{
 
 class LabelListLoss : public LabelLossBase{
    public:
-      LabelListLoss() : strt_(NULL) {}
-      virtual ~LabelListLoss();
+      LabelListLoss() : temp_(2) ,frames_(0.0), correct_(0.0), loss_(0.0), entropy_(0.0), 
+      frames_progress_(0.0), loss_progress_(0.0), entropy_progress_(0.0) { }
+
+      virtual ~LabelListLoss() {}
       
       virtual MyLossType GetType() { return lList; }
 
@@ -77,10 +79,22 @@ class LabelListLoss : public LabelLossBase{
       virtual void Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, 
             MyCuMatrix<BaseFloat> *nnet_out_diff);
 
-      virtual string Report() { return strt_->Report(); }
+      virtual string Report();
 
    private:
-      StrtListBase *strt_;
+      double temp_;
+
+      double frames_;
+      double correct_;
+      double loss_;
+      double entropy_;
+
+      // partial results during training
+      double frames_progress_;
+      double loss_progress_;
+      double entropy_progress_;
+      vector<float> loss_vec_;
+      
 };
 
 class LabelFrameLoss : public LabelLossBase{

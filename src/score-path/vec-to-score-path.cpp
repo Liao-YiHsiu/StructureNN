@@ -18,6 +18,9 @@ int main(int argc, char *argv[]) {
     string score_rspecifier;
     po.Register("score-rspecifier", &score_rspecifier, "Use this file as score.");
 
+    int n = -1;
+    po.Register("n", &n, "produce at least n path");
+
     po.Read(argc, argv);
 
     if (po.NumArgs() != 2) {
@@ -48,6 +51,12 @@ int main(int argc, char *argv[]) {
 
        if(pKey == "" || nkey.compare(pKey) != 0){
           if(pKey != ""){
+             if(n > score_path.Value().size()){
+                vector<uchar> dummy_path(score_path.Value()[0].second.size(), 1);
+                for(int i = score_path.Value().size(); i < n; ++i){
+                   score_path.Value().push_back(make_pair(0, dummy_path));
+                }
+             }
              score_path_writer.Write(pKey, score_path);
              score_path.Value().clear();
           }
@@ -61,6 +70,12 @@ int main(int argc, char *argv[]) {
        if(score_rspecifier != "") score_reader.Next();
     }
 
+    if(n > score_path.Value().size()){
+       vector<uchar> dummy_path(score_path.Value()[0].second.size(), 1);
+       for(int i = score_path.Value().size(); i < n; ++i){
+          score_path.Value().push_back(make_pair(0, dummy_path));
+       }
+    }
     score_path_writer.Write(pKey, score_path);
 
     return 0;

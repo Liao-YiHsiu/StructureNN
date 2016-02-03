@@ -17,6 +17,9 @@ start_halving_impr=0.005
 end_halving_impr=0.00005
 halving_factor=0.5
 
+halving_limit=3
+moving_cst=0.5
+
 verbose=1
 
 seed=777
@@ -86,17 +89,17 @@ mkdir -p $tmpdir/log
 
 # precompute lattice data
 train_lattice_path=$dir/../lab/train.lab_${lattice_N}_${acwt}.gz
-lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/2 )) --acoustic-scale $acwt --n $lattice_N \
+lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/3 )) --acoustic-scale $acwt --n $lattice_N \
    $lat_model "$train_lat" "$train_lattice_path" \
    2>&1 | tee -a $log; ( exit ${PIPESTATUS[0]} ) || exit 1
 
 dev_lattice_path=$dir/../lab/dev.lab_${test_lattice_N}_${acwt}.gz
-lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/2 )) --acoustic-scale $acwt --n $test_lattice_N \
+lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/3 )) --acoustic-scale $acwt --n $test_lattice_N \
    $lat_model "$cv_lat" "$dev_lattice_path" \
    2>&1 | tee -a $log; ( exit ${PIPESTATUS[0]} ) || exit 1
 
 dev_lattice_path_rand=$dir/../lab/dev.lab_${test_lattice_N}_${acwt}_${seed}.gz
-lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/2 )) --acoustic-scale $acwt \
+lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/3 )) --acoustic-scale $acwt \
    --random true --srand $seed \
    --n $test_lattice_N $lat_model "$cv_lat" "$dev_lattice_path_rand" \
    2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
@@ -146,7 +149,7 @@ for iter in $(seq -w $max_iters); do
 
    if [ "$lattice_source" == "both" -o "$lattice_source" == "rand" ]; then
       train_lattice_path_rand=$dir/../lab/train.lab_${lattice_N}_${acwt}_${seed}.gz
-      lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/2 )) --acoustic-scale $acwt \
+      lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/3 )) --acoustic-scale $acwt \
          --random true --srand $seed \
          --n $lattice_N $lat_model "$train_lat" "$train_lattice_path_rand" \
          2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
@@ -154,7 +157,7 @@ for iter in $(seq -w $max_iters); do
       # precompute next iteration in backgroud
       seed_next=$((seed + 1))
       train_lattice_path_rand_next=$dir/../lab/train.lab_${lattice_N}_${acwt}_${seed_next}.gz
-      lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/2 )) --acoustic-scale $acwt \
+      lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/3 )) --acoustic-scale $acwt \
          --random true --srand $seed_next \
          --n $lattice_N $lat_model "$train_lat" "$train_lattice_path_rand_next" \
          >/dev/null 2>/dev/null &
@@ -222,17 +225,25 @@ for iter in $(seq -w $max_iters); do
 # ------------------------------------------------------------------------------------------------
 
    # accept or reject new parameters (based on objective function)
-   loss_prev=$loss
    
-   echo -n "$iter $(printf '%.10f' $learn_rate) $loss_tr $loss_new $acc_tr $acc_new $WER " >> $nnetdir/log
+   echo -n "$iter $(printf '%.10f' $learn_rate) $(printf '%.7f' $loss_tr) $(printf '%.7f' $loss_new) $acc_tr $acc_new $WER " >> $nnetdir/log
 
+   # record best loss
    if [ 1 == $(bc <<< "$loss_new < $min_loss") ]; then
       min_loss=$loss_new
       cp -f $mlp_next ${nnet_out}.best
    fi
 
-   if [ 1 == $(bc <<< "$loss_new < $loss") -o $iter -le $keep_lr_iters ]; then
-      loss=$loss_new
+   # my stopping criterion
+   if [ -z "$moving_ave" ]; then
+      moving_ave=$loss_new
+   fi
+
+   if [ 1 == $(bc <<< "$loss_new < $moving_ave") -o $iter -le $keep_lr_iters ]; then
+      moving_ave=$(bc <<< "scale=10; (1 - $moving_cst)*$moving_ave + $moving_cst*$loss_new")
+      halving=0;
+      halving_cnt=0;
+
       mlp_best=$tmpdir/nnet/nnet.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}
       echo "accept" >> $nnetdir/log
       [ $iter -le $keep_lr_iters ] && mlp_best=${mlp_best}_keep-lr-iters-$keep_lr_iters 
@@ -240,32 +251,39 @@ for iter in $(seq -w $max_iters); do
       mv $mlp_next $mlp_best
       echo "nnet accepted ($(basename $mlp_best))"
    else
-     mlp_reject=$tmpdir/nnet/nnet.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}_rejected
-     echo "rejected" >> $nnetdir/log
-     mv $mlp_next $mlp_reject
-     echo "nnet rejected ($(basename $mlp_reject))"
+      halving=1;
+      halving_cnt=$((halving_cnt + 1));
+
+      mlp_reject=$tmpdir/nnet/nnet.${iter}_learnrate${learn_rate}_tr$(printf "%.4f" $loss_tr)_acc${acc_tr}_cv$(printf "%.4f" $loss_new)_acc${acc_new}_wer${WER}_rejected
+      echo "rejected" >> $nnetdir/log
+      mv $mlp_next $mlp_reject
+      echo "nnet rejected ($(basename $mlp_reject))"
    fi
 
-   # no learn-rate halving yet, if keep_lr_iters set accordingly
-   [ $iter -le $keep_lr_iters ] && continue 
 
-   # stopping criterion
-   rel_impr=$(bc <<< "scale=10; ($loss_prev-$loss)/$loss_prev")
-   if [ 1 == $halving -a 1 == $(bc <<< "$rel_impr < $end_halving_impr") ]; then
-     if [[ "$min_iters" != "" ]]; then
-       if [ $min_iters -gt $iter ]; then
-         echo we were supposed to finish, but we continue as min_iters : $min_iters
-         continue
-       fi
-     fi
-     echo finished, too small rel. improvement $rel_impr
+   if [ $halving_cnt -ge $halving_limit ]; then
+     echo finished, too small improvement
      break
    fi
 
-   # start annealing when improvement is low
-   if [ 1 == $(bc <<< "$rel_impr < $start_halving_impr") ]; then
-     halving=1
-   fi
+
+   # stopping criterion
+#   rel_impr=$(bc <<< "scale=10; ($loss_prev-$loss)/$loss_prev")
+#   if [ 1 == $halving -a 1 == $(bc <<< "$rel_impr < $end_halving_impr") ]; then
+#     if [[ "$min_iters" != "" ]]; then
+#       if [ $min_iters -gt $iter ]; then
+#         echo we were supposed to finish, but we continue as min_iters : $min_iters
+#         continue
+#       fi
+#     fi
+#     echo finished, too small rel. improvement $rel_impr
+#     break
+#   fi
+#
+#   # start annealing when improvement is low
+#   if [ 1 == $(bc <<< "$rel_impr < $start_halving_impr") ]; then
+#     halving=1
+#   fi
    
    # do annealing
    if [ 1 == $halving ]; then
@@ -276,7 +294,8 @@ done
 
 echo "train success"
 
-cp $mlp_best $nnet_out
+mv ${nnet_out}.best $nnet_out
+#cp $mlp_best $nnet_out
 
 rm -rf $tmpdir
 

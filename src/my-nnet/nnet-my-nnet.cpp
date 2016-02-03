@@ -77,10 +77,6 @@ void MyNnet::Backpropagate(const CuMatrixBase<BaseFloat> &out_diff, MyCuMatrix<B
    for(int i = NumComponents()-1; i >= 0; --i){
       components_[i]->Backpropagate(propagate_buf_[i], propagate_buf_[i+1],
             backpropagate_buf_[i+1], &backpropagate_buf_[i]);
-
-      if(components_[i]->IsUpdatable()){
-         components_[i]->Update(propagate_buf_[i], backpropagate_buf_[i+1]);
-      }
    }
 
    if(NULL != in_diff) (*in_diff) = backpropagate_buf_[0];
@@ -207,12 +203,12 @@ void MyNnet::GetParams(Vector<BaseFloat> *weights) const{
 }
 
 void MyNnet::SetDropoutRetention(BaseFloat r){
-//   for(int i = 0; i < components_.size(); ++i){
-//      if(components_[i]->GetType() == Component::kDropout){
-//         Dropout& comp = dynamic_cast<Dropout&>(*components_[i]);
-//         comp.SetDropoutRetention(r);
-//      }
-//   }
+   for(int i = 0; i < components_.size(); ++i){
+      if(components_[i]->GetType() == MyComponent::mDropout){
+         myDropout& comp = dynamic_cast<myDropout&>(*components_[i]);
+         comp.SetDropoutRetention(r);
+      }
+   }
 }
 
 void MyNnet::ResetLstmStreams(const vector<int32> &stream_reset_flag){
@@ -273,9 +269,7 @@ void MyNnet::SetSeqLengths(const vector<int32> &sequence_lengths){
    streamN_ = sequence_lengths.size();
 }
 
-void MyNnet::Init(const string &file){
-   Input in(file);
-   istream &is = in.Stream();
+void MyNnet::Init(istream &is){
    string conf_line, token;
    while(!is.eof()){
       assert(is.good());
@@ -283,14 +277,23 @@ void MyNnet::Init(const string &file){
       if(conf_line == "") continue;
       KALDI_VLOG(1) << conf_line;
       istringstream(conf_line) >> ws >> token;
-      if( token == "<MyNnetProto>" || token == "</MyNnetProto>")
+      if( token == "<MyNnetProto>" )
          continue;
+      else if( token == "</MyNnetProto>")
+         break;
       AppendComponent(MyComponent::Init(conf_line + "\n"));
       is >> ws;
    }
    
-   in.Close();
    Check();
+}
+
+void MyNnet::Init(const string &file){
+   Input in(file);
+   istream &is = in.Stream();
+   Init(is);
+   
+   in.Close();
 }
 
 void MyNnet::Read(const string &file){

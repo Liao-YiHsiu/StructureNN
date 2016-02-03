@@ -13,7 +13,7 @@ acoustic_scale=
 n=
 random=
 srand=
-cpus=$(( (`nproc` + 1)/2 ))
+cpus=$(( (`nproc` + 1)/3 ))
 zip_file="true"
 
 dir=$(mktemp -d)
@@ -102,8 +102,8 @@ done
 
 weight-basefloat ark:${file_out}.lm_am 1.0 ark:${file_out}.lm $acoustic_scale ark:${file_out}.am  || exit 1;
 
-vec-to-score-path --score-rspecifier="ark:${file_out}.lm_am" scp:$file_out "$score_path_w" || exit 1;
+vec-to-score-path ${n:+ --n=$n} --score-rspecifier="ark:${file_out}.lm_am" scp:$file_out "$score_path_w" || exit 1;
 
 ) 9>$lock_file
-rm $lock_file
+rm -rf $lock_file
 rm -rf $dir

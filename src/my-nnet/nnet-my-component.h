@@ -31,6 +31,10 @@ class MyComponent {
 
          mActiv = 0x0300,
          mReLU,
+         mSoftmax,
+         mSigmoid,
+         mTanh,
+         mDropout,
 
          mLayer = 0x0400,
          mLSTM,
@@ -104,11 +108,9 @@ class MyComponent {
       // --------------------------------------------------------------
       //<UpdatableComponent>
    public:
-      bool IsUpdatable() const { return true; }
+      virtual bool IsUpdatable() const { return true; }
       virtual int32 NumParams() const = 0;
       virtual void GetParams(Vector<BaseFloat> *params) const = 0;
-      virtual void Update(const CuMatrixBase<BaseFloat> &input, 
-            const CuMatrixBase<BaseFloat> &diff) = 0;
       const NnetTrainOptions& GetTrainOptions() const{
          return opts_;
       }
@@ -117,6 +119,8 @@ class MyComponent {
       }
       virtual void InitData(istream &is) = 0;
    protected:
+      virtual void Update(const CuMatrixBase<BaseFloat> &input, 
+            const CuMatrixBase<BaseFloat> &diff) = 0;
       NnetTrainOptions opts_;
       //</UpdatableComponent>
 };
@@ -127,7 +131,7 @@ class MyComponent {
       virtual int32 NumParams() const{ return 0;} \
       virtual void GetParams(Vector<BaseFloat> *params) const { params->Resize(0); } \
       virtual void Update(const CuMatrixBase<BaseFloat> &input, \
-            const CuMatrixBase<BaseFloat> &diff) {} \
-      virtual void Update() {}
+            const CuMatrixBase<BaseFloat> &diff) { assert(false);} \
+      virtual void Update() { assert(false); }
 
 #endif

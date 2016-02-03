@@ -10,6 +10,10 @@ const struct MyComponent::key_value MyComponent::MarkerMap[] = {
    {MyComponent::mEmbedSimple, "<EmbedSimple>"},
    {MyComponent::mBlendSum, "<BlendSum>"},
    {MyComponent::mReLU, "<mReLU>"},
+   {MyComponent::mSoftmax, "<mSoftmax>"},
+   {MyComponent::mSigmoid, "<mSigmoid>"},
+   {MyComponent::mTanh, "<mTanh>"},
+   {MyComponent::mDropout, "<mDropout>"},
    {MyComponent::mLSTM, "<mLSTM>"},
    {MyComponent::mAffine, "<mAffine>"}
 };
@@ -61,6 +65,8 @@ void MyComponent::Backpropagate(const CuMatrixBase<BaseFloat> &in,
    }else{
       BackpropagateFnc(in, out, out_diff, NULL);
    }
+
+   if(IsUpdatable()) Update(in, out_diff);
 }
 
 MyComponent* MyComponent::Init(const string &conf_line){
@@ -90,11 +96,9 @@ MyComponent* MyComponent::Read(istream &is, bool binary){
    int first_char = Peek(is, binary);
    if(first_char == EOF)return NULL;
 
-   streampos pos = is.tellg();
    ReadToken(is, binary, &token);
 
    if(token == "<Nnet>" || token == "<MyNnet>"){
-      pos = is.tellg();
       ReadToken(is, binary, &token);
    }
 
@@ -130,6 +134,18 @@ MyComponent* MyComponent::NewMyComponentOfType(MyComponent::MyType type, int32 i
          break;
       case mReLU:
          ans = new myReLU(input_dim, output_dim);
+         break;
+      case mSoftmax:
+         ans = new mySoftmax(input_dim, output_dim);
+         break;
+      case mSigmoid:
+         ans = new mySigmoid(input_dim, output_dim);
+         break;
+      case mTanh:
+         ans = new myTanh(input_dim, output_dim);
+         break;
+      case mDropout:
+         ans = new myDropout(input_dim, output_dim);
          break;
       case mLSTM:
          ans = new myLSTM(input_dim, output_dim);

@@ -3,6 +3,7 @@
 
 #include "cudamatrix/cu-matrix.h"
 #include "my-cuda-kernel/kernel.h"
+#include "my-cumatrix/cu-general.h"
 #include <vector>
 
 using namespace std;
@@ -41,5 +42,15 @@ void blendsum_back(const CuMatrixBase<BaseFloat> &out_diff, const int *seq_arr, 
 void cuMemCopy(float* dst, int dst_pitch,const float* src, int src_pitch, int width, int height);
 
 void fillin(CuMatrixBase<BaseFloat> &dest, vector< CuMatrix<BaseFloat> > &src, int stream_num);
+
+void weighted_sum(CuMatrixBase<BaseFloat> &out,
+      CuVectorG<BaseFloat*> &in_data_arr, const CuVectorG<int32> &in_stride_arr, 
+      const CuMatrixBase<BaseFloat> &att); 
+
+void back_weighted_sum(CuVectorG<BaseFloat*> &in_diff_arr, const CuVectorG<int32> &in_diff_stride,
+      CuMatrixBase<BaseFloat> &att_diff,
+      const CuMatrixBase<BaseFloat> &out_diff,
+      CuVectorG<BaseFloat*> &in_arr, const CuVectorG<int32> &in_stride,
+      const CuMatrixBase<BaseFloat> &att);
 
 #endif

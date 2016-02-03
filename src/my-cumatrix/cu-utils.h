@@ -4,6 +4,7 @@
 #include "nnet/nnet-nnet.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
+#include "my-cumatrix/cu-matrix.h"
 #include <string>
 #include <vector>
 
@@ -24,5 +25,7 @@ vector<int> getRowsN(const vector< CuMatrix<BaseFloat> > &arr);
 void Sum(const vector< CuMatrix<BaseFloat> > &arr, CuMatrix<BaseFloat>* out, int N = -1);
 
 bool Same(const CuMatrixBase<BaseFloat> &a, const CuMatrixBase<BaseFloat> &b, double err = 1e-8);
+
+void getCuData(vector< MyCuMatrix<BaseFloat> > &in_arr, vector<BaseFloat*> &ptr_arr, vector<int32> &stride_arr);
 
 #endif

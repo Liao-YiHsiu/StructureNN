@@ -11,7 +11,8 @@ CXXFLAGS += -I$(KALDISRC) -I..
 LDFLAGS += $(CUDA_LDFLAGS)
 LDLIBS += $(CUDA_LDLIBS) -lpthread
 
-BINFILES = mynnet-info mynnet-init mynnet-score mynnet-train-single-utt mynnet-train-utt 
+BINFILES = mynnet-info mynnet-init mynnet-score mynnet-train-single-utt mynnet-train-utt \
+	   rennet-info rennet-init rennet-forward rennet-train-frmshuff
 
 OBJFILES = 
 

@@ -6,13 +6,12 @@ lattice_N=100
 train_opt=
 momentum=0.5
 learn_rate=0.00001
-start_halving_impr=0.000005
-end_halving_impr=0.00000005
+moving_cst=0.5
 cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
-keep_lr_iters=10
+keep_lr_iters=1
 num_stream=256
 seed=777
 tmpdir=$(mktemp -d)
@@ -52,9 +51,9 @@ dir=$3
 nnet_init=$tmpdir/nnet.init
 
 mynnet-init --seed=$seed $nnet_proto $nnet_init
-sha=`(cat $nnet_init; cat $loss_func)|sha1sum| cut -b 1-6`
+sha=`(cat $nnet_init; cat $loss_func; echo "$test_lattice_N $lattice_N $train_opt $momentum $learn_rate $moving_cst $acwt $lat_model $feature_transform $keep_lr_iters $num_stream $seed")|sha1sum| cut -b 1-6`
 
-paramId=${sha}_${lattice_N}_${learn_rate}_${acwt}_${keep_lr_iters}_${train_tool// /}
+paramId=data_${sha}
 
 log=log/$dir/${paramId}.log
 data=$dir/$paramId/data
@@ -63,10 +62,29 @@ nnet=$dir/$paramId/nnet
 [ ! -d log/$dir ] && mkdir -p log/$dir
 [ ! -d $dir/../lab ] && mkdir -p $dir/../lab
 
+if [ -f $log ]; then
+   time_before=$(($(date +%s) - 180));
+   [ $(stat -c %Y $log) -gt $time_before ] && echo "doing by other script!" && exit 0;
+fi
+
+# logging ...
+
 echo "$HOSTNAME `date`" \
 2>&1 | tee $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
 echo "$command_line" \
+2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+(echo "nnet_proto" && cat $nnet_proto) \
+2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+(echo "loss_func" && cat $nnet_proto) \
+2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+echo "dir = $dir" \
+2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
+
+(set -o posix; set) \
 2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    #check file existence.
@@ -81,14 +99,14 @@ echo "$command_line" \
 
    [ -f ${nnet}.best ] && [ ! -f $nnet ] && nnet=${nnet}.best
 
+
    [ -f $nnet ] || mynnet_train.sh --cpus $cpus\
       --learn-rate $learn_rate --acwt $acwt \
       --momentum $momentum\
       --train-tool "$train_tool" \
       --test-lattice-N ${lattice_N} --lattice-N $lattice_N\
-      ${start_halving_impr:+ --start-halving-impr $start_halving_impr} \
-      ${end_halving_impr:+ --end-halving-impr $end_halving_impr} \
       ${debug:+ --debug $debug} ${seed:+ --seed $seed} \
+      ${moving_cst:+ --moving-cst $moving_cst} \
       ${keep_lr_iters:+ --keep-lr-iters $keep_lr_iters} \
       ${train_opt:+ --train-opt "$train_opt"} \
       ${keep_lr_iters:+ --keep-lr-iters "$keep_lr_iters"} \
@@ -97,7 +115,7 @@ echo "$command_line" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
    test_lattice_path=$dir/../lab/test.lab_${test_lattice_N}_${acwt}.gz
-   lattice-to-nbest-path.sh --cpus $cpus --acoustic-scale $acwt --n $test_lattice_N \
+   lattice-to-nbest-path.sh --cpus $(( (cpus + 1)/3 )) --acoustic-scale $acwt --n $test_lattice_N \
       $lat_model ark:$dir/test.lat "$test_lattice_path" \
       2>&1 | tee -a $log ; ( exit ${PIPESTATUS[0]} ) || exit 1;
 
