@@ -106,6 +106,7 @@ int main(int argc, char *argv[]) {
 
          vector< CuMatrix<BaseFloat> >     features(num_stream);
          vector< vector< vector<uchar> > > label_arr(num_stream);
+         vector< vector<uchar> >           ref_arr(num_stream);
          int streams = 0;
          int max_length = 0;
 
@@ -124,11 +125,14 @@ int main(int argc, char *argv[]) {
 
             nnet_transf.Feedforward(CuMatrix<BaseFloat>(feat), &features[streams]);
 
+            ref_arr[streams] = label;
+
             vector< vector<uchar> > & seqs = label_arr[streams];
 
-            seqs.reserve(1 + table.size());
+            seqs.reserve(table.size());
+            //seqs.reserve(1 + table.size());
 
-            seqs.push_back(label);
+            //seqs.push_back(label);
 
             for(int i = 0; i < table.size(); ++i)
                seqs.push_back(table[i].second);
@@ -175,7 +179,7 @@ int main(int argc, char *argv[]) {
          nnet_out_diff.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kSetZero);
 
          for(int i = 0; i < streams; ++i){
-            loss->Eval(label_arr[i],
+            loss->Eval(ref_arr[i], label_arr[i],
                   nnet_out.RowRange(i*max_length*seqs_stride, max_length*seqs_stride), &nnet_out_diff_arr[i]);
             nnet_out_diff.RowRange(i*max_length*seqs_stride, max_length*seqs_stride).CopyFromMat(nnet_out_diff_arr[i]);
          }

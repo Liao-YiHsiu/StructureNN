@@ -1,4 +1,4 @@
-SUBDIRS = my-cuda-kernel my-cumatrix my-nnet score-path my-utils my-nnetbin
+SUBDIRS = my-cuda-kernel my-cumatrix my-nnet score-path my-utils my-nnetbin bin
 
 all: $(SUBDIRS)
 

@@ -4,15 +4,15 @@ source path
 test_lattice_N=10
 lattice_N=100
 train_opt=
-momentum=0.5
-learn_rate=0.00001
+momentum=0.9
+learn_rate=0.001
 moving_cst=0.5
 cpus=$(nproc)
 acwt=0.16
 lat_model=$timit/exp/dnn4_pretrain-dbn_dnn_smbr/final.mdl
 feature_transform=
 keep_lr_iters=1
-num_stream=256
+num_stream=32
 seed=777
 tmpdir=$(mktemp -d)
 

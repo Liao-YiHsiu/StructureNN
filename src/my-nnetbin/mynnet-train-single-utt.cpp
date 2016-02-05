@@ -115,11 +115,12 @@ int main(int argc, char *argv[]) {
 
          assert(feat.NumRows() == label.size());
 
-         int seqs_stride = table.size() + 1;
+         //int seqs_stride = table.size() + 1;
+         int seqs_stride = table.size();
 
          vector< vector<uchar> > labels_eval;
-         labels_eval.reserve(seqs_stride);
-         labels_eval.push_back(label);
+         //labels_eval.reserve(seqs_stride);
+         //labels_eval.push_back(label);
          for(int i = 0; i < table.size(); ++i){
             assert(table[i].second.size() == label.size());
             labels_eval.push_back(table[i].second);
@@ -148,7 +149,7 @@ int main(int argc, char *argv[]) {
          assert(nnet_out.NumRows() == label.size() * seqs_stride);
          //nnet_out_diff.Resize(nnet_out.NumRows(), nnet_out.NumCols(), kSetZero);
 
-         loss->Eval(labels_eval, nnet_out, &nnet_out_diff);
+         loss->Eval(label, labels_eval, nnet_out, &nnet_out_diff);
 
          if(!crossvalidate){
             nnet.Backpropagate(nnet_out_diff, NULL);

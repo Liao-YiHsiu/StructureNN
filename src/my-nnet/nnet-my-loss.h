@@ -54,8 +54,8 @@ class LabelLossBase{
 
       virtual MyLossType GetType() = 0;
 
-      virtual void Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, 
-            MyCuMatrix<BaseFloat> *nnet_out_diff) = 0;
+      virtual void Eval(const vector<uchar> &ref, const vector< vector<uchar> > &labels,
+            const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff) = 0;
 
       virtual string Report() { return ""; }
 
@@ -67,7 +67,7 @@ class LabelLossBase{
 
 class LabelListLoss : public LabelLossBase{
    public:
-      LabelListLoss() : temp_(2) ,frames_(0.0), correct_(0.0), loss_(0.0), entropy_(0.0), 
+      LabelListLoss() : temp_t_(1), temp_y_(1) ,frames_(0.0), correct_(0.0), loss_(0.0), entropy_(0.0), 
       frames_progress_(0.0), loss_progress_(0.0), entropy_progress_(0.0) { }
 
       virtual ~LabelListLoss() {}
@@ -76,13 +76,14 @@ class LabelListLoss : public LabelLossBase{
 
       virtual void SetParam(istream &is);
 
-      virtual void Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, 
-            MyCuMatrix<BaseFloat> *nnet_out_diff);
+      virtual void Eval(const vector<uchar> &ref, const vector< vector<uchar> > &labels,
+            const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff);
 
       virtual string Report();
 
    private:
-      double temp_;
+      double temp_t_;
+      double temp_y_;
 
       double frames_;
       double correct_;
@@ -106,8 +107,8 @@ class LabelFrameLoss : public LabelLossBase{
 
       virtual void SetParam(istream &is) {}
 
-      virtual void Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, 
-            MyCuMatrix<BaseFloat> *nnet_out_diff);
+      virtual void Eval(const vector<uchar> &ref, const vector< vector<uchar> > &labels,
+            const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff);
 
       virtual string Report() { return xent.Report(); }
 
@@ -126,8 +127,8 @@ class LabelMultiLoss : public LabelLossBase{
 
       virtual void SetParam(istream &is) {}
 
-      virtual void Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, 
-            MyCuMatrix<BaseFloat> *nnet_out_diff);
+      virtual void Eval(const vector<uchar> &ref, const vector< vector<uchar> > &labels,
+            const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff);
 
       virtual string Report();
    private:

@@ -109,19 +109,21 @@ void LabelListLoss::SetParam(istream &is){
 
    while(!is.eof()){
       ReadToken(is, false, &token);
-           if(token == "<Temp>")  ReadBasicType(is, false, &temp_);
+           if(token == "<TempT>")  ReadBasicType(is, false, &temp_t_);
+      else if(token == "<TempY>")  ReadBasicType(is, false, &temp_y_);
       else KALDI_ERR << "Unknown token " << token << ", a typo in config?"
          << " (Temp)";
       is >> ws;
    }
 
-   assert(temp_ > 0);
+   assert(temp_t_ > 0);
+   assert(temp_y_ > 0);
 }
 
-void LabelListLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff){
+void LabelListLoss::Eval(const vector<uchar> &ref, const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff){
 
    int L = labels.size();
-   int T = labels[0].size();
+   int T = ref.size();
 
    assert(nnet_out.NumCols() == 1);
    assert(nnet_out.NumRows() % L == 0);
@@ -134,24 +136,27 @@ void LabelListLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBa
    // sum up over all time frame
    Vector<BaseFloat> nnet_out_mixed(L);
    Vector<BaseFloat> targets(L);
-   double max_t = -FLT_MAX, max_n = -FLT_MAX;
-   int    max_t_id = -1, max_n_id = -1;
 
 #pragma omp parallel for
    for(int i = 0; i < L; ++i){
-      targets(i) = phone_frame_acc(labels[0], labels[i]);
+      targets(i) = phone_acc(ref, labels[i], true);
 
       for(int j = 0; j < T; ++j)
          nnet_out_mixed(i) += nnet_out_host(i + j*L, 0);
 
-      targets(i) *= temp_;
-      nnet_out_mixed(i) *= temp_;
+      targets(i) *= temp_t_;
+      nnet_out_mixed(i) *= temp_y_;
 
-      if(max_t < targets(i)){
+   }
+
+   double max_t = -FLT_MAX, max_n = -FLT_MAX;
+   int    max_t_id = -1, max_n_id = -1;
+   for(int i = 0; i < L; ++i){
+      if(max_t <= targets(i)){
          max_t_id = i;
          max_t = targets(i);
       }
-      if(max_n < nnet_out_mixed(i)){
+      if(max_n <= nnet_out_mixed(i)){
          max_n_id = i;
          max_n = nnet_out_mixed(i);
       }
@@ -243,7 +248,7 @@ string LabelListLoss::Report(){
 
 // -----------------------------------------------------------------------------------------------------
 
-void LabelFrameLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff){
+void LabelFrameLoss::Eval(const vector<uchar> &ref, const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff){
    int L = labels.size();
    int T = labels[0].size();
 
@@ -290,7 +295,7 @@ LabelMultiLoss::~LabelMultiLoss(){
    loss_arr_.resize(0);
 }
 
-void LabelMultiLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff){
+void LabelMultiLoss::Eval(const vector<uchar> &ref, const vector< vector<uchar> > &labels, const CuMatrixBase<BaseFloat> &nnet_out, MyCuMatrix<BaseFloat> *nnet_out_diff){
 
    if(nnet_out_diff != NULL)
       nnet_out_diff->Resize(nnet_out.NumRows(), nnet_out.NumCols());
@@ -312,7 +317,7 @@ void LabelMultiLoss::Eval(const vector< vector<uchar> > &labels, const CuMatrixB
       }
 
       MyCuMatrix<BaseFloat> diff;
-      loss_arr_[i]->Eval(labels, nnet_out.ColRange(colIdx, col_width), &diff);
+      loss_arr_[i]->Eval(ref, labels, nnet_out.ColRange(colIdx, col_width), &diff);
 
       if(nnet_out_diff != NULL){
          diff.Scale(loss_weight_[i]);
